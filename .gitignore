@@ -103,3 +103,7 @@ ENV/
 \.DS_Store
 
 \.vscode/
+
+# big training_data files
+machine_learning/machine_learning/training_data
+machine_learning/machine_learning/training_data.zip
