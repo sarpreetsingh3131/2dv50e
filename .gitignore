@@ -105,5 +105,5 @@ ENV/
 \.vscode/
 
 # big training_data files
-machine_learning/machine_learning/training_data
-machine_learning/machine_learning/training_data.zip
+machine_learning/machine_learning/training_data/*.txt
+machine_learning/machine_learning/training_data/*.json
