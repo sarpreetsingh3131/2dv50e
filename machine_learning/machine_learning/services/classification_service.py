@@ -2,7 +2,6 @@ from machine_learning.models import classification
 from machine_learning.parser import testing_data, training_data
 from sklearn.linear_model import SGDClassifier
 
-
 MODELS = {
     'sgd_classifier': SGDClassifier
 }

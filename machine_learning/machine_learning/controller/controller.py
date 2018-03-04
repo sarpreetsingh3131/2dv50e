@@ -5,7 +5,6 @@ import json
 import traceback
 from machine_learning.services import classification_service
 from machine_learning.services import regression_service
-from machine_learning.graph import graph
 
 
 @csrf_exempt
@@ -26,9 +25,6 @@ def handle_request(request):
 
         elif type == 'regression':
             response = regression_service.run(mode, model_name, json_testing_data)
-
-        elif type == 'graph':
-            response = graph.draw()
 
         return JsonResponse(response)
 

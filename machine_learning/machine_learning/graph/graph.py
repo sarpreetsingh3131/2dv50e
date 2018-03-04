@@ -3,18 +3,14 @@ import traceback
 
 DATA_DIR_PATH = 'machine_learning/results/data/'
 FIG_DIR_PATH = 'machine_learning/results/figures/'
-COLORS = {'ActivFORM': 'orange', 'Regression': 'blue', 'Classification': 'green'}
+COLORS = {'ActivFORM': 'lightskyblue', 'Regression': 'lightgreen', 'Classification': 'lightyellow'}
 CONTROLS = ['ActivFORM', 'Regression', 'Classification']
 
 
 def draw():
     try:
         for index, title in enumerate(['Energy Consumption', 'Packet Loss', 'Adaptation Space', 'Time']):
-            data = {
-                'activform': [],
-                'regression': [],
-                'classification': []
-            }
+            data = {'activform': [], 'regression': [], 'classification': []}
 
             for file_name in ['regression.txt', 'activform.txt', 'classification.txt']:
                 with open(DATA_DIR_PATH + file_name) as f:
@@ -36,12 +32,8 @@ def draw():
             fig, ax = plt.subplots()
             ax.set_title(title)
 
-            boxplot_dict = ax.boxplot(
-                [data[x] for x in ['activform', 'regression', 'classification']],
-                positions=[1, 2, 3],
-                labels=CONTROLS,
-                patch_artist=True,
-                widths=.5)
+            boxplot_dict = ax.boxplot([data[x] for x in ['activform', 'regression', 'classification']],
+                                      positions=[1, 2, 3], labels=CONTROLS, patch_artist=True, widths=.5)
 
             for index, box in enumerate(boxplot_dict['boxes']):
                 lab = ax.get_xticklabels()[index].get_text()
@@ -50,10 +42,10 @@ def draw():
             fig.savefig(FIG_DIR_PATH + title)
             plt.close(fig)
 
-        return {'message': 'graph saved'}
+        print('graphs saved')
     except Exception as e:
         traceback.print_tb(e.__traceback__)
-        return {'message': 'graph failed'}
+        print('graphs failed')
 
 
 def add_result(file_name, data, result):
@@ -63,3 +55,6 @@ def add_result(file_name, data, result):
         data['activform'].append(result)
     else:
         data['classification'].append(result)
+
+
+draw()

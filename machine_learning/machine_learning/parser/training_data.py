@@ -19,6 +19,7 @@ def parse(type):
 
     except Exception:
         # parse data from txt file, then save into json file and return it
+        count = 0
         for file_name in ['data1.txt', 'data2.txt', 'data3.txt', 'data4.txt', 'data5.txt',  'data6.txt',  'data7.txt']:
             with open(DIR_PATH + file_name) as f:
                 file_data = f.readlines()
@@ -35,7 +36,7 @@ def parse(type):
 
                     for mote in adaptation:
                         for link in mote['links']:
-                            cycle_features[index].append(link['SNR'])
+                            cycle_features[index].append(int(str(link['SNR']).split('.')[0]))
 
                     for mote in adaptation:
                         for link in mote['links']:
