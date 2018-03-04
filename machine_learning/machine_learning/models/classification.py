@@ -39,7 +39,7 @@ def accuracy(features, target, model):
         training_features, testing_features, training_target, testing_target = train_test_split(
             features, target, test_size=0.3)
         classification = model()
-        classification.partial_fit(training_features, training_target)
+        classification.partial_fit(training_features, training_target, [0, 1])
         score = classification.score(testing_features, testing_target)
         return {'accuracy': "{0:.2f}".format(score)}
     except Exception as e:

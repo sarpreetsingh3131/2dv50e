@@ -19,7 +19,6 @@ def parse(type):
 
     except Exception:
         # parse data from txt file, then save into json file and return it
-        count = 0
         for file_name in ['data1.txt', 'data2.txt', 'data3.txt', 'data4.txt', 'data5.txt',  'data6.txt',  'data7.txt']:
             with open(DIR_PATH + file_name) as f:
                 file_data = f.readlines()
