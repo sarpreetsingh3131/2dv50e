@@ -14,17 +14,17 @@ def handle_request(request):
         type = parse_qs(urlparse(path).query)['type'][0]
         mode = parse_qs(urlparse(path).query)['mode'][0]
         model_name = parse_qs(urlparse(path).query)['model_name'][0]
-        json_testing_data = {}
+        data = {}
         response = {}
 
         if request.method == 'POST':
-            json_testing_data = json.loads(request.body)
+            data = json.loads(request.body)
 
         if type == 'classification':
-            response = classification_service.run(mode, model_name, json_testing_data)
+            response = classification_service.run(mode, model_name, data)
 
         elif type == 'regression':
-            response = regression_service.run(mode, model_name, json_testing_data)
+            response = regression_service.run(mode, model_name, data)
 
         return JsonResponse(response)
 

@@ -1,6 +1,10 @@
-def parse(json_testing_data):
+import numpy as np
+
+
+def parse_data(data, target_type=None):
     features = []
-    adaptations = parse_adaptations(json_testing_data['adaptations'], json_testing_data['environment'])
+    target = []
+    adaptations = parse_adaptations(data['adaptations'], data['environment'])
 
     for index, adaptation in enumerate(adaptations):
         features.append([])
@@ -9,24 +13,42 @@ def parse(json_testing_data):
             features[index].append(snr['SNR'])
 
         for mote in adaptation['motes']:
-            features[index].append(mote['distribution'])
-
-        for mote in adaptation['motes']:
-            features[index].append(mote['powerSetting'])
+            mote_id = mote['moteId']
+            if mote_id == 7 or mote_id == 10 or mote_id == 12:
+                features[index].append(mote['distribution'])
 
         for traffic in adaptation['motesTraffic']:
-            features[index].append(traffic['traffic'])
+            mote_id = traffic['moteId']
+            if mote_id == 10 or mote_id == 12:
+                features[index].append(traffic['traffic'])
 
-    return {'features': features}
+        if target_type == 'classification':
+            if adaptation['packet_loss'] < 10:
+                target.append(1)
+            else:
+                target.append(0)
+
+        elif target_type == 'regression':
+            target.append(adaptation['packet_loss'])
+
+    return np.array(features, dtype='float64'), np.array(target, dtype='float64')
 
 
 def parse_adaptations(adaptations, environment):
     data = []
     for adaptation_index, adaptation_id in enumerate(adaptations):
-        data.append({'adaptation_id': adaptation_id, 'motes': []})
+        data.append({'adaptation_id': adaptation_id, 'motes': [], 'packet_loss': 0, 'energy_consumption': 0})
         parse_motes(adaptation_index, adaptation_id, adaptations, data)
         parse_environment(adaptation_index, environment, data)
+        parse_verification_results(adaptation_index, adaptation_id, adaptations, data)
     return data
+
+
+def parse_verification_results(adaptation_index, adaptation_id, adaptations, data):
+    packet_loss = adaptations[adaptation_id]['verificationResults']['packetLoss']['value']['value']
+    energy_consumption = adaptations[adaptation_id]['verificationResults']['energyConsumption']['value']['value']
+    data[adaptation_index]['packet_loss'] = packet_loss
+    data[adaptation_index]['energy_consumption'] = energy_consumption
 
 
 def parse_environment(adaptation_index, environment, data):

@@ -1,5 +1,5 @@
 from machine_learning.models import regression
-from machine_learning.parser import testing_data, training_data
+from machine_learning.parser.parser import parse_data
 from sklearn.linear_model import SGDRegressor
 
 
@@ -8,15 +8,11 @@ MODELS = {
 }
 
 
-def run(mode, model_name, json_testing_data):
+def run(mode, model_name, data):
     if mode == 'training':
-        data = training_data.parse(type='regression')
-        return regression.training(data['features'], data['target'], MODELS[model_name])
+        features, target = parse_data(data, target_type='regression')
+        return regression.training(features, target, MODELS[model_name])
 
     elif mode == 'testing':
-        data = testing_data.parse(json_testing_data)
-        return regression.testing(data['features'], MODELS[model_name])
-
-    elif mode == 'accuracy':
-        data = training_data.parse(type='classification')
-        return regression.accuracy(data['features'], data['target'], MODELS[model_name])
+        features, target = parse_data(data)
+        return regression.testing(features, MODELS[model_name])
