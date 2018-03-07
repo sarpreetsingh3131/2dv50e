@@ -38,7 +38,7 @@ def feature_importances(features, target, target_type):
 
     title = 'Feature Importances For ' + target_type + ' By Extra Tress Classifier'
     plt.suptitle(title)
-    plt.savefig(DIR_PATH + title)
+    plt.savefig(DIR_PATH + title + '.pdf')
 
 
 features, classification_target, regression_target = load_data()
