@@ -10,23 +10,20 @@ from machine_learning.services import regression_service
 @csrf_exempt
 def handle_request(request):
     try:
-        path = request.get_full_path()
-        type = parse_qs(urlparse(path).query)['type'][0]
-        mode = parse_qs(urlparse(path).query)['mode'][0]
-        model_name = parse_qs(urlparse(path).query)['model_name'][0]
-        data = {}
-        response = {}
-
         if request.method == 'POST':
+            path = request.get_full_path()
+            type = parse_qs(urlparse(path).query)['type'][0]
+            mode = parse_qs(urlparse(path).query)['mode'][0]
             data = json.loads(request.body)
+            response = {}
 
-        if type == 'classification':
-            response = classification_service.run(mode, model_name, data)
+            if type == 'classification':
+                response = classification_service.run(mode, data)
 
-        elif type == 'regression':
-            response = regression_service.run(mode, model_name, data)
+            elif type == 'regression':
+                response = regression_service.run(mode, data)
 
-        return JsonResponse(response)
+            return JsonResponse(response)
 
     except Exception as e:
         traceback.print_tb(e.__traceback__)

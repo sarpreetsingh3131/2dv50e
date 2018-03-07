@@ -1,18 +1,19 @@
 import traceback
 from machine_learning.model_persistence.model_persistence import load_model, save_model
 from sklearn.preprocessing import MinMaxScaler
+from sklearn.linear_model import SGDRegressor
 
 DIR_PATH = 'machine_learning/trained_models/regression/'
 
 
-def training(features, target, model):
+def train(features, target):
     try:
-        regression = load_model(model(average=True), model.__name__, DIR_PATH)
+        regressor = load_model(SGDRegressor(average=True), SGDRegressor.__name__, DIR_PATH)
         scaler = load_model(MinMaxScaler(), MinMaxScaler.__name__, DIR_PATH)
         scaler.partial_fit(features)
         features = scaler.transform(features)
-        regression.partial_fit(features, target)
-        save_model(regression, model.__name__, DIR_PATH)
+        regressor.partial_fit(features, target)
+        save_model(regressor, SGDRegressor.__name__, DIR_PATH)
         save_model(scaler, MinMaxScaler.__name__, DIR_PATH)
         return {'message': 'trained successfully'}
     except Exception as e:
@@ -20,18 +21,17 @@ def training(features, target, model):
         return {'message': 'training failed '}
 
 
-def testing(features, model):
+def test(features):
     try:
-        regression = load_model(None, model.__name__, DIR_PATH)
+        regressor = load_model(None, SGDRegressor.__name__, DIR_PATH)
         scaler = load_model(None, MinMaxScaler.__name__, DIR_PATH)
         features = scaler.transform(features)
-        predictions = regression.predict(features)
-        save_model(regression, model.__name__, DIR_PATH)
+        predictions = regressor.predict(features)
         response = {'result': [], 'adaptation_space': 0}
-
+        
         for prediction in predictions:
             response['result'].append(float(prediction))  # todo here
-            if float(prediction) < 0.10:
+            if float(prediction) < 10.0:
                 response['adaptation_space'] += 1
 
         return response

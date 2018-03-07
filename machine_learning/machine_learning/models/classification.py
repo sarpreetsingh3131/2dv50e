@@ -1,19 +1,20 @@
 import traceback
 from machine_learning.model_persistence.model_persistence import load_model, save_model
 from sklearn.preprocessing import MinMaxScaler
-import json
+from sklearn.linear_model import SGDClassifier
+import numpy as np
 
 DIR_PATH = 'machine_learning/trained_models/classification/'
 
 
-def training(features, target, model):
+def train(features, target):
     try:
-        classification = load_model(model(average=True), model.__name__, DIR_PATH)
+        classifier = load_model(SGDClassifier(average=True), SGDClassifier.__name__, DIR_PATH)
         scaler = load_model(MinMaxScaler(), MinMaxScaler.__name__, DIR_PATH)
         scaler.partial_fit(features)
         features = scaler.transform(features)
-        classification.partial_fit(features, target, [0, 1])
-        save_model(classification, model.__name__, DIR_PATH)
+        classifier.partial_fit(features, target, classes=np.array([0, 1]))
+        save_model(classifier, SGDClassifier.__name__, DIR_PATH)
         save_model(scaler, MinMaxScaler.__name__, DIR_PATH)
         return {'message': 'trained successfully'}
     except Exception as e:
@@ -21,12 +22,12 @@ def training(features, target, model):
         return {'message': 'training failed '}
 
 
-def testing(features, model):
+def test(features):
     try:
-        classification = load_model(None, model.__name__, DIR_PATH)
+        classifier = load_model(None, SGDClassifier.__name__, DIR_PATH)
         scaler = load_model(None, MinMaxScaler.__name__, DIR_PATH)
         features = scaler.transform(features)
-        predictions = classification.predict(features)
+        predictions = classifier.predict(features)
         response = {'result': [], 'adaptation_space': 0}
 
         for prediction in predictions:
