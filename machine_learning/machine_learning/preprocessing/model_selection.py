@@ -108,7 +108,7 @@ def model_selection(features, target, estimators, target_type, scaler):
 
         plt.suptitle(title)
         plt.legend(loc='upper right', ncol=3)
-        plt.xlabel("Test Size")
+        plt.xlabel("Training Size")
         plt.ylabel("Test Error Rate")
         plt.savefig(DIR_PATH + title + '.pdf')
 
