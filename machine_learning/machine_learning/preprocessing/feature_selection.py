@@ -20,6 +20,7 @@ def feature_scores(features, target, target_type, score_function):
     title = 'Feature Scores For ' + target_type + ' By ' + score_function.__name__
     plt.suptitle(title)
     plt.savefig(DIR_PATH + title)
+    print('graph saved')
 
 
 def feature_importances(features, target, target_type):
@@ -39,6 +40,7 @@ def feature_importances(features, target, target_type):
     title = 'Feature Importances For ' + target_type + ' By Extra Tress Classifier'
     plt.suptitle(title)
     plt.savefig(DIR_PATH + title + '.pdf')
+    print('graph saved')
 
 
 features, classification_target, regression_target = load_data()

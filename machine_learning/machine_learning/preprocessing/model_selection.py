@@ -5,7 +5,6 @@ from sklearn.linear_model import SGDClassifier, Perceptron, SGDRegressor
 from sklearn.linear_model import PassiveAggressiveClassifier, PassiveAggressiveRegressor
 from sklearn.preprocessing import MinMaxScaler, StandardScaler, MaxAbsScaler
 from dataset import load_data
-from matplotlib.font_manager import FontProperties
 
 classifiers = [
     ('SGD(default)', SGDClassifier()),
@@ -45,78 +44,94 @@ regressors = [
      PassiveAggressiveRegressor(average=True, loss='squared_epsilon_insensitive'))
 ]
 
-DIR_PATH = 'machine_learning/preprocessing/results/model_selection/'
+DIR_PATH = 'machine_learning/preprocessing/results/model_selection'
 
 TESTING_SIZE = [0.99, 0.90, 0.80, 0.70, 0.60, 0.50, 0.40, 0.30, 0.20, 0.10, 0.01]
 
 ROUNDS = 10
 
-COLORS = ['red', 'green', 'yellow', 'blue', 'orange', 'pink', 'peachpuff', 'black', 'brown', 'aliceblue',
-          'skyblue', 'blueviolet', 'royalblue', 'violet', 'aqua', 'sienna', 'powderblue', 'grey']
+COLORS = ['red', 'green', 'yellow', 'blue', 'orange', 'pink', 'black', 'brown', 'skyblue', 'royalblue']
 
 
-def model_selection(features, target, estimators, target_type, scaler):
+def model_selection(features, target, estimators, target_type):
     x_axis = 1. - np.array(TESTING_SIZE)
 
-    plt.figure(figsize=(15, 8))
-    index = 0
-    for name, clf in estimators:
-        rng = np.random.RandomState(42)
-        y_axis = []
+    plt.figure(figsize=(20, 20))
+    fig_index = 0
 
-        for size in TESTING_SIZE:
-            y_axis_mean = []
-
-            for r in range(ROUNDS):
-                training_features, testing_features, training_target, testing_target = train_test_split(
-                    features, target, test_size=size, random_state=rng)
-
-                if scaler != None:
-                    m_scaler = scaler()
-                    m_scaler.partial_fit(training_features)
-                    training_features = m_scaler.transform(training_features)
-                    testing_features = m_scaler.transform(testing_features)
-
-                if target_type == 'Classification':
-                    clf.partial_fit(training_features, training_target, classes=np.array([0, 1]))
-                    predictions = clf.predict(testing_features)
-                    y_axis_mean.append(1 - np.mean(predictions == testing_target))
-                else:
-                    clf.partial_fit(training_features, training_target)
-                    predictions = clf.predict(testing_features)
-                    for i in range(0, len(testing_target)):
-                        if predictions[i] < 10 and testing_target[i] < 10 or predictions[i] >= 10 and testing_target[i] >= 10:
-                            predictions[i] = 1
-                            testing_target[i] = 1
-                        else:
-                            predictions[i] = 0
-                            testing_target[i] = 1
-
-                    y_axis_mean.append(1 - np.mean(predictions == testing_target))
-
-            y_axis.append(np.mean(y_axis_mean))
-
-        plt.plot(x_axis, y_axis, label=name, color=COLORS[index])
-
-        index += 1
-        title = target_type + ' Model Selection'
+    for scaler in [None, MinMaxScaler, StandardScaler, MaxAbsScaler]:
+        fig_index += 1
+        plt.subplot(4, 2, fig_index)
+        color_index = 0
+        estimator_index = 0
+        title = ''
 
         if scaler == None:
             title += ' Without Feature Scaling'
         else:
             title += ' With ' + scaler.__name__ + ' Feature Scaling'
 
-        plt.suptitle(title)
-        plt.legend(loc='upper right', ncol=3)
-        plt.xlabel("Training Size")
-        plt.ylabel("Test Error Rate")
-        plt.savefig(DIR_PATH + title + '.pdf')
+        for name, clf in estimators:
+            rng = np.random.RandomState(42)
+            y_axis = []
+
+            for size in TESTING_SIZE:
+                y_axis_mean = []
+
+                for r in range(ROUNDS):
+                    training_features, testing_features, training_target, testing_target = train_test_split(
+                        features, target, test_size=size, random_state=rng)
+
+                    if scaler != None:
+                        m_scaler = scaler()
+                        m_scaler.partial_fit(training_features)
+                        training_features = m_scaler.transform(training_features)
+                        testing_features = m_scaler.transform(testing_features)
+
+                    if target_type == 'Classification':
+                        clf.partial_fit(training_features, training_target, classes=np.array([0, 1]))
+                        predictions = clf.predict(testing_features)
+                        y_axis_mean.append(1 - np.mean(predictions == testing_target))
+                    else:
+                        clf.partial_fit(training_features, training_target)
+                        predictions = clf.predict(testing_features)
+                        for i in range(0, len(testing_target)):
+                            if predictions[i] < 10 and testing_target[i] < 10 or predictions[i] >= 10 and testing_target[i] >= 10:
+                                predictions[i] = 1
+                                testing_target[i] = 1
+                            else:
+                                predictions[i] = 0
+                                testing_target[i] = 1
+
+                        y_axis_mean.append(1 - np.mean(predictions == testing_target))
+
+                y_axis.append(np.mean(y_axis_mean))
+
+            if estimator_index == 9:
+                fig_index += 1
+                plt.subplot(4, 2, fig_index)
+
+            if estimator_index == 0 or estimator_index == 9:
+                color_index = 0
+                plt.title(title)
+
+            plt.plot(x_axis, y_axis, label=name, color=COLORS[color_index])
+            plt.legend(loc='upper right')
+            plt.xlabel("Training Size")
+            plt.ylabel("Test Error Rate")
+
+            estimator_index += 1
+            color_index += 1
+
+    plt.suptitle(target_type + ' Model Selection')
+    plt.savefig(DIR_PATH + target_type + ' Model Selection' + '.pdf')
+    print('graph saved')
 
 
 features, classification_target, regression_target = load_data()
 
-for scaler in [None, MinMaxScaler, StandardScaler, MaxAbsScaler]:
-    for target, estimators, target_type in zip(
-            [classification_target, regression_target], [classifiers, regressors], ['Classification', 'Regression']):
 
-        model_selection(features, target, estimators, target_type, scaler)
+for target, estimators, target_type in zip(
+        [classification_target, regression_target], [classifiers, regressors], ['Classification', 'Regression']):
+
+    model_selection(features, target, estimators, target_type)
