@@ -1,8 +1,7 @@
 from matplotlib import pyplot as plt
 import traceback
 
-DATA_DIR_PATH = 'machine_learning/results/data/'
-FIG_DIR_PATH = 'machine_learning/results/figures/'
+DIR_PATH = 'machine_learning/results/'
 COLORS = {'ActivFORM': 'lightskyblue', 'Regression': 'lightgreen', 'Classification': 'lightyellow'}
 CONTROLS = ['ActivFORM', 'Regression', 'Classification']
 
@@ -13,7 +12,7 @@ def draw():
             data = {'activform': [], 'regression': [], 'classification': []}
 
             for file_name in ['activform', 'regression', 'classification']:
-                with open(DATA_DIR_PATH + file_name + '.txt') as f:
+                with open(DIR_PATH + 'data/' + file_name + '.txt') as f:
                     file_data = f.readlines()
 
                 file_data = [x.strip() for x in file_data]
@@ -39,7 +38,7 @@ def draw():
                 lab = ax.get_xticklabels()[index].get_text()
                 box.set_facecolor(COLORS[lab])
 
-            fig.savefig(FIG_DIR_PATH + title)
+            fig.savefig(DIR_PATH + title + '.pdf')
             plt.close(fig)
 
         print('graphs saved')

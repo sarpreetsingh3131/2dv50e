@@ -20,11 +20,11 @@ classifiers = [
     ('Perceptron(l2)', Perceptron(penalty='l2')),
     ('Perceptron(l1)', Perceptron(penalty='l1')),
     ('Perceptron(elasticnet)', Perceptron(penalty='elasticnet')),
-    ('Passive-Aggressive(default)', PassiveAggressiveClassifier()),
-    ('Passive-Aggressive(hinge)', PassiveAggressiveClassifier(loss='hinge')),
-    ('Passive-Aggressive(squared_hinge)', PassiveAggressiveClassifier(loss='squared_hinge')),
-    ('Avg. Passive-Aggressive(hinge)', PassiveAggressiveClassifier(average=True, loss='hinge')),
-    ('Avg. Passive-Aggressive(squared_hinge)', PassiveAggressiveClassifier(average=True, loss='squared_hinge'))
+    ('PA(default)', PassiveAggressiveClassifier()),
+    ('PA(hinge)', PassiveAggressiveClassifier(loss='hinge')),
+    ('PA(squared_hinge)', PassiveAggressiveClassifier(loss='squared_hinge')),
+    ('APA(hinge)', PassiveAggressiveClassifier(average=True, loss='hinge')),
+    ('APA(squared_hinge)', PassiveAggressiveClassifier(average=True, loss='squared_hinge'))
 ]
 
 regressors = [
@@ -36,21 +36,16 @@ regressors = [
     ('ASGD(huber)', SGDRegressor(average=True, loss='huber')),
     ('ASGD(epsilon_insensitive)', SGDRegressor(average=True, loss='epsilon_insensitive')),
     ('ASGD(squared_epsilon_insensitive)', SGDRegressor(average=True, loss='squared_epsilon_insensitive')),
-    ('Passive-Aggressive(default)', PassiveAggressiveRegressor()),
-    ('Passive-Aggressive(epsilon_insensitive)', PassiveAggressiveRegressor(loss='epsilon_insensitive')),
-    ('Passive-Aggressive(squared_epsilon_insensitive)', PassiveAggressiveRegressor(loss='squared_epsilon_insensitive')),
-    ('Avg. Passive-Aggressive(epsilon_insensitive)', PassiveAggressiveRegressor(average=True, loss='epsilon_insensitive')),
-    ('Avg. Passive-Aggressive(squared_epsilon_insensitive)',
-     PassiveAggressiveRegressor(average=True, loss='squared_epsilon_insensitive'))
+    ('PA(default)', PassiveAggressiveRegressor()),
+    ('PA(epsilon_insensitive)', PassiveAggressiveRegressor(loss='epsilon_insensitive')),
+    ('PA(squared_epsilon_insensitive)', PassiveAggressiveRegressor(loss='squared_epsilon_insensitive')),
+    ('APA(epsilon_insensitive)', PassiveAggressiveRegressor(average=True, loss='epsilon_insensitive')),
+    ('APA(squared_epsilon_insensitive)', PassiveAggressiveRegressor(average=True, loss='squared_epsilon_insensitive'))
 ]
 
-DIR_PATH = 'machine_learning/preprocessing/results/model_selection'
-
+DIR_PATH = 'machine_learning/results/'
 TESTING_SIZE = [0.99, 0.90, 0.80, 0.70, 0.60, 0.50, 0.40, 0.30, 0.20, 0.10, 0.01]
-
-ROUNDS = 10
-
-COLORS = ['red', 'green', 'yellow', 'blue', 'orange', 'pink', 'black', 'brown', 'skyblue', 'royalblue']
+ROUNDS = 20
 
 
 def model_selection(features, target, estimators, target_type):
@@ -60,9 +55,6 @@ def model_selection(features, target, estimators, target_type):
     fig_index = 0
 
     for scaler in [None, MinMaxScaler, StandardScaler, MaxAbsScaler]:
-        fig_index += 1
-        plt.subplot(4, 2, fig_index)
-        color_index = 0
         estimator_index = 0
         title = ''
 
@@ -107,31 +99,28 @@ def model_selection(features, target, estimators, target_type):
 
                 y_axis.append(np.mean(y_axis_mean))
 
-            if estimator_index == 9:
+            if estimator_index % 5 == 0:
                 fig_index += 1
-                plt.subplot(4, 2, fig_index)
-
-            if estimator_index == 0 or estimator_index == 9:
-                color_index = 0
+                if target_type == 'Classification':
+                    plt.subplot(4, 4, fig_index)
+                else:
+                    plt.subplot(4, 3, fig_index)
                 plt.title(title)
 
-            plt.plot(x_axis, y_axis, label=name, color=COLORS[color_index])
+            plt.plot(x_axis, y_axis, label=name)
             plt.legend(loc='upper right')
             plt.xlabel("Training Size")
             plt.ylabel("Test Error Rate")
-
             estimator_index += 1
-            color_index += 1
 
     plt.suptitle(target_type + ' Model Selection')
     plt.savefig(DIR_PATH + target_type + ' Model Selection' + '.pdf')
     print('graph saved')
 
 
-features, classification_target, regression_target = load_data()
-
-
-for target, estimators, target_type in zip(
-        [classification_target, regression_target], [classifiers, regressors], ['Classification', 'Regression']):
+features, classification_target, regression_target = load_data(features_type='selected')
+for target, estimators, target_type in zip([classification_target, regression_target],
+                                           [classifiers, regressors],
+                                           ['Classification', 'Regression']):
 
     model_selection(features, target, estimators, target_type)

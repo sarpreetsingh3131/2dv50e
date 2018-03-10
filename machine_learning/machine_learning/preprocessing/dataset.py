@@ -2,7 +2,7 @@ import json
 import numpy as np
 
 
-def load_data():
+def load_data(features_type):
     features = []
     classfication_target = []
     regression_target = []
@@ -13,7 +13,8 @@ def load_data():
     file_data = [x.strip() for x in file_data]
 
     for cycle in file_data:
-        cycle_features, cycle_classification_target, cycle_regression_target = parse_data(json.loads(cycle))
+        cycle_features, cycle_classification_target, cycle_regression_target = parse_data(
+            json.loads(cycle), features_type)
 
         for index in range(0, len(cycle_features)):
             features.append(cycle_features[index])
@@ -26,7 +27,7 @@ def load_data():
         regression_target, dtype='float64')
 
 
-def parse_data(data):
+def parse_data(data, features_type):
     features = []
     classfication_target = []
     regression_target = []
@@ -38,15 +39,23 @@ def parse_data(data):
         for snr in adaptation['linksSNR']:
             features[index].append(snr['SNR'])
 
-        for mote in adaptation['motes']:
-            mote_id = mote['moteId']
-            if mote_id == 7 or mote_id == 10 or mote_id == 12:
+        if features_type == 'all':
+            for mote in adaptation['motes']:
                 features[index].append(mote['distribution'])
 
-        for traffic in adaptation['motesTraffic']:
-            mote_id = traffic['moteId']
-            if mote_id == 10 or mote_id == 12:
+            for traffic in adaptation['motesTraffic']:
                 features[index].append(traffic['traffic'])
+
+        elif features_type == 'selected':
+            for mote in adaptation['motes']:
+                mote_id = mote['moteId']
+                if mote_id == 7 or mote_id == 10 or mote_id == 12:
+                    features[index].append(mote['distribution'])
+
+            for traffic in adaptation['motesTraffic']:
+                mote_id = traffic['moteId']
+                if mote_id == 10 or mote_id == 12:
+                    features[index].append(traffic['traffic'])
 
         if adaptation['packet_loss'] < 10:
             classfication_target.append(1)
