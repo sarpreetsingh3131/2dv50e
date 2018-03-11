@@ -9,10 +9,24 @@ degree project at bachelor level
 5) App will be running on http://localhost:8000/
 
 ## API
+## Online Learning
+-------------------
+
 **Train classification model**
 ----
-* **URL** `http://localhost:8000?type=classification&mode=training&model_name=sgd_classifier`
-* **Method:** `GET`
+* **URL** `http://localhost:8000?type=classification&mode=training`
+* **Method:** `POST`
+* **Headers:** `Content-Type: application/json`
+* **Body:**
+        
+        {
+            "adaptations": {
+                ....
+            },
+            "environment: {
+                ....
+            }
+        }
 * **Success Response:**
     * **Content:**  <br />
                 
@@ -34,7 +48,7 @@ degree project at bachelor level
 ---
 **Test classification model**
 ----
-* **URL** `http://localhost:8000?type=classification&mode=testing&model_name=sgd_classifier`
+* **URL** `http://localhost:8000?type=classification&mode=testing`
 * **Method:** `POST`
 * **Headers:** `Content-Type: application/json`
 * **Body:**
@@ -71,8 +85,19 @@ degree project at bachelor level
 ---
 **Train regression model**
 ----
-* **URL** `http://localhost:8000?type=regression&mode=training&model_name=sgd_regressor`
-* **Method:** `GET`
+* **URL** `http://localhost:8000?type=regression&mode=training`
+* **Method:** `POST`
+* **Headers:** `Content-Type: application/json`
+* **Body:**
+        
+        {
+            "adaptations": {
+                ....
+            },
+            "environment: {
+                ....
+            }
+        }
 * **Success Response:**
     * **Content:**  <br />
                 
@@ -95,7 +120,7 @@ degree project at bachelor level
 ---
 **Test regression model**
 ----
-* **URL** `http://localhost:8000?type=regression&mode=testing&model_name=sgd_regressor`
+* **URL** `http://localhost:8000?type=regression&mode=testing`
 * **Method:** `POST`
 * **Headers:** `Content-Type: application/json`
 * **Body:**
@@ -130,52 +155,37 @@ degree project at bachelor level
                 "message": "invalid request"
             }
 ---
-**Test accuracy of classification model**
+
+## Offline Learning
+--------------------
+
+**Train classification and regression models**
 ----
-* **URL** `http://localhost:8000?type=classfication&mode=accuracy&model_name=sgd_classifier`
+* **URL** `http://localhost:8000/offline_training`
 * **Method:** `GET`
 * **Success Response:**
     * **Content:**  <br />
                 
-            { 
-                "accuracy": 0.95
+            {
+                "classification":{
+                    "message": "trained successfully"
+                },
+                "regression":{
+                    "message": "trained successfully"
+                },
+                
             }
 
 * **Error Responses:**
    * **Content:**  <br />
                 
             { 
-                "message": "accuracy failed"
+                "message": "training failed"
             }
         OR
 
             { 
                 "message": "invalid request"
             }
-
----
-
-**Test accuracy of regression model**
-----
-* **URL** `http://localhost:8000?type=regression&mode=accuracy&model_name=sgd_regressor`
-* **Method:** `GET`
-* **Success Response:**
-    * **Content:**  <br />
-                
-            { 
-                "accuracy": 0.95
-            }
-
-* **Error Responses:**
-   * **Content:**  <br />
-                
-            { 
-                "message": "accuracy failed"
-            }
-        OR
-
-            { 
-                "message": "invalid request"
-            }
-
+* **NOTE** `It will train the models with limited training data that can be find in training_data folder. It is strongly recommended to use online training. Offline training is good for model testing purposes.`
 ---
