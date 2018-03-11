@@ -53,7 +53,7 @@ def draw_boxplots():
             create_boxplot(result_type + ' Online Learning', data,
                            ['_1', '_2', '_3', '_4', '_5', '_6', '_7', '_8', '_9', '_10'],
                            [1, 2, 3, 4, 5, 6, 7, 8, 9, 10], [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
-                           'Learning Cycles', title, result_type + ' ' + title)
+                           'Testing Cycles', title, result_type + ' ' + title)
 
         data = {'activform': [], 'classification_10': [], 'regression_10': []}
 
