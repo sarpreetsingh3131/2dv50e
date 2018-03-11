@@ -4,7 +4,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.linear_model import SGDClassifier, Perceptron, SGDRegressor
 from sklearn.linear_model import PassiveAggressiveClassifier, PassiveAggressiveRegressor
 from sklearn.preprocessing import MinMaxScaler, StandardScaler, MaxAbsScaler
-from dataset import load_data
+from parser import load_data
 
 classifiers = [
     ('SGD(default)', SGDClassifier()),

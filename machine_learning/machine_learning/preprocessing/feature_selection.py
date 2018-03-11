@@ -1,7 +1,7 @@
 from sklearn.feature_selection import SelectKBest, f_classif, f_regression, SelectPercentile, SelectFromModel
 from sklearn.ensemble import ExtraTreesClassifier, ExtraTreesRegressor
 import numpy as np
-from dataset import load_data
+from parser import load_data
 import matplotlib.pyplot as plt
 
 DIR_PATH = 'machine_learning/results/'
