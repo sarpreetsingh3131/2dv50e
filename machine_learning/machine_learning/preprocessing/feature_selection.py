@@ -35,17 +35,16 @@ def feature_importances(features, target, target_type, clf):
     forest.fit(features, target)
     importances = forest.feature_importances_
 
-    std = np.std([tree.feature_importances_ for tree in forest.estimators_], axis=0)
-    indices = np.argsort(importances)[::-1]
-
     plt.figure()
-    plt.bar(range(features.shape[1]), importances[indices], color='r', align='center')
-    plt.xlim([-1, features.shape[1]])
+    plt.bar(range(0, 17), importances[:17], color='r', align='center', label='0-16 SNR')
+    plt.bar(range(17, 34), importances[17:34], color='b', align='center', label='17-33 Distributions')
+    plt.bar(range(34, 48), importances[34:], color='orange', align='center', label='33-47 Traffic')
 
-    title = 'Feature Importances For ' + target_type + ' By ' + clf.__name__
+    title = 'Feature Importances For ' + target_type
     plt.suptitle(title)
+    plt.legend()
     plt.savefig(DIR_PATH + title + '.pdf')
-    print(importances, 'graph saved')
+    print('graph saved')
 
 
 features, classification_target, regression_target = load_data(features_type='all')
