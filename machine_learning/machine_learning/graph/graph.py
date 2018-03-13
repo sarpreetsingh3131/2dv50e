@@ -33,6 +33,6 @@ plt.legend(loc='upper right')
 plt.xlabel("Cycles")
 plt.ylabel("Adaptation Space")
 
-plt.suptitle('Online Learning')
+plt.suptitle('Online Incremental Learning')
 plt.savefig(DIR_PATH + 'Online Learning.pdf')
 print('graph saved')
