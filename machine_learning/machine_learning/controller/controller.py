@@ -5,22 +5,6 @@ import json
 import traceback
 from machine_learning.services import classification_service
 from machine_learning.services import regression_service
-from machine_learning.preprocessing.parser import load_data
-from machine_learning.models import classification, regression
-
-
-@csrf_exempt
-def offline_training(request):
-    try:
-        if request.method == 'GET':
-            features, classification_target, regression_target = load_data(features_type='selected')
-            response = {'classification': '', 'regression': ''}
-            response['classification'] = classification.train(features, classification_target)
-            response['regression'] = regression.train(features, regression_target)
-            return JsonResponse(response)
-    except Exception:
-        traceback.print_tb(e.__traceback__)
-        return JsonResponse({'mesage': 'invalid request'})
 
 
 @csrf_exempt

@@ -7,7 +7,7 @@ def load_data(features_type):
     classfication_target = []
     regression_target = []
 
-    with open('machine_learning/training_data/data.txt') as f:
+    with open('machine_learning/preprocessing/data.txt') as f:
         file_data = f.readlines()
 
     file_data = [x.strip() for x in file_data]
