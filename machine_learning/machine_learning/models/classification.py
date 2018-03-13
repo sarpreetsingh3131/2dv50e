@@ -4,7 +4,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import SGDClassifier
 import numpy as np
 
-DIR_PATH = 'machine_learning/trained_models/classification/'
+DIR_PATH = 'machine_learning/trained_models/classification/test/'
 
 
 def train(features, target):

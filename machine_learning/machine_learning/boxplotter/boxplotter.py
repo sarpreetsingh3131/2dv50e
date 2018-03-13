@@ -1,5 +1,4 @@
 from matplotlib import pyplot as plt
-import traceback
 
 DIR_PATH = 'machine_learning/results/'
 
