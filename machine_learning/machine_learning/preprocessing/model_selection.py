@@ -120,7 +120,6 @@ def model_selection(features, target, estimators, target_type):
 
 features, classification_target, regression_target = load_data(features_type='selected')
 for target, estimators, target_type in zip([classification_target, regression_target],
-                                           [classifiers, regressors],
-                                           ['Classification', 'Regression']):
+                                           [classifiers, regressors], ['Classification', 'Regression']):
 
     model_selection(features, target, estimators, target_type)

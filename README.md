@@ -2,11 +2,10 @@
 degree project at bachelor level
 
 ## How to run machine_learning project:
-1) install *python (3.6.4), scikit-learn* and *django-admin*
-2) unzip all the files in `machine_learning/training_data`  
-3) run `cd machine_learning/` 
-4) run `python3 manage.py runserver`
-5) App will be running on http://localhost:8000/
+1) install *python (3.6.4), scikit-learn* and *django-admin* 
+2) run `cd machine_learning/` 
+3) run `python3 manage.py runserver`
+4) App will be running on http://localhost:8000/
 
 ## API
 ## Online Learning

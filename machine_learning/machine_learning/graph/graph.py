@@ -20,10 +20,9 @@ for line in file_data:
         data['activform'].append(int(content[3]))
 
 
-
-plt.figure(figsize=(10, 8))
+plt.figure(figsize=(15, 10))
 plt.xlim(-1, 80)
-x_axis = np.arange(1, 77, 1);
+x_axis = np.arange(1, 77, 1)
 
 plt.plot(x_axis, data['classification'], label='Classification')
 plt.plot(x_axis, data['regression'], label='Regression')
@@ -34,5 +33,5 @@ plt.xlabel("Cycles")
 plt.ylabel("Adaptation Space")
 
 plt.suptitle('Online Incremental Learning')
-plt.savefig(DIR_PATH + 'Online Learning.pdf')
+plt.savefig(DIR_PATH + 'Online Incremental Learning.pdf')
 print('graph saved')
