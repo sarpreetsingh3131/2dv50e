@@ -6,9 +6,9 @@ fig_index = 0
 plt.figure(figsize=(15, 10))
 
 for title in ['Energy Consumption', 'Packet Loss', 'Adaptation Space', 'Time (sec)']:
-    data = {'activform': [], 'classification_1': [], 'regression_1': []}
+    data = {'activform': [], 'classification': [], 'regression': []}
 
-    for file_name in ['activform', 'classification_1', 'regression_1']:
+    for file_name in ['activform', 'classification', 'regression']:
         with open(DIR_PATH + 'data/' + file_name + '.txt') as f:
             file_data = f.readlines()
 
@@ -31,7 +31,7 @@ for title in ['Energy Consumption', 'Packet Loss', 'Adaptation Space', 'Time (se
 
     plt.subplot(2, 2, fig_index + 1)
 
-    plt.boxplot([data[x] for x in ['activform', 'classification_1', 'regression_1']], positions=[1, 2, 3],
+    plt.boxplot([data[x] for x in ['activform', 'classification', 'regression']], positions=[1, 2, 3],
                 labels=['ActivFORM', 'Classification', 'Regression'], widths=.5)
 
     plt.ylabel(title)
