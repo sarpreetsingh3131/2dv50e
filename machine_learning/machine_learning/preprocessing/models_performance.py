@@ -45,10 +45,13 @@ regressors = [
 
 DIR_PATH = 'machine_learning/results/'
 TESTING_SIZE = [0.99, 0.90, 0.80, 0.70, 0.60, 0.50, 0.40, 0.30, 0.20, 0.10, 0.01]
-ROUNDS = 20
+ROUNDS = 1
 
+features, classification_target, regression_target = load_data(features_type='selected')
 
-def model_selection(features, target, estimators, target_type):
+for target, estimators, target_type in zip([classification_target, regression_target], [classifiers, regressors],
+                                           ['classification', 'regression']):
+
     x_axis = 1. - np.array(TESTING_SIZE)
 
     plt.figure(figsize=(20, 20))
@@ -56,12 +59,10 @@ def model_selection(features, target, estimators, target_type):
 
     for scaler in [None, MinMaxScaler, StandardScaler, MaxAbsScaler]:
         estimator_index = 0
-        title = ''
+        title = 'Without Scaler'
 
-        if scaler == None:
-            title += ' Without Feature Scaling'
-        else:
-            title += ' With ' + scaler.__name__ + ' Feature Scaling'
+        if scaler != None:
+            title = ' With ' + scaler.__name__ 
 
         for name, clf in estimators:
             rng = np.random.RandomState(42)
@@ -70,7 +71,7 @@ def model_selection(features, target, estimators, target_type):
             for size in TESTING_SIZE:
                 y_axis_mean = []
 
-                for r in range(ROUNDS):
+                for _ in range(ROUNDS):
                     training_features, testing_features, training_target, testing_target = train_test_split(
                         features, target, test_size=size, random_state=rng)
 
@@ -80,10 +81,9 @@ def model_selection(features, target, estimators, target_type):
                         training_features = m_scaler.transform(training_features)
                         testing_features = m_scaler.transform(testing_features)
 
-                    if target_type == 'Classification':
+                    if target_type == 'classification':
                         clf.partial_fit(training_features, training_target, classes=np.array([0, 1]))
                         predictions = clf.predict(testing_features)
-                        y_axis_mean.append(1 - np.mean(predictions == testing_target))
                     else:
                         clf.partial_fit(training_features, training_target)
                         predictions = clf.predict(testing_features)
@@ -95,16 +95,18 @@ def model_selection(features, target, estimators, target_type):
                                 predictions[i] = 0
                                 testing_target[i] = 1
 
-                        y_axis_mean.append(1 - np.mean(predictions == testing_target))
+                    y_axis_mean.append(1 - np.mean(predictions == testing_target))
 
                 y_axis.append(np.mean(y_axis_mean))
 
             if estimator_index % 5 == 0:
                 fig_index += 1
-                if target_type == 'Classification':
+                
+                if target_type == 'classification':
                     plt.subplot(4, 4, fig_index)
                 else:
                     plt.subplot(4, 3, fig_index)
+                
                 plt.title(title)
 
             plt.plot(x_axis, y_axis, label=name)
@@ -112,14 +114,6 @@ def model_selection(features, target, estimators, target_type):
             plt.xlabel("Training Size")
             plt.ylabel("Test Error Rate")
             estimator_index += 1
-
-    plt.suptitle(target_type + ' Model Selection')
-    plt.savefig(DIR_PATH + target_type + ' Model Selection' + '.pdf')
-    print('graph saved')
-
-
-features, classification_target, regression_target = load_data(features_type='selected')
-for target, estimators, target_type in zip([classification_target, regression_target],
-                                           [classifiers, regressors], ['Classification', 'Regression']):
-
-    model_selection(features, target, estimators, target_type)
+    
+    plt.subplots_adjust(top=0.98, bottom=0.03, left=0.04, right=0.98, hspace=0.25, wspace=0.35)
+    plt.savefig(DIR_PATH + target_type + '_models_performance.pdf')

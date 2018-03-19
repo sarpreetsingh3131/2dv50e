@@ -3,7 +3,6 @@ import numpy as np
 
 DIR_PATH = 'machine_learning/results/'
 
-
 data = {'classification': [], 'regression': [], 'activform': []}
 
 with open(DIR_PATH + 'data/online_learning.txt') as f:
@@ -19,8 +18,6 @@ for line in file_data:
         data['regression'].append(int(content[2]))
         data['activform'].append(int(content[3]))
 
-
-plt.figure(figsize=(15, 10))
 plt.xlim(-1, 80)
 x_axis = np.arange(1, 77, 1)
 
@@ -32,6 +29,4 @@ plt.legend(loc='upper right')
 plt.xlabel("Cycles")
 plt.ylabel("Adaptation Space")
 
-plt.suptitle('Online Incremental Learning')
-plt.savefig(DIR_PATH + 'Online Incremental Learning.pdf')
-print('graph saved')
+plt.savefig(DIR_PATH + 'incremental_learning.pdf')

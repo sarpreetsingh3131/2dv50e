@@ -3,9 +3,10 @@ from matplotlib import pyplot as plt
 DIR_PATH = 'machine_learning/results/'
 
 fig_index = 0
-plt.figure(figsize=(15, 10))
 
-for title in ['Energy Consumption', 'Packet Loss', 'Adaptation Space', 'Time (sec)']:
+plt.figure(figsize=(8, 6))
+
+for title in ['Energy Consumption (coulomb)', 'Packet Loss (%)', 'Adaptation Space', 'Time (sec)']:
     data = {'activform': [], 'classification': [], 'regression': []}
 
     for file_name in ['activform', 'classification', 'regression']:
@@ -17,10 +18,10 @@ for title in ['Energy Consumption', 'Packet Loss', 'Adaptation Space', 'Time (se
         for line in file_data:
             content = line.split(';')
 
-            if title == 'Energy Consumption' and len(content) == 2:
+            if title == 'Energy Consumption (coulomb)' and len(content) == 2:
                 data[file_name].append(float(content[1]))
 
-            elif title == 'Packet Loss' and len(content) == 2:
+            elif title == 'Packet Loss (%)' and len(content) == 2:
                 data[file_name].append(float(content[0]))
 
             elif title == 'Adaptation Space' and len(content) == 4:
@@ -32,11 +33,10 @@ for title in ['Energy Consumption', 'Packet Loss', 'Adaptation Space', 'Time (se
     plt.subplot(2, 2, fig_index + 1)
 
     plt.boxplot([data[x] for x in ['activform', 'classification', 'regression']], positions=[1, 2, 3],
-                labels=['ActivFORM', 'Classification', 'Regression'], widths=.5)
+                labels=['ActivFORM', 'Classification', 'Regression'], widths=.3)
 
     plt.ylabel(title)
     fig_index += 1
 
-plt.suptitle("Comparison")
-plt.savefig(DIR_PATH + 'Comparison.pdf')
-print('graphs saved')
+plt.subplots_adjust(top=0.98, bottom=0.05, left=0.08, right=0.98, hspace=0.25, wspace=0.35)
+plt.savefig(DIR_PATH + 'comparison.pdf')
