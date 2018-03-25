@@ -3,7 +3,7 @@ from machine_learning.model_persistence.model_persistence import load_model, sav
 from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import PassiveAggressiveRegressor
 
-DIR_PATH = 'machine_learning/trained_models/regression/test/'
+DIR_PATH = 'machine_learning/trained_models/regression/'
 
 
 def train(features, target):

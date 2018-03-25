@@ -45,10 +45,9 @@ regressors = [
 
 DIR_PATH = 'machine_learning/results/'
 TESTING_SIZE = [0.99, 0.90, 0.80, 0.70, 0.60, 0.50, 0.40, 0.30, 0.20, 0.10, 0.01]
-ROUNDS = 1
+ROUNDS = 20
 
 features, classification_target, regression_target = load_data(features_type='selected')
-
 for target, estimators, target_type in zip([classification_target, regression_target], [classifiers, regressors],
                                            ['classification', 'regression']):
 
