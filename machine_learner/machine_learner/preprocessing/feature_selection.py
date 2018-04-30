@@ -1,0 +1,27 @@
+import matplotlib.pyplot as plt
+import json
+from sklearn.ensemble import ExtraTreesClassifier, ExtraTreesRegressor
+
+data = json.load(open('machine_learner/collected_data/dataset_with_all_features.json'))
+plt_index = 1
+
+for target_type, target, model in zip(['Classification', 'Regression'], [data['classification_target'], data['regression_target']],
+                                      [ExtraTreesClassifier, ExtraTreesRegressor]):
+    model = model(random_state=10)
+    model.fit(data['features'], target)
+    importances = model.feature_importances_
+    
+    plt.subplot(1, 2, plt_index)
+    plt.bar(range(1, 18), importances[:17], color='r', label='SNR')
+    plt.bar(range(18, 35), importances[17:34], color='b', label='Distribution')
+    plt.bar(range(35, 49), importances[34:], color='green',label='Traffic')
+    plt.xlabel('Features', fontsize=8)
+    plt.ylabel('Importance', fontsize=8)
+    plt.title(target_type + ' Task', fontsize=8)
+    plt.xticks([1, 17, 34, 48])
+    plt_index +=1
+    
+    if plt_index == 2:
+        plt.legend(fontsize=8)
+
+plt.show()
