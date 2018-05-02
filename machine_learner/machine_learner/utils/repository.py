@@ -7,7 +7,6 @@ def get(model, model_name, dir_path):
         model = joblib.load(dir_path + model_name + '.pkl')
     except Exception as e:
         traceback.print_tb(e.__traceback__)
-
     return model
 
 
