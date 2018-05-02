@@ -2,7 +2,6 @@ import numpy as np, json, matplotlib.pyplot as plt
 from sklearn.linear_model import SGDClassifier, SGDRegressor, PassiveAggressiveClassifier, PassiveAggressiveRegressor, Perceptron
 from sklearn.preprocessing import MinMaxScaler, StandardScaler, MaxAbsScaler
 
-
 classifiers = [
     ('SGD', SGDClassifier()),
     ('Perceptron-I', Perceptron(penalty='l1')),
@@ -18,6 +17,12 @@ regressors = [
     ('PA-II', PassiveAggressiveRegressor(loss='squared_epsilon_insensitive'))
 ]
 
+scalers = [
+    ('Min-Max', MinMaxScaler()),
+    ('Standarization', StandardScaler()),
+    ('Max-Abs', MaxAbsScaler())
+]
+
 data = json.load(open('machine_learner/collected_data/dataset_with_selected_features.json'))
 features = data['features']
 training_cycles = [15, 30, 45, 60, 70]
@@ -28,15 +33,9 @@ for target, target_type, models in zip(
                                         ['Classification', 'Regression'],
                                         [classifiers, regressors]
                                     ):
-    
     plt.figure()
     plt_index = 1
-    for scaler_name, scaler in [
-                                ('Min-Max', MinMaxScaler()),
-                                ('Standarization', StandardScaler()),
-                                ('Max-Abs', MaxAbsScaler())
-                            ]:
-
+    for scaler_name, scaler in scalers:
         plt.subplot(1, 3, plt_index)
         plt_index += 1        
         for model_name, model in models:

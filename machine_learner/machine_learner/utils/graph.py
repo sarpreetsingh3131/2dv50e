@@ -103,7 +103,6 @@ def selected_adaptation_options():
                                             ['Classification', 'Regression'],
                                             [data[i]['classification'], data[i]['regression']]
                                         ):
-
             plt.subplot(1, 2, plt_index)
             for pl, ec, target in zip(data[i]['packetLoss'], data[i]['energyConsumption'], target_type):
                 plt.scatter(pl, ec, color='orange')
@@ -124,7 +123,7 @@ def selected_adaptation_options():
         plt.show()
 
 
-#online_learning()
+online_learning()
 comparison()
-#time_measurement()
-#selected_adaptation_options()
+time_measurement()
+selected_adaptation_options()

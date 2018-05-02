@@ -9,7 +9,6 @@ for target_type, target, model in zip(
                                     [data['classification_target'], data['regression_target']],
                                     [ExtraTreesClassifier, ExtraTreesRegressor]
                                 ):
-
     model = model(random_state=10)
     model.fit(data['features'], target)
     importances = model.feature_importances_

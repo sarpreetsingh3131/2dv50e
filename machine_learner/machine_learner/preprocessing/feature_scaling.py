@@ -11,7 +11,6 @@ for name, scaler in [
                         ('Standarization', StandardScaler),
                         ('Max-Abs', MaxAbsScaler)
                     ]:
-
     plt.subplot(2, 2, plt_index)
     if scaler != None:
         model = scaler()

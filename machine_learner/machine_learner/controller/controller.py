@@ -4,7 +4,6 @@ from django.views.decorators.csrf import csrf_exempt
 from urllib.parse import urlparse, parse_qs
 from machine_learner.models import classification, regression
 
-
 @csrf_exempt
 def training_testing(request):
     try:
