@@ -13,15 +13,16 @@ def online_learning():
             data['classification'].append(int(content[4]))
             data['regression'].append(int(content[5]))
             data['activform'].append(int(content[6]))
-    plt.plot(np.arange(1, len(data['activform']) + 1, 1), data['activform'], label='ActivFORM', color='orange')
     for index, label in enumerate(['Classification', 'Regression']):
+        plt.subplot(2, 1, index + 1)
+        plt.plot(np.arange(1, len(data['activform']) + 1, 1), data['activform'], label='ActivFORM', color='orange')
         plt.plot(
             np.arange(31, len(data['activform']) + 1, 1), data[str(label).lower()],
             label = ['Classification', 'Regression'][index], color=['blue', 'green'][index]
         )
         plt.xlabel('Adaptation Cycles')
         plt.ylabel('Adaptation Options')
-        plt.xticks([1, 15, 30, 45, 60, 75, 90, 105, 120, 135, 150])
+        plt.xticks([1, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300])
         if index == 0:
             plt.legend(
                 bbox_to_anchor = (0., 1.02, 1., .102), loc=3, ncol=3, mode='expand', borderaxespad=0., handles=[
@@ -59,6 +60,7 @@ def comparison():
                 elif title == 'Energy Consumption (coulomb)' and len(content) == 2:
                     data[file_name].append(float(content[1]))
         plt.subplot(2, 2, plt_index)
+        #print(title, 'cls', str(np.mean(data['classification'])), 'reg', str(np.mean(data['regression'])), 'ac', str(np.mean(data['activform'])))
         plt.boxplot(
             [data[x] for x in['activform', 'classification', 'regression']],
             positions = [1, 2, 3], labels=['ActivFORM', 'Classification', 'Regresssion'], widths=.3
@@ -123,7 +125,7 @@ def selected_adaptation_options():
         plt.show()
 
 
-online_learning()
+#online_learning()
 comparison()
-time_measurement()
-selected_adaptation_options()
+#time_measurement()
+#selected_adaptation_options()
