@@ -26,7 +26,8 @@ def online_learning():
         if index == 0:
             plt.legend(
                 bbox_to_anchor = (0., 1.02, 1., .102), loc=3, ncol=3, mode='expand', borderaxespad=0., handles=[
-                mpatches.Patch(color='orange', label='ActivFORM'), mpatches.Patch(color='blue', label='Classification'),
+                mpatches.Patch(color='orange', label='ActivFORMS'),
+                mpatches.Patch(color='blue', label='Classification'),
                 mpatches.Patch(color='green', label='Regression')]
             )
     plt.show()
@@ -63,7 +64,7 @@ def comparison():
         #print(title, 'cls', str(np.mean(data['classification'])), 'reg', str(np.mean(data['regression'])), 'ac', str(np.mean(data['activform'])))
         plt.boxplot(
             [data[x] for x in['activform', 'classification', 'regression']],
-            positions = [1, 2, 3], labels=['ActivFORM', 'Classification', 'Regresssion'], widths=.3
+            positions = [1, 2, 3], labels=['ActivFORMS', 'Classification', 'Regresssion'], widths=.3
         )
         plt.ylabel(title)
         plt_index += 1
@@ -98,7 +99,7 @@ def time_measurement():
 
 def selected_adaptation_options():
     data = json.load(open('machine_learner/collected_data/selected_adaptation_options.json'))
-    for i in range(len(data)):
+    for i in range(40, len(data)):
         plt_index = 1
         plt.figure()
         for model_name, target_type in zip(
@@ -117,15 +118,16 @@ def selected_adaptation_options():
             plt.ylabel('Energy Consumption (coulomb)')
             if plt_index == 1:
                 plt.legend(
-                    bbox_to_anchor = (0.3, 1.02, 1.6, .102), loc=3, ncol=3, mode='expand', borderaxespad=0., handles=[
-                    mpatches.Patch(color='blue', label='Classification'), mpatches.Patch(color='orange', label='ActivFORM'),
+                    bbox_to_anchor = (0.3, 1.02, 1.6, .102), loc = 3, ncol = 3, mode = 'expand', borderaxespad = 0., handles = [
+                    mpatches.Patch(color='orange', label='ActivFORMS'),
+                    mpatches.Patch(color='blue', label='Classification'),
                     mpatches.Patch(color='green', label='Regression')
                 ])
             plt_index += 1 
         plt.show()
 
 
-#online_learning()
+online_learning()
 comparison()
-#time_measurement()
-#selected_adaptation_options()
+time_measurement()
+selected_adaptation_options()
