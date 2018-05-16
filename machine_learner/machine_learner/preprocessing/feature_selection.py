@@ -13,9 +13,9 @@ for target_type, target, model in zip(
     model.fit(data['features'], target)
     importances = model.feature_importances_
     plt.subplot(1, 2, plt_index)
-    plt.bar(range(1, 18), importances[:17], color='r', label='SNR')
-    plt.bar(range(18, 35), importances[17:34], color='b', label='Distribution')
-    plt.bar(range(35, 49), importances[34:], color='green',label='Traffic')
+    plt.bar(range(1, 18), importances[:17], color='r', label='1-17 SNR')
+    plt.bar(range(18, 35), importances[17:34], color='b', label='18-34 Packets Distribution')
+    plt.bar(range(35, 49), importances[34:], color='green',label='35-48 Traffic Load')
     plt.xlabel('Features')
     plt.ylabel('Importance Score')
     plt.title(target_type)

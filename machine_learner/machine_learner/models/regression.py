@@ -7,7 +7,7 @@ DIR_PATH = 'machine_learner/trained_models/regression/'
 
 def training(features, target):
     try:
-        model = repository.get(SGDRegressor(loss='epsilon_insensitive'), SGDRegressor.__name__, DIR_PATH)
+        model = repository.get(SGDRegressor(loss='epsilon_insensitive', penalty='l2'), SGDRegressor.__name__, DIR_PATH)
         scaler = repository.get(MaxAbsScaler(), MaxAbsScaler.__name__, DIR_PATH)
         scaler.partial_fit(features)
         features = scaler.transform(features)
@@ -22,7 +22,7 @@ def training(features, target):
 
 def testing(features):
     try:
-        model = repository.get(SGDRegressor(loss='epsilon_insensitive'), SGDRegressor.__name__, DIR_PATH)
+        model = repository.get(SGDRegressor(loss='epsilon_insensitive', penalty='l2'), SGDRegressor.__name__, DIR_PATH)
         scaler = repository.get(MaxAbsScaler(), MaxAbsScaler.__name__, DIR_PATH)
         features = scaler.transform(features)
         predictions = model.predict(features)

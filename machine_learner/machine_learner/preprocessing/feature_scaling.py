@@ -19,9 +19,9 @@ for name, scaler in [
         plt.title('With ' + name + ' Scaling')
     else:
         plt.title('Without Scaling')
-    plt.bar(range(1, 18), features[0][:17], color='r', label='SNR')
-    plt.bar(range(18, 23), features[0][17:22], color='b', label='Distribution')
-    plt.bar(range(23, 26), features[0][22:], color='green', label='Traffic')
+    plt.bar(range(1, 18), features[0][:17], color='r', label='1-17 SNR')
+    plt.bar(range(18, 24), features[0][17:23], color='b', label='18-23 Packets Distribution')
+    plt.bar(range(24, 26), features[0][23:], color='green', label='24-25 Traffic Load')
     plt.xlabel('Features')
     plt.ylabel('Value')
     plt.xticks([1, 9, 17, 25])
