@@ -1,10 +1,10 @@
 import numpy as np, json, matplotlib.pyplot as plt, matplotlib.patches as mpatches
 
 
-def online_learning():
+def overview_of_selected_adaptation_options():
     plt.figure()
     data = {'classification': [], 'regression': [], 'activform': []}
-    file_data = open('machine_learner/collected_data/online_learning.txt').readlines()
+    file_data = open('machine_learner/collected_data/overview_of_selected_adaptation_options.txt').readlines()
     file_data = [x.strip() for x in file_data]
     for line in file_data:
         content = line.split(';')
@@ -51,9 +51,9 @@ def comparison():
         for file_name in ['activform', 'classification', 'regression']:
             file_data = open('machine_learner/collected_data/' + file_name + '.txt').readlines()
             file_data = [x.strip() for x in file_data]
-            for line in file_data:
+            for index, line in enumerate(file_data):
                 content = line.split(';')
-                if title == 'Adaptation Space' and file_name == 'activform':
+                if title == 'Adaptation Space' and file_name == 'activform' and len(content) == 11:
                     data[file_name].append(216)
                 elif title == 'Adaptation Space' and file_name != 'activform' and len(content) == 6:
                     if int(content[3]) == 0:
@@ -66,9 +66,9 @@ def comparison():
                     data[file_name].append(time / 1000.0)
                 elif title == 'Adaptation Time (sec)' and file_name != 'activform' and len(content) == 6:
                     data[file_name].append((float(content[5]) - float(content[1])) / 1000.0)
-                elif title == 'Packet Loss (%)' and len(content) == 2:
+                elif title == 'Packet Loss (%)' and len(content) == 2 and index >= 330:
                     data[file_name].append(float(content[0]))
-                elif title == 'Energy Consumption (coulomb)' and len(content) == 2:
+                elif title == 'Energy Consumption (coulomb)' and len(content) == 2 and index >= 330:
                     data[file_name].append(float(content[1]))
         plt.subplot(2, 2, plt_index)
         print(title, 'cls', str(np.mean(data['classification'])), 'reg', str(np.mean(data['regression'])), 'ac', str(np.mean(data['activform'])))
@@ -104,6 +104,7 @@ def time_measurement():
                 elif len(content) == 6 and title == 'Training Time After Prediction (sec)':
                     data[file_name].append(int(content[4]) / 1000.0)
         plt.subplot(1, 3, plt_index)
+        print(title, 'cls', str(np.mean(data['classification'])), 'reg', str(np.mean(data['regression'])))
         boxplot = plt.boxplot(
                         [data[x] for x in['classification', 'regression']],
                         positions=[1, 2],
@@ -222,7 +223,7 @@ def uncertainties():
 
 
 #uncertainties()
-#online_learning()
-comparison()
-#time_measurement()
+overview_of_selected_adaptation_options()
+#comparison()
+time_measurement()
 #selected_adaptation_options()

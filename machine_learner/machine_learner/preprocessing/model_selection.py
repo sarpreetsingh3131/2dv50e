@@ -2,7 +2,7 @@ import random, numpy as np, json, matplotlib.pyplot as plt
 from sklearn.linear_model import SGDClassifier, SGDRegressor, PassiveAggressiveClassifier, PassiveAggressiveRegressor, Perceptron
 from sklearn.preprocessing import MinMaxScaler, StandardScaler, MaxAbsScaler
 
-penalty = ['l1', 'l2', 'elasticnet'][0]
+penalty = ['l1', 'l2', 'elasticnet'][2]
 
 sgd_classifiers = [
     ('SGD-h', SGDClassifier(loss='hinge', penalty=penalty)),
@@ -46,9 +46,9 @@ training_cycles = [15, 30, 45, 60, 70]
 rounds = 20
 
 for target, target_type, models in zip(
-                                        [ data['classification_target'], data['regression_target']],
-                                        ['Classification', 'Regression'],
-                                        [selected_classifiers, selected_regressors]
+                                        [data['regression_target'], data['classification_target']],
+                                        ['Regression', 'Classification'],
+                                        [sgd_regressors, sgd_classifiers]
                                     ):
     plt.figure()
     plt_index = 1
