@@ -1,5 +1,5 @@
 # 2dv50e
-degree project at bachelor level
+degree project at bachelor level. The report can be found at http://lnu.diva-portal.org/smash/record.jsf?pid=diva2%3A1240014&dswid=-7780
 
 ## How to run:
 1. Clone or download the repository
