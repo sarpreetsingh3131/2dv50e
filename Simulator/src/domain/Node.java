@@ -1,19 +1,19 @@
 package domain;
 
 public abstract class Node {
-	
+
 	private int id;
 	private Profile<Double> interference = new Constant<>(0.0);
 	private Position position;
-	
+
 	// Constructors
 	public Node(int id, Position position) {
 		this.id = id;
 		this.position = position;
 	}
-	
+
 	abstract void calcualtePacketReceiveBatteryConsumption(int timeSlots);
-	
+
 	// Functionality
 	abstract void receivePacket(Packet packet, RunInfo runInfo);
 
@@ -21,7 +21,7 @@ public abstract class Node {
 	public int getId() {
 		return id;
 	}
-	
+
 	public Profile<Double> getInterference() {
 		return interference;
 	}
@@ -29,7 +29,7 @@ public abstract class Node {
 	public void setInterference(Profile<Double> interference) {
 		this.interference = interference;
 	}
-	
+
 	public Position getPosition() {
 		return position;
 	}
@@ -37,5 +37,4 @@ public abstract class Node {
 	public void setPosition(Position position) {
 		this.position = position;
 	}
-	
 }

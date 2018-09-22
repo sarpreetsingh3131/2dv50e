@@ -1,14 +1,14 @@
 package domain;
 
 public class Packet {
-	
+
 	private Mote source;
 	private int number;
 	private int run;
 	private Gateway destination;
 	private static int identifier = 1;
 	private int id;
-	
+
 	public Packet(Mote source, Gateway destination, int number, int run) {
 		this.source = source;
 		this.destination = destination;
@@ -20,22 +20,23 @@ public class Packet {
 	public Mote getSource() {
 		return source;
 	}
-	
+
 	public Gateway getDestination() {
 		return destination;
 	}
+
 	void setDestination(Gateway destination) {
 		this.destination = destination;
 	}
-	
+
 	public int getStartingRun() {
 		return run;
 	}
-	
+
 	public Packet clone() {
 		return new Packet(source, destination, number, run);
 	}
-	
+
 	@Override
 	public String toString() {
 		return String.format("Source:%d, number:%d", source.getId(), number);

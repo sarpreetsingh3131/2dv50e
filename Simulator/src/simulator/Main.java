@@ -17,25 +17,20 @@ import deltaiot.services.QoS;
 
 public class Main {
 
-	enum Type {
-		CLASSIFICATION("classification"), REGRESSION("regression"), CLUSTERING("clustering");
-
-		String value;
-
-		Type(String value) {
-			this.value = value;
-		}
-	}
-
-	enum Classification {
-		SVC("svc");
-
-		String value;
-
-		Classification(String value) {
-			this.value = value;
-		}
-	}
+	/*
+	 * enum Type { CLASSIFICATION("classification"), REGRESSION("regression"),
+	 * CLUSTERING("clustering");
+	 * 
+	 * String value;
+	 * 
+	 * Type(String value) { this.value = value; } }
+	 * 
+	 * enum Classification { SVC("svc");
+	 * 
+	 * String value;
+	 * 
+	 * Classification(String value) { this.value = value; } }
+	 */
 
 	public static void main(String[] args) {
 		run();
@@ -79,12 +74,12 @@ public class Main {
 								globalInterference, probability1, probability2);
 
 						SimulationClient client = new SimulationClient(simul);
-						//for (int m = 0; m < 10; m++) {
-							adaptations.add(client.getProbe().getAllMotes());
-							//System.out.println(adaptations.get(0));
-							 result.add(client.getNetworkQoS(1));
-							//System.out.println(client.getNetworkQoS(1));
-						//}
+						// for (int m = 0; m < 10; m++) {
+						adaptations.add(client.getProbe().getAllMotes());
+						// System.out.println(adaptations.get(0));
+						result.add(client.getNetworkQoS(1));
+						// System.out.println(client.getNetworkQoS(1));
+						// }
 						distributions[4] += 20;
 						distributions[5] -= 20;
 					}
@@ -120,27 +115,22 @@ public class Main {
 
 	}
 
-	static void sendDataToServer(ArrayList<ArrayList<deltaiot.services.Mote>> adaptations,
-			ArrayList<ArrayList<QoS>> result, String type, String clf) {
-
-		try {
-			JSONObject data = new JSONObject();
-			data.put("adaptations", new JSONArray(adaptations));
-			data.put("result", new JSONArray(result));
-
-			// JsonObject sendData = new JsonObject();
-			// sendData.add("adaptations", new Gson().toJsonTree(new
-			// JSONArray(adaptations)));
-			// sendData.add("result", new Gson().toJsonTree(new JSONArray(result)));
-
-			HttpClient client = HttpClientBuilder.create().build();
-			HttpPost http = new HttpPost("http://localhost:8000/?type=" + type + "&mode=training&clf=" + clf);
-			http.setEntity(new StringEntity(data.toString()));
-			http.setHeader("Content-Type", "application/json");
-			System.out.println(new JSONObject(client.execute(http, new BasicResponseHandler())).toString());
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-	}
-
+	/*
+	 * static void sendDataToServer(ArrayList<ArrayList<deltaiot.services.Mote>>
+	 * adaptations, ArrayList<ArrayList<QoS>> result, String type, String clf) {
+	 * 
+	 * try { JSONObject data = new JSONObject(); data.put("adaptations", new
+	 * JSONArray(adaptations)); data.put("result", new JSONArray(result));
+	 * 
+	 * // JsonObject sendData = new JsonObject(); // sendData.add("adaptations", new
+	 * Gson().toJsonTree(new // JSONArray(adaptations))); // sendData.add("result",
+	 * new Gson().toJsonTree(new JSONArray(result)));
+	 * 
+	 * HttpClient client = HttpClientBuilder.create().build(); HttpPost http = new
+	 * HttpPost("http://localhost:8000/?type=" + type + "&mode=training&clf=" +
+	 * clf); http.setEntity(new StringEntity(data.toString()));
+	 * http.setHeader("Content-Type", "application/json"); System.out.println(new
+	 * JSONObject(client.execute(http, new BasicResponseHandler())).toString()); }
+	 * catch (Exception e) { e.printStackTrace(); } }
+	 */
 }

@@ -1,4 +1,7 @@
-import random, numpy as np, json, matplotlib.pyplot as plt
+import random
+import numpy as np
+import json
+import matplotlib.pyplot as plt
 from sklearn.linear_model import SGDClassifier, SGDRegressor, PassiveAggressiveClassifier, PassiveAggressiveRegressor, Perceptron
 from sklearn.preprocessing import MinMaxScaler, StandardScaler, MaxAbsScaler
 
@@ -40,21 +43,22 @@ scalers = [
     ('Max-Abs', MaxAbsScaler())
 ]
 
-data = json.load(open('machine_learner/collected_data/dataset_with_selected_features.json'))
+data = json.load(
+    open('machine_learner/collected_data/dataset_with_selected_features.json'))
 features = data['features']
 training_cycles = [15, 30, 45, 60, 70]
 rounds = 20
 
 for target, target_type, models in zip(
-                                        [data['regression_target'], data['classification_target']],
-                                        ['Regression', 'Classification'],
-                                        [sgd_regressors, sgd_classifiers]
-                                    ):
+    [data['regression_target'], data['classification_target']],
+    ['Regression', 'Classification'],
+    [sgd_regressors, sgd_classifiers]
+):
     plt.figure()
     plt_index = 1
     for scaler_name, scaler in scalers:
         plt.subplot(1, 3, plt_index)
-        plt_index += 1        
+        plt_index += 1
         for model_name, model in models:
             error_rate = []
             for cycle in training_cycles:
@@ -73,7 +77,7 @@ for target, target_type, models in zip(
                         for i in range(0, len(testing_target)):
                             if predictions[i] < 10.0 and testing_target[i] < 10.0 or \
                                predictions[i] >= 10.0 and testing_target[i] >= 10.0:
-                                    predictions[i],  testing_target[i] = 1, 1
+                                predictions[i],  testing_target[i] = 1, 1
                             else:
                                 predictions[i], testing_target[i] = 0, 1
                     scores.append(1 - np.mean(predictions == testing_target))
@@ -89,6 +93,5 @@ for target, target_type, models in zip(
         if target_type == 'Classification':
             plt.ylim(ymax=0.16)
         else:
-            plt.ylim(ymax=0.30)    
+            plt.ylim(ymax=0.30)
     plt.show()
-    

@@ -1,8 +1,10 @@
-import json, traceback
+import json
+import traceback
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from urllib.parse import urlparse, parse_qs
 from machine_learner.models import classification, regression
+
 
 @csrf_exempt
 def training_testing(request):
@@ -17,12 +19,14 @@ def training_testing(request):
                 response = save_data(dataset)
             elif task_type == 'classification':
                 if mode == 'training':
-                    response = classification.training(dataset['features'], dataset['target'])
+                    response = classification.training(
+                        dataset['features'], dataset['target'])
                 elif mode == 'testing':
                     response = classification.testing(dataset['features'])
             elif task_type == 'regression':
                 if mode == 'training':
-                    response = regression.training(dataset['features'], dataset['target'])
+                    response = regression.training(
+                        dataset['features'], dataset['target'])
                 elif mode == 'testing':
                     response = regression.testing(dataset['features'])
             return JsonResponse(response)
@@ -33,18 +37,19 @@ def training_testing(request):
 
 def save_data(data):
     try:
-        file_data = json.load(open('machine_learner/collected_data/selected_adaptation_options.json'))
+        file_data = json.load(
+            open('machine_learner/collected_data/selected_adaptation_options.json'))
     except Exception:
         file_data = []
-    
+
     file_data.append({
         'packetLoss': data['packetLoss'],
         'energyConsumption': data['energyConsumption'],
         'classification': data['classification'],
         'regression': data['regression']
     })
-    
+
     with open('machine_learner/collected_data/selected_adaptation_options.json', 'w') as f:
         json.dump(file_data, f, indent=4)
-        
+
     return {'message': 'successful'}

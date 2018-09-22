@@ -25,7 +25,5 @@ public class FileProfile implements Profile<Double> {
 		// default (" + defaultValue + ").");
 		// return defaultValue;
 		// }
-
 	}
-
 }

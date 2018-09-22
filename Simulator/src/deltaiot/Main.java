@@ -6,7 +6,7 @@ import java.util.Random;
 
 public class Main {
 
-	public static void main(String [ ] args) {
+	public static void main(String[] args) {
 		DeltaIoTSimulator setup = new DeltaIoTSimulator();
 		setup.run();
 //		Random r = new Random();
@@ -19,5 +19,4 @@ public class Main {
 //			System.out.println(ls.stream().mapToDouble(val->val).average());
 //		}
 	}
-	
 }

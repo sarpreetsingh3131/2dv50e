@@ -5,10 +5,13 @@ from machine_learner.utils import repository
 
 DIR_PATH = 'machine_learner/trained_models/regression/'
 
+
 def training(features, target):
     try:
-        model = repository.get(SGDRegressor(loss='epsilon_insensitive', penalty='l2'), SGDRegressor.__name__, DIR_PATH)
-        scaler = repository.get(MaxAbsScaler(), MaxAbsScaler.__name__, DIR_PATH)
+        model = repository.get(SGDRegressor(
+            loss='epsilon_insensitive', penalty='l2'), SGDRegressor.__name__, DIR_PATH)
+        scaler = repository.get(
+            MaxAbsScaler(), MaxAbsScaler.__name__, DIR_PATH)
         scaler.partial_fit(features)
         features = scaler.transform(features)
         model.partial_fit(features, target)
@@ -22,8 +25,10 @@ def training(features, target):
 
 def testing(features):
     try:
-        model = repository.get(SGDRegressor(loss='epsilon_insensitive', penalty='l2'), SGDRegressor.__name__, DIR_PATH)
-        scaler = repository.get(MaxAbsScaler(), MaxAbsScaler.__name__, DIR_PATH)
+        model = repository.get(SGDRegressor(
+            loss='epsilon_insensitive', penalty='l2'), SGDRegressor.__name__, DIR_PATH)
+        scaler = repository.get(
+            MaxAbsScaler(), MaxAbsScaler.__name__, DIR_PATH)
         features = scaler.transform(features)
         predictions = model.predict(features)
         response = {'predictions': [], 'adaptation_space': 0}
@@ -35,4 +40,3 @@ def testing(features):
     except Exception as e:
         traceback.print_tb(e.__traceback__)
         return{'message': 'testing failed'}
-        

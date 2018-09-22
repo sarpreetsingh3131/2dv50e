@@ -107,26 +107,25 @@ public class Mote extends Node {
 	 * on the number of packets send
 	 */
 	public void handleTurn(RunInfo runInfo, int timeSlots) {
-		//System.out.println("Turn: " + this);
+		// System.out.println("Turn: " + this);
 		// Create your own packets
 		List<Packet> myPackets = new ArrayList<>(); // empty if none send
 
-		
 		// Create your own packets
-		//for (int i = 0; i < load; i++) {
-		//	if (Math.random() < activationProbability.get(runInfo.getRunNumber())) {
-		//		lastPacketNumber++;
-		//		myPackets.add(new Packet(this, null, lastPacketNumber, runInfo.getRunNumber()));
-		//	}
-		//}
-		
+		// for (int i = 0; i < load; i++) {
+		// if (Math.random() < activationProbability.get(runInfo.getRunNumber())) {
+		// lastPacketNumber++;
+		// myPackets.add(new Packet(this, null, lastPacketNumber,
+		// runInfo.getRunNumber()));
+		// }
+		// }
+
 		// New Logic to create exact packets
 		int packetsToGenerate = (int) Math.round(load * activationProbability.get(runInfo.getRunNumber()));
-		for(int i = 0; i < packetsToGenerate; i++) {
+		for (int i = 0; i < packetsToGenerate; i++) {
 			lastPacketNumber++;
 			myPackets.add(new Packet(this, null, lastPacketNumber, runInfo.getRunNumber()));
 		}
-		
 
 		// if (this.getId() == 4)
 		// System.out.println(packetQueue.size() + ":" + myPackets.size());
@@ -150,7 +149,7 @@ public class Mote extends Node {
 				}
 			}
 		}
-		
+
 		// 3. Notify the gateways they can expect packages, so they can easily
 		// calculate packet loss
 		for (Packet packet : myPackets) {
@@ -231,7 +230,7 @@ public class Mote extends Node {
 		while (!packetQueue.isEmpty()) {
 			Packet packet = packetQueue.remove();
 			if (runInfo.getRunNumber() - packet.getStartingRun() >= keepAliveTime) {
-				//packet.getDestination().reportQueueLoss(packet);
+				// packet.getDestination().reportQueueLoss(packet);
 				lostPackets.add(packet);
 			} else {
 				queue.add(packet);
@@ -248,8 +247,7 @@ public class Mote extends Node {
 			for (Link link : links) {
 				link.getTo().calcualtePacketReceiveBatteryConsumption(timeSlots);
 			}
-		}
-		else {
+		} else {
 			if (links.size() > 0)
 				links.get(0).getTo().calcualtePacketReceiveBatteryConsumption(timeSlots);
 		}
@@ -322,5 +320,4 @@ public class Mote extends Node {
 		links.get(0).getDirection().reportPowerConsumed(batteryUsage);
 
 	}
-
 }
