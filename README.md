@@ -4,16 +4,17 @@ Degree project at bachelor level. The report can be found at http://lnu.diva-por
 ## How to run:
 1. Install **Java (1.8), Python (3.6.4), Scikit-Learn, django-admin (2.0.2), VS Code,** and **Eclipse** on your system 
 2. Clone or download the repository
-3. Open **VS Code**. Click `File` -> `Open` and Open **machine_learner** project
-4. On left side of **VS Code** you should see the folders and files present in **machine_learner** project. Click on `manage.py` file. Now, you must see **Python (3.6.4)** on the left bottom of **VS Code**. We already configured this project for Mac. However, if you cannot see it then configure this project according to the following instructions:
+3. Open **VS Code**. Click `View` -> `Extensions` and search `Python` and install `Python` extension
+4. In **VS Code** click `File` -> `Open` and Open **machine_learner** project
+5. On left side of **VS Code** you should see the folders and files present in **machine_learner** project. Click on `manage.py` file. Now, you must see **Python (3.6.4)** on the left bottom of **VS Code**. We already configured this project for Mac. However, if you cannot see it then configure this project according to the following instructions:
     - From the file hierarchy of this project click `.vscode` -> `settings.json`.
     - In `settings.json` file provide the path where you installed **Python (3.6.4)**
-5. In **VS Code** open terminal by clicking `View` -> `Terminal`. Now enter `python3 manage.py runserver`. The **machine_learner** project should be running on http://localhost:8000/
-6. Open **Eclipse**.  Click `File` -> `New` -> `Java Project`. Unclick `Use default location` and click on `Browse`. Open **Simulator** project
-7. Right click on **Simulator** project. Then click `Build Path` -> `Configure Build Path` -> `Libraries` -> `Add External JARs`. Import all the JAR files from `Simulator` -> `lib` and click `Apply and close`
-8. Similarly Open **MachineLearning_simulation** project in **Eclipse**. In addition, import all JAR files from its `lib` folder.
-9. Import **Simulator** project in **MachineLearning_simulation** project by right clicking on `MachineLearning_simulation` -> `Build Path` -> `Configure Build Path` -> `Projects` -> `Add` -> `Simulator` -> `Ok` -> `Apply and close` 
-10. Run this project from `MachineLearning_simulation/src/main/Main.java`. The print out is in the following format:
+6. In **VS Code** open terminal by clicking `View` -> `Terminal`. Now enter `python3 manage.py runserver`. The **machine_learner** project should be running on http://localhost:8000/
+7. Open **Eclipse**.  Click `File` -> `New` -> `Java Project`. Unclick `Use default location` and click on `Browse`. Open **Simulator** project
+8. Right click on **Simulator** project. Then click `Build Path` -> `Configure Build Path` -> `Libraries` -> `Add External JARs`. Import all the JAR files from `Simulator` -> `lib` and click `Apply and close`
+9. Similarly Open **MachineLearning_simulation** project in **Eclipse**. In addition, import all JAR files from its `lib` folder.
+10. Import **Simulator** project in **MachineLearning_simulation** project by right clicking on `MachineLearning_simulation` -> `Build Path` -> `Configure Build Path` -> `Projects` -> `Add` -> `Simulator` -> `Ok` -> `Apply and close` 
+11. Run this project from `MachineLearning_simulation/src/main/Main.java`. The print out is in the following format:
     - When **Mode = Testing, TaskType = Classification or Regrssion**:
         - While *# of adaptation cycles <=  \# of training cycles*:
             - adaptation cycle;start time;training time; end time
