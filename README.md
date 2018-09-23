@@ -42,8 +42,9 @@ Degree project at bachelor level. The report can be found at http://lnu.diva-por
     - Mode: 
         - Testing: Train the selected *TaskType* on *\# of training cycles*, and then start the testing
         - ActivFORMS: Execute ActivFORMS
-        - comparison. Execute *ActivFORMS* + *Classification* + *Regression*. Then train *Classification* and *Regression* on \# of training cycles*, and then start the testing. On the other hand, ActivFORMS run continously
-- In `MachineLearning_simulation/src/mapek/FeedbackLoop.java`, inside the start(), we can configure *# of adaptation cycles*
+        - Comparison: Execute *ActivFORMS* + *Classification* + *Regression* in parallel. Then train *Classification* and *Regression* on *\# of training cycles*, and then start the testing. On the other hand, ActivFORMS runs continously
+- In `MachineLearning_simulation/src/mapek/FeedbackLoop.java`, inside the start(), we can configure:
+    - \# of adaptation cycles
 
 ## API
 ## Online Supervised Learning
