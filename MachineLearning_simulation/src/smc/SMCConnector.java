@@ -54,7 +54,7 @@ public class SMCConnector {
 
 	public void startVerification() {
 		// System.out.println("Verification started!");
-		Mode mode = Mode.TESTING;
+		Mode mode = Mode.ACTIVFORM;
 		TaskType taskType = TaskType.REGRESSION;
 
 		switch (mode) {

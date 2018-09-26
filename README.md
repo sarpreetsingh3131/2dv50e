@@ -13,8 +13,9 @@ Degree project at bachelor level. The report can be found at http://lnu.diva-por
 7. Open **Eclipse**.  Click `File` -> `New` -> `Java Project`. Unclick `Use default location` and click on `Browse`. Open **Simulator** project
 8. Right click on **Simulator** project. Then click `Build Path` -> `Configure Build Path` -> `Libraries` -> `Add External JARs`. Import all the JAR files from `Simulator` -> `lib` and click `Apply and close`
 9. Similarly Open **MachineLearning_simulation** project in **Eclipse**. In addition, import all JAR files from its `lib` folder.
-10. Import **Simulator** project in **MachineLearning_simulation** project by right clicking on `MachineLearning_simulation` -> `Build Path` -> `Configure Build Path` -> `Projects` -> `Add` -> `Simulator` -> `Ok` -> `Apply and close` 
-11. Run this project from `MachineLearning_simulation/src/main/Main.java`. The print out is in the following format:
+10. Import **Simulator** project in **MachineLearning_simulation** project by right clicking on `MachineLearning_simulation` -> `Build Path` -> `Configure Build Path` -> `Projects` -> `Add` -> `Simulator` -> `Ok` -> `Apply and close`
+11. If you are going to run this project on mac-64-bit, please go to next step. In **MachineLearning_simulation** project, go to `uppal` directory and then your platform specific directory. Copy `verifyte` file and paste it in `MachineLearning_simulation` -> `uppal-verifyta`
+12. Run this project from `MachineLearning_simulation/src/main/Main.java`. The print out is in the following format:
     - When **Mode = Testing, TaskType = Classification or Regrssion**:
         - While *# of adaptation cycles <=  \# of training cycles*:
             - adaptation cycle;start time;training time; end time
