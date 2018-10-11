@@ -1,0 +1,61 @@
+This is BibTeX, Version 0.99d (TeX Live 2017)
+Capacity: max_strings=100000, hash_size=100000, hash_prime=85009
+The top-level auxiliary file: report.aux
+The style file: IEEEtran.bst
+Reallocated singl_function (elt_size=4) to 100 items from 50.
+Reallocated singl_function (elt_size=4) to 100 items from 50.
+Reallocated singl_function (elt_size=4) to 100 items from 50.
+Reallocated wiz_functions (elt_size=4) to 6000 items from 3000.
+Reallocated singl_function (elt_size=4) to 100 items from 50.
+Database file #1: referenser.bib
+-- IEEEtran.bst version 1.14 (2015/08/26) by Michael Shell.
+-- http://www.michaelshell.org/tex/ieeetran/bibtex/
+-- See the "IEEEtran_bst_HOWTO.pdf" manual for usage information.
+Warning--missing school in AMBATESASWG-2017
+Warning--empty author in AABFAC-2005
+Warning--empty journal in TRSMCFSAS-2016
+Warning--edition ordinal word "{1st}" may be too high (or improper) for conversion in HOMLWSLATF-2017
+
+Done.
+You've used 38 entries,
+            4087 wiz_defined-function locations,
+            1079 strings with 14237 characters,
+and the built_in function-call counts, 29130 in all, are:
+= -- 2313
+> -- 506
+< -- 265
++ -- 268
+- -- 70
+* -- 1368
+:= -- 4266
+add.period$ -- 88
+call.type$ -- 38
+change.case$ -- 39
+chr.to.int$ -- 672
+cite$ -- 42
+duplicate$ -- 2131
+empty$ -- 2585
+format.name$ -- 102
+if$ -- 6929
+int.to.chr$ -- 0
+int.to.str$ -- 38
+missing$ -- 331
+newline$ -- 137
+num.names$ -- 40
+pop$ -- 826
+preamble$ -- 1
+purify$ -- 0
+quote$ -- 4
+skip$ -- 2158
+stack$ -- 0
+substring$ -- 1583
+swap$ -- 1701
+text.length$ -- 41
+text.prefix$ -- 0
+top$ -- 5
+type$ -- 38
+warning$ -- 4
+while$ -- 130
+width$ -- 40
+write$ -- 371
+(There were 4 warnings)
