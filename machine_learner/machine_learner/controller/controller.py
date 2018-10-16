@@ -30,6 +30,8 @@ def training_testing(request):
                 elif mode == 'testing':
                     response = regression.testing(dataset['features'])
             return JsonResponse(response)
+        else:
+            return JsonResponse({'mesage': 'only POST requests are allowed'})
     except Exception as e:
         traceback.print_tb(e.__traceback__)
         return JsonResponse({'mesage': 'invalid request'})

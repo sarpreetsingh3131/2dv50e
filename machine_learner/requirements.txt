@@ -1,0 +1,6 @@
+pypi
+django
+numpy
+scipy
+scikit-learn==0.20
+matplotlib
