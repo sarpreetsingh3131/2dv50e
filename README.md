@@ -78,7 +78,7 @@ This repository contains two main modules:
             - packet loss;energy consumption
         
         
-        **NOTE:** `ctr + c` can be used to stop this module. If you want to run again, first run **machine_learner** module (if not already running) than run this module by only using `docker-compose up` command. Sometimes the print out can be bit odd, i.e., a print out of one run can be combined with next one. This happens due to continous runtime printing. In this cases, please seprate the printing carefully. One suggestion is to always look for run number because the start time of a run is always same as the end time of its previous run.
+        **NOTE:** `ctr + c` can be used to stop this module. If you want to run again, first run **machine_learner** module (if not already running) than run this module by only using `docker-compose up` command.
 
 ## How to change settings:
 ----------------------------
