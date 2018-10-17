@@ -45,6 +45,8 @@ public class Main {
 
 	void printResults() {
 		// Get QoS data of previous runs
+		// probe.getNetworkQoS() should not have less number than the number of times
+		// feedback loop will run, e.g, feedback loop runs 5 times, this should have >=5
 		List<QoS> qosList = probe.getNetworkQoS(300);
 		System.out.println("\nPacketLoss;EnergyConsumption");
 		for (QoS qos : qosList) {

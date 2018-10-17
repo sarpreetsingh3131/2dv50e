@@ -1,56 +1,126 @@
 # 2dv50e
-Degree project at bachelor level. The report can be found at http://lnu.diva-portal.org/smash/record.jsf?pid=diva2%3A1240014&dswid=-7780
+This repository contains the code of the approach that we mentioned in the thesis called: *Applying Machine Learning to Reduce the Adaptation Space in Self-Adaptive Systems: an exploratory work* (http://lnu.diva-portal.org/smash/record.jsf?pid=diva2%3A1240014&dswid=-7780)
+
+This repository contains two main modules:
+
+1. **machine_learner**: This contains all the code related to machine learning
+
+2. **simulation**: This module contains two sub-modules:
+    
+    1. **activforms**: This contains all the code related to ActivFORMS approach. In addition, it also has some code that connects this module to **machine_learner** module through HTTP.
+    
+    2. **simulator**: This contains all the code related to DeltaIOT simulator.
+
+    Other than above two sub-modules, **simulation** module also contains some some folders/files (SMCConfig.properties, models, uppaal-verifyta). These folder/files are used by **activform** module during runtime.
 
 ## How to run:
-1. Install **Java (1.8), Python (3.6.4), Scikit-Learn, django-admin (2.0.2), VS Code,** and **Eclipse** on your system 
-2. Clone or download the repository
-3. Open **VS Code**. Click `View` -> `Extensions` and search `Python` and install `Python` extension
-4. In **VS Code** click `File` -> `Open` and Open **machine_learner** project
-5. On left side of **VS Code** you should see the folders and files present in **machine_learner** project. Click on `manage.py` file. Now, you must see **Python (3.6.4)** on the left bottom of **VS Code**. We already configured this project for Mac. However, if you cannot see it then configure this project according to the following instructions:
-    - From the file hierarchy of this project click `.vscode` -> `settings.json`.
-    - In `settings.json` file provide the path where you installed **Python (3.6.4)**
-6. In **VS Code** open terminal by clicking `View` -> `Terminal`. Now enter `python3 manage.py runserver`. The **machine_learner** project should be running on http://localhost:8000/
-7. Open **Eclipse**.  Click `File` -> `New` -> `Java Project`. Unclick `Use default location` and click on `Browse`. Open **Simulator** project
-8. Right click on **Simulator** project. Then click `Build Path` -> `Configure Build Path` -> `Libraries` -> `Add External JARs`. Import all the JAR files from `Simulator` -> `lib` and click `Apply and close`
-9. Similarly Open **MachineLearning_simulation** project in **Eclipse**. In addition, import all JAR files from its `lib` folder.
-10. Import **Simulator** project in **MachineLearning_simulation** project by right clicking on `MachineLearning_simulation` -> `Build Path` -> `Configure Build Path` -> `Projects` -> `Add` -> `Simulator` -> `Ok` -> `Apply and close`
-11. If you are going to run this project on mac-64-bit, please go to next step. In **MachineLearning_simulation** project, go to `uppal` directory and then your platform specific directory. Copy `verifyte` file and paste it in `MachineLearning_simulation` -> `uppal-verifyta`
-12. Run this project from `MachineLearning_simulation/src/main/Main.java`. The print out is in the following format:
-    - When **Mode = Testing, TaskType = Classification or Regrssion**:
-        - While *# of adaptation cycles <=  \# of training cycles*:
-            - adaptation cycle;start time;training time; end time
-        - While *# of adaptation cycles > \# of training cycles*:  
-            - adaptation cycle;start time;testing time; adaptation space;training time; end time
-    - When **Mode = Comparsion, TaskType does not matter**:
-        - While *# of adaptation cycles <=  \# of training cycles*:
-            - adaptation cycle;start time;classification training time;regression training time; activform adaptation space;end time
-        - While *# of adaptation cycles > \# of training cycles*:  
-            - adaptation cycle;start time;classification prediction time; regression prediction time;classification adaptation space;regression adaptation space;activform adaptation space;
-            classificaton training time;regression training time;saving data time;end time
-    - When **TaskType = ActivFORMS, Mode does not matter**:
-        - adaptation cycle;start time;adaptation space;end time
+-------------------------------
+1. Download this repository
 
-    - When all the adaptation cycles are executed:
-        - packet loss;energy consumption
+2. Install Docker (https://www.docker.com/) and start it on your machine
+
+3. Open terminal and go in to the root directory (2dv50e-master) of this repository
+
+4. In terminal, write `cd machine_learner/`
+
+5. Now, we are in **machine_learner** module. Run this module by executing following commands in terminal:
+    
+    1. `docker-compose build`
+    
+    2. `docker-compose up`
+
+    **NOTE**: You can verify this by going to http://localhost:8000 on browser. It will say *{'mesage': 'only POST requests are allowed'}*. `ctr + c` can be used to stop this module. If you want to run again, only use `docker-compose up` command. Before re-running, **please delete the old learning models** from following folders:
+     
+     - `machine_learner/machine_learner/trained_models/classification`
+
+     - `machine_learner/machine_learner/trained_models/regression`
+
+     Any change in code will be executed directly due to hot-reloading (no need to re-run every time, however must delete old learning models)
+
+6. Open new terminal window and go in to the root directory (2dv50e-master) of this repository
+
+7. In terminal, write `cd simulation/`
+
+8. Now, we are in **simulation** module. Run this module (sub-modules will be automatically executed) by executing following commands in terminal:
+    
+    1. `docker-compose build`
+    
+    2. `docker-compose up`
+
+    - This will start the feeback loop that will print out some data in each run. Below is the print format:
+        
+        - When **Mode = Testing, TaskType = Classification or Regrssion**:
+            
+            - While *# of adaptation cycles <=  \# of training cycles*:
+                
+                - adaptation cycle;start time;training time; end time
+            
+            - While *# of adaptation cycles > \# of training cycles*:  
+                
+                - adaptation cycle;start time;testing time; adaptation space;training time; end time
+        
+        - When **Mode = Comparsion, TaskType does not matter**:
+            
+            - While *# of adaptation cycles <=  \# of training cycles*:
+                
+                - adaptation cycle;start time;classification training time;regression training time; activform adaptation space;end time
+            
+            - While *# of adaptation cycles > \# of training cycles*:  
+                - adaptation cycle;start time;classification prediction time; regression prediction time;classification adaptation space;regression adaptation space;activform adaptation space;
+                classificaton training time;regression training time;saving data time;end time
+        
+        - When **TaskType = ActivFORMS, Mode does not matter**:
+            
+            - adaptation cycle;start time;adaptation space;end time
+
+        - When all the adaptation cycles are executed:
+            
+            - packet loss;energy consumption
+        
+        
+        **NOTE:** `ctr + c` can be used to stop this module. If you want to run again, first run **machine_learner** module (if not already running) than run this module by only using `docker-compose up` command. Sometimes the print out can be bit odd, i.e., a print out of one run can be combined with next one. This happens due to continous runtime printing. In this cases, please seprate the printing carefully. One suggestion is to always look for run number because the start time of a run is always same as the end time of its previous run.
 
 ## How to change settings:
-- In `MachineLearning_simulation/src/smc/SMCConnector.java`, we can configure following settings:
+----------------------------
+1. Install VSCode (https://code.visualstudio.com/). We do not recommend any IDE (eclipse, intellij, etc.). VSCode has some plugins that we use in the development. They are not required to run the project. However, they can help you in the devlopment.
+    
+    - For docker: https://marketplace.visualstudio.com/items?itemName=PeterJausovec.vscode-docker
+    
+    - For java: https://marketplace.visualstudio.com/items?itemName=redhat.java
+    
+    - For python: https://marketplace.visualstudio.com/items?itemName=ms-python.python
+
+    **Note**: The above plugins might ask you to download some more plugins. Please ignore them.
+
+2. In `simulation/activforms/src/smc/SMCConnector.java`, we can change following settings:
+    
     - \# of training cycles
+    
     - TaskType:
+        
         - Classification
+        
         - Regression
+        
         - ActivFORMS
+    
     - Mode: 
+        
         - Testing: Train the selected *TaskType* on *\# of training cycles*, and then start the testing
+        
         - ActivFORMS: Execute ActivFORMS
+        
         - Comparison: Execute *ActivFORMS* + *Classification* + *Regression* in parallel. Then train *Classification* and *Regression* on *\# of training cycles*, and then start the testing. On the other hand, ActivFORMS runs continously
-- In `MachineLearning_simulation/src/mapek/FeedbackLoop.java`, inside the start(), we can configure:
+
+3. In `simulation/activforms/src/mapek/FeedbackLoop.java`, inside the start(), we can change:
+    
     - \# of adaptation cycles
 
-## API
-## Online Supervised Learning
--------------------
+    
+    **NOTE**: You can change the settings in other modules too. However, to test our approach we only recommend to change the above settings. 
 
+## API of online supervised learning
+-------------------
 **Train classification model**
 ----
 * **URL** `http://localhost:8000?type=classification&mode=training`

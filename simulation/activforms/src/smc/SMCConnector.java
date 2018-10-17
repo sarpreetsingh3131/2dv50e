@@ -24,7 +24,7 @@ public class SMCConnector {
 	Environment environment;
 	SMCChecker smcChecker = new SMCChecker();
 	List<AdaptationOption> verifiedOptions;
-	final int TRAINING_CYCLE = 1;
+	final int TRAINING_CYCLE = 5;
 	int cycles = 1;
 
 	enum Mode {
@@ -54,7 +54,7 @@ public class SMCConnector {
 
 	public void startVerification() {
 		// System.out.println("Verification started!");
-		Mode mode = Mode.TESTING;
+		Mode mode = Mode.ACTIVFORM;
 		TaskType taskType = TaskType.REGRESSION;
 
 		switch (mode) {

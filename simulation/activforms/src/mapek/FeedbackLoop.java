@@ -54,6 +54,7 @@ public class FeedbackLoop {
 
 	public void start() {
 		System.out.println("Feedback loop started.");
+		// if you change here, also update the printResult() in main/Main
 		for (int i = 1; i <= 5; i++) {
 			// while (true) {
 			System.out.print(i + ";" + System.currentTimeMillis());
