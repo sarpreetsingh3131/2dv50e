@@ -312,6 +312,8 @@ public class FeedbackLoop {
 
 		if (steps.size() > 0) {
 			execution();
+		} else {
+			System.out.println(";" + System.currentTimeMillis());
 		}
 	}
 
