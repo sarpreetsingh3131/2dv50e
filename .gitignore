@@ -4,3 +4,11 @@ __pycache__
 .project
 .classpath
 target
+
+# Vscode files
+*.vscode
+*.code-workspace
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
