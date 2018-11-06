@@ -238,7 +238,7 @@ public class SMCConnector {
 	JSONObject send(JSONObject dataset, TaskType taskType, Mode mode) {
 		try {
 			HttpClient client = HttpClientBuilder.create().build();
-			HttpPost http = new HttpPost("http://localhost:8000/?task-type=" + taskType.val + "&mode=" + mode.val);
+			HttpPost http = new HttpPost("http://localhost:8000/?task-type=" + taskType.val + "&mode=" + mode.val + "&cycle=" + cycles);
 			http.setEntity(new StringEntity(dataset.toString()));
 			http.setHeader("Content-Type", "application/json");
 			long start = System.currentTimeMillis();
