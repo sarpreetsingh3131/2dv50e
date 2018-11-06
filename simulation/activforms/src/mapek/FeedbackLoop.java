@@ -25,25 +25,7 @@ public class FeedbackLoop {
 	List<AdaptationOption> verifiedOptions;
 	SMCConnector smcConnector = new SMCConnector();
 
-	public FeedbackLoop() {
-		snrEquations.add(new SNREquation(2, 4, 0.0169, 7.4076));
-		snrEquations.add(new SNREquation(3, 1, 0.4982, 1.2468));
-		snrEquations.add(new SNREquation(4, 1, 0.8282, -8.1246));
-		snrEquations.add(new SNREquation(5, 9, 0.4932, -4.4898));
-		snrEquations.add(new SNREquation(6, 4, 0.6199, -9.8051));
-		snrEquations.add(new SNREquation(7, 3, 0.5855, -6.644));
-		snrEquations.add(new SNREquation(7, 2, 0.5398, -2.0549));
-		snrEquations.add(new SNREquation(8, 1, 0.5298, -0.1031));
-		snrEquations.add(new SNREquation(9, 1, 0.8284, -7.2893));
-		snrEquations.add(new SNREquation(10, 6, 0.8219, -7.3331));
-		snrEquations.add(new SNREquation(10, 5, 0.6463, -3.0037));
-		snrEquations.add(new SNREquation(11, 7, 0.714, -3.1985));
-		snrEquations.add(new SNREquation(12, 7, 0.9254, -16.21));
-		snrEquations.add(new SNREquation(12, 3, 0.1, 6));
-		snrEquations.add(new SNREquation(13, 11, 0.6078, -3.6005));
-		snrEquations.add(new SNREquation(14, 12, 0.4886, -4.7704));
-		snrEquations.add(new SNREquation(15, 12, 0.5899, -7.1896));
-	}
+	public FeedbackLoop() {}
 
 	public void setProbe(Probe probe) {
 		this.probe = probe;
@@ -53,15 +35,16 @@ public class FeedbackLoop {
 		this.effector = effector;
 	}
 
+	public void setEquations(List<SNREquation> equations) {
+		snrEquations = equations;
+	}
+
 	public void start() {
 		System.out.println("Feedback loop started.");
-		// if you change here, also update the printResult() in main/Main
+
 		for (int i = 1; i <= ConfigLoader.getInstance().getAmountOfCycles(); i++) {
-			// while (true) {
 			System.out.print(i + ";" + System.currentTimeMillis());
 			monitor();
-
-			// System.out.println(probe.getNetworkQoS(0));
 		}
 	}
 
@@ -101,23 +84,18 @@ public class FeedbackLoop {
 	}
 
 	void analysis() {
-
 		// analyze all link settings
 		boolean adaptationRequired = analysisRequired();
 
 		if (!adaptationRequired)
 			return;
 
-		//
 		AdaptationOption newPowerSettingsConfig = new AdaptationOption();
 		newPowerSettingsConfig.system = currentConfiguration.system.getCopy();
 		analyzePowerSettings(newPowerSettingsConfig);
-		// System.out.println(newPowerSettingsConfig);
 		removePacketDuplication(newPowerSettingsConfig);
-		// System.out.println(newPowerSettingsConfig);
 		composeAdaptationOptions(newPowerSettingsConfig);
 
-		// adaptationOptions.forEach(o -> System.out.println(o));
 		smcConnector.setAdaptationOptions(adaptationOptions, currentConfiguration.environment);
 		smcConnector.startVerification();
 		verifiedOptions = adaptationOptions;
@@ -144,9 +122,6 @@ public class FeedbackLoop {
 					saveAdaptationOptions(newConfiguration, moteOptions, mote.getMoteId());
 				}
 			}
-			// for (AdaptationOption ada : adaptationOptions) {
-			// System.out.println(ada);
-			// }
 		}
 	}
 
@@ -270,8 +245,8 @@ public class FeedbackLoop {
 
 	}
 
-	void planning() {
 
+	void planning() {
 		AdaptationOption bestAdaptationOption = null;
 
 		for (int i = 0; i < verifiedOptions.size(); i++) {
@@ -318,6 +293,7 @@ public class FeedbackLoop {
 		}
 	}
 
+
 	void execution() {
 		boolean addMote;
 		List<Mote> motesEffected = new LinkedList<Mote>();
@@ -352,6 +328,7 @@ public class FeedbackLoop {
 		System.out.print(";" + System.currentTimeMillis() + "\n");
 	}
 
+
 	Link findLink(Mote mote, int dest) {
 		for (Link link : mote.getLinks()) {
 			if (link.getDestination() == dest)
@@ -359,6 +336,7 @@ public class FeedbackLoop {
 		}
 		throw new RuntimeException(String.format("Link %d --> %d not found", mote.getMoteId(), dest));
 	}
+
 
 	public LinkSettings newLinkSettings(int src, int dest, int power, int distribution, int sf) {
 		LinkSettings settings = new LinkSettings();
@@ -370,11 +348,13 @@ public class FeedbackLoop {
 		return settings;
 	}
 
+
 	void printMote(Mote mote) {
 		System.out.println(String.format("MoteId: %d, BatteryRemaining: %f, Links:%s", mote.getMoteId(),
 				mote.getEnergyLevel(), getLinkString(mote.getLinks())));
 	}
 
+	
 	String getLinkString(List<Link> links) {
 		StringBuilder strBuilder = new StringBuilder();
 		for (Link link : links) {

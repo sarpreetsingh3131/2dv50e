@@ -1,6 +1,8 @@
 package main;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import deltaiot.client.Effector;
 import deltaiot.client.Probe;
@@ -8,8 +10,10 @@ import deltaiot.client.SimulationClient;
 //import deltaiot.client.SimulationClient;
 import deltaiot.services.QoS;
 import mapek.FeedbackLoop;
+import mapek.SNREquation;
 import simulator.Simulator;
 import util.ConfigLoader;
+import domain.*;
 
 public class Main {
 
@@ -18,30 +22,31 @@ public class Main {
 	Simulator simulator;
 
 	public void start() {
+		new Thread(() -> {
+			List<SNREquation> equations = new ArrayList<>();
+			List<Link> links = simulator.getMotes().stream()
+				.map(Mote::getLinks)
+				.flatMap(List::stream)
+				.collect(Collectors.toList());
 
-		// get probe and effectors
-		// probe = new Probe();
-		// effector = new Effector();
-		// SimulationClient client = new SimulationClient();
-		// probe = client.getProbe();
-		// effector = client.getEffector();
-		new Thread(new Runnable() {
-
-			@Override
-			public void run() {
-				// TODO Auto-generated method stub
-				FeedbackLoop feedbackLoop = new FeedbackLoop();
-				feedbackLoop.setProbe(probe);
-				feedbackLoop.setEffector(effector);
-
-				// StartFeedback loop
-				feedbackLoop.start();
-
-				// See results
-				printResults();
+			for (Link link : links) {
+				equations.add(new SNREquation(link.getFrom().getId(),
+					link.getTo().getId(),
+					link.getSnrEquation().multiplier,
+					link.getSnrEquation().constant));
 			}
-		}).start();
-		// Connect probe and effectors with feedback loop
+
+			FeedbackLoop feedbackLoop = new FeedbackLoop();
+			feedbackLoop.setProbe(probe);
+			feedbackLoop.setEffector(effector);
+			feedbackLoop.setEquations(equations);
+
+			// StartFeedback loop
+			feedbackLoop.start();
+
+			// See results
+			printResults();
+	}).start();
 	}
 
 	void printResults() {

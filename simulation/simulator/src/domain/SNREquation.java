@@ -2,8 +2,8 @@ package domain;
 
 public class SNREquation {
 
-	double multiplier;
-	double constant;
+	public double multiplier;
+	public double constant;
 
 	public SNREquation(double multiplier, double constant) {
 		this.multiplier = multiplier;
