@@ -28,6 +28,7 @@ public class SMCModelLoader {
 
 		try {
 
+			// TODO adjust this part to use the ConfigLoader class
 			File configFile = new File(configPath);
 			if (!configFile.exists()) {
 				throw new RuntimeException("SMCConfig.properties file not found at following path:" + configPath);

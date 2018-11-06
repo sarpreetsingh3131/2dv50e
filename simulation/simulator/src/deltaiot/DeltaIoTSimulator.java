@@ -123,19 +123,19 @@ public class DeltaIoTSimulator {
 
 		// Set profiles for some links and motes
 		// 3,6,9,15 are heat sensors so these motes sends traffic all the time
-		// 5,7,11,12 RFID sensors
 		// 2,4,8,10,13,14 Passive infrared sensors
 		mote2.setActivationProbability(new Constant<>(0.50));
 		mote4.setActivationProbability(new Constant<>(0.50));
+		mote8.setActivationProbability(new Constant<>(0.50));
+		mote10.setActivationProbability(new FileProfile("deltaiot/scenario_data/PIR1.txt", 1.0));
+		mote13.setActivationProbability(new FileProfile("deltaiot/scenario_data/PIR2.txt", 1.0));
+		mote14.setActivationProbability(new Constant<>(0.50));
+		
+		// 5,7,11,12 RFID sensors
 		mote5.setActivationProbability(new Constant<>(0.50));
-		mote6.setActivationProbability(new Constant<>(0.50));
 		mote7.setActivationProbability(new Constant<>(0.50));
 		mote11.setActivationProbability(new Constant<>(0.50));
 		mote12.setActivationProbability(new Constant<>(0.50));
-		mote14.setActivationProbability(new Constant<>(0.50));
-
-		mote10.setActivationProbability(new FileProfile("deltaiot/scenario_data/PIR1.txt", 1.0));
-		mote13.setActivationProbability(new FileProfile("deltaiot/scenario_data/PIR2.txt", 1.0));
 
 		mote12.getLinkTo(mote3).setInterference(new FileProfile("deltaiot/scenario_data/SNR2.txt", 0.0));
 		// mote4.getLinkTo(gateway).setInterference(new DoubleRange(0.0, 25.0));
