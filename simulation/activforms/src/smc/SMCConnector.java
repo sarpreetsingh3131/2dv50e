@@ -20,6 +20,7 @@ import mapek.Link;
 import mapek.Mote;
 import mapek.SNR;
 import mapek.TrafficProbability;
+import util.ConfigLoader;
 
 public class SMCConnector {
 
@@ -27,10 +28,12 @@ public class SMCConnector {
 	Environment environment;
 	SMCChecker smcChecker = new SMCChecker();
 	List<AdaptationOption> verifiedOptions;
-	final int TRAINING_CYCLE = 5;
+	final int TRAINING_CYCLE = ConfigLoader.getInstance().getAmountOfLearningCycles();
 	int cycles = 1;
+	Mode mode;
+	TaskType taskType;
 
-	enum Mode {
+	public enum Mode {
 		TRAINING("training"), 
 		TESTING("testing"), 
 		ACTIVFORM(""), 
@@ -53,7 +56,7 @@ public class SMCConnector {
 		}
 	}
 
-	enum TaskType {
+	public enum TaskType {
 		CLASSIFICATION("classification"), 
 		REGRESSION("regression"), 
 		NONE("none");
@@ -73,49 +76,49 @@ public class SMCConnector {
 		}
 	}
 
+	public SMCConnector() {
+		ConfigLoader configLoader = ConfigLoader.getInstance();
+		mode = configLoader.getRunMode();
+		taskType = configLoader.getTaskType();
+	}
+
 	public void setAdaptationOptions(List<AdaptationOption> adaptationOptions, Environment environment) {
 		this.adaptationOptions = adaptationOptions;
 		this.environment = environment;
-		// System.out.println("Environment:" + environment);
-
 	}
 
 	public void startVerification() {
-		// System.out.println("Verification started!");
-		Mode mode = Mode.ACTIVFORM;
-		TaskType taskType = TaskType.REGRESSION;
-
 		switch (mode) {
-		case ACTIVFORM:
-			activform();
-			break;
-		case COMPARISON:
-			if (cycles <= TRAINING_CYCLE) {
-				int space = 0;
-				for (AdaptationOption adaptationOption : adaptationOptions) {
-					smcChecker.checkCAO(adaptationOption.toModelString(), environment.toModelString(),
-							adaptationOption.verificationResults);
-					if (adaptationOption.verificationResults.packetLoss < 10.0) {
-						space++;
+			case ACTIVFORM:
+				activform();
+				break;
+			case COMPARISON:
+				if (cycles <= TRAINING_CYCLE) {
+					int space = 0;
+					for (AdaptationOption adaptationOption : adaptationOptions) {
+						smcChecker.checkCAO(adaptationOption.toModelString(), environment.toModelString(),
+								adaptationOption.verificationResults);
+						if (adaptationOption.verificationResults.packetLoss < 10.0) {
+							space++;
+						}
 					}
-				}
-				System.out.print(";" + space);
-				send(adaptationOptions, TaskType.CLASSIFICATION, Mode.TRAINING);
-				send(adaptationOptions, TaskType.REGRESSION, Mode.TRAINING);
+					System.out.print(";" + space);
+					send(adaptationOptions, TaskType.CLASSIFICATION, Mode.TRAINING);
+					send(adaptationOptions, TaskType.REGRESSION, Mode.TRAINING);
 
-			} else
-				comparison();
-			break;
-		case MLADJUSTMENT:
-			machineLearningAdjustmentInspection(cycles <= TRAINING_CYCLE);
-			break;
-		default:
-			if (cycles <= TRAINING_CYCLE)
-				training(taskType);
-			else
-				testing(taskType);
-		}
-		cycles++;
+				} else
+					comparison();
+				break;
+			case MLADJUSTMENT:
+				machineLearningAdjustmentInspection(cycles <= TRAINING_CYCLE);
+				break;
+			default:
+				if (cycles <= TRAINING_CYCLE)
+					training(taskType);
+				else
+					testing(taskType);
+			}
+			cycles++;
 	}
 
 /**

@@ -7,6 +7,7 @@ import deltaiot.client.Effector;
 import deltaiot.services.LinkSettings;
 import deltaiot.services.QoS;
 import smc.SMCConnector;
+import util.ConfigLoader;
 import deltaiot.client.Probe;
 
 public class FeedbackLoop {
@@ -15,7 +16,7 @@ public class FeedbackLoop {
 	Effector effector;
 
 	// Knowledge
-	public static final int DISTRIBUTION_GAP = 20;
+	public static final int DISTRIBUTION_GAP = ConfigLoader.getInstance().getDistributionGap();
 	Configuration currentConfiguration;
 	Configuration previousConfiguration;
 	List<PlanningStep> steps = new LinkedList<>();
@@ -55,7 +56,7 @@ public class FeedbackLoop {
 	public void start() {
 		System.out.println("Feedback loop started.");
 		// if you change here, also update the printResult() in main/Main
-		for (int i = 1; i <= 5; i++) {
+		for (int i = 1; i <= ConfigLoader.getInstance().getAmountOfCycles(); i++) {
 			// while (true) {
 			System.out.print(i + ";" + System.currentTimeMillis());
 			monitor();

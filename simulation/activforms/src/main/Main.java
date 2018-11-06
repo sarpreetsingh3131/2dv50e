@@ -9,6 +9,7 @@ import deltaiot.client.SimulationClient;
 import deltaiot.services.QoS;
 import mapek.FeedbackLoop;
 import simulator.Simulator;
+import util.ConfigLoader;
 
 public class Main {
 
@@ -47,7 +48,7 @@ public class Main {
 		// Get QoS data of previous runs
 		// probe.getNetworkQoS() should not have less number than the number of times
 		// feedback loop will run, e.g, feedback loop runs 5 times, this should have >=5
-		List<QoS> qosList = probe.getNetworkQoS(300);
+		List<QoS> qosList = probe.getNetworkQoS(ConfigLoader.getInstance().getAmountOfCycles());
 		System.out.println("\nPacketLoss;EnergyConsumption");
 		for (QoS qos : qosList) {
 			System.out.println(String.format("%f;%f", qos.getPacketLoss(), qos.getEnergyConsumption()));
@@ -65,8 +66,6 @@ public class Main {
 		probe = client.getProbe();
 		effector = client.getEffector();
 		simulator = client.getSimulator();
-		// probe = new Probe();
-		// effector = new Effector();
 	}
 
 	public Simulator getSimulator() {
