@@ -3,6 +3,9 @@ package smc;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
@@ -28,20 +31,45 @@ public class SMCConnector {
 	int cycles = 1;
 
 	enum Mode {
-		TRAINING("training"), TESTING("testing"), ACTIVFORM(""), COMPARISON("comparison");
+		TRAINING("training"), 
+		TESTING("testing"), 
+		ACTIVFORM(""), 
+		COMPARISON("comparison"),
+		MLADJUSTMENT("mladjustment");
+
 		String val;
 
 		Mode(String val) {
 			this.val = val;
 		}
+
+		public static Mode getMode(String value) {
+			for (Mode mode : Mode.values()) {
+				if (mode.val.equals(value)) {
+					return mode;
+				}
+			}
+			throw new RuntimeException(String.format("Run mode %s is not supported.", value));
+		}
 	}
 
 	enum TaskType {
-		CLASSIFICATION("classification"), REGRESSION("regression");
+		CLASSIFICATION("classification"), 
+		REGRESSION("regression"), 
+		NONE("none");
 		String val;
 
 		TaskType(String val) {
 			this.val = val;
+		}
+
+		public static TaskType getTaskType(String value) {
+			for (TaskType taskType : TaskType.values()) {
+				if (taskType.val.equals(value)) {
+					return taskType;
+				}
+			}
+			throw new RuntimeException(String.format("Task type %s is not supported.", value));
 		}
 	}
 
@@ -72,11 +100,14 @@ public class SMCConnector {
 					}
 				}
 				System.out.print(";" + space);
-				send(parse(adaptationOptions, TaskType.CLASSIFICATION), TaskType.CLASSIFICATION, Mode.TRAINING);
-				send(parse(adaptationOptions, TaskType.REGRESSION), TaskType.REGRESSION, Mode.TRAINING);
+				send(adaptationOptions, TaskType.CLASSIFICATION, Mode.TRAINING);
+				send(adaptationOptions, TaskType.REGRESSION, Mode.TRAINING);
 
 			} else
 				comparison();
+			break;
+		case MLADJUSTMENT:
+			machineLearningAdjustmentInspection(cycles <= TRAINING_CYCLE);
 			break;
 		default:
 			if (cycles <= TRAINING_CYCLE)
@@ -87,11 +118,113 @@ public class SMCConnector {
 		cycles++;
 	}
 
+/**
+	 * Helper function which adds the predictions of both learning models to their respective JSON arrays.
+	 * The predictions are made over the whole adaptation space.
+	 * @param classArray The JSON array which will hold the classification predictions.
+	 * @param regrArray The JSON array which will hold the regression predictions.
+	 */
+	private void addPredictionsToJSONArrays(JSONArray classArray, JSONArray regrArray) {
+		JSONObject classificationResponse = send(adaptationOptions, TaskType.CLASSIFICATION, Mode.TESTING);
+		JSONObject regressionResponse = send(adaptationOptions, TaskType.REGRESSION, Mode.TESTING);
+
+		for (Object item : classificationResponse.getJSONArray("predictions")) {
+			classArray.put(Integer.parseInt(item.toString()));
+		}
+		for (Object item : regressionResponse.getJSONArray("predictions")) {
+			regrArray.put(Float.parseFloat(item.toString()));
+		}
+	}
+
+	/**
+	 * FIXME remove later on, here for data analysis
+	 *
+	 * Similar execution as comparison, but also tracks the adjustments
+	 * made to the regression/classifications predictions after online learning.
+	 * @param training Specifies whether the current cycle is still a training cycle.
+	 */
+	private void machineLearningAdjustmentInspection(boolean training) {
+		JSONObject adjInspection = new JSONObject();
+		adjInspection.put("packetLoss", new JSONArray());
+		adjInspection.put("energyConsumption", new JSONArray());
+		adjInspection.put("regressionBefore", new JSONArray());
+		adjInspection.put("classificationBefore", new JSONArray());
+		adjInspection.put("regressionAfter", new JSONArray());
+		adjInspection.put("classificationAfter", new JSONArray());
+
+		if (cycles == 1) {
+			// At the first cycle, no regression or classification output can be retrieved yet
+			IntStream.range(0, adaptationOptions.size()).forEach(i -> {
+				adjInspection.getJSONArray("regressionBefore").put(-1);
+				adjInspection.getJSONArray("classificationBefore").put(-1);
+			});
+		} else {
+			// If not at the first cycle, retrieve the results predicted before learning
+			addPredictionsToJSONArrays(adjInspection.getJSONArray("classificationBefore"),
+				adjInspection.getJSONArray("regressionBefore"));
+		}
+
+
+		// Check all the adaptation options
+		for (AdaptationOption adaptationOption : adaptationOptions) {
+			smcChecker.checkCAO(adaptationOption.toModelString(), environment.toModelString(),
+				adaptationOption.verificationResults);
+			adjInspection.getJSONArray("packetLoss").put(adaptationOption.verificationResults.packetLoss);
+			adjInspection.getJSONArray("energyConsumption").put(adaptationOption.verificationResults.energyConsumption);
+		}
+
+		if (training) {
+			// If we are training, send the entire adaptation space to the learners and check what they have learned
+			send(adaptationOptions, TaskType.CLASSIFICATION, Mode.TRAINING);
+			send(adaptationOptions, TaskType.REGRESSION, Mode.TRAINING);
+
+			addPredictionsToJSONArrays(adjInspection.getJSONArray("classificationAfter"),
+				adjInspection.getJSONArray("regressionAfter"));
+		} else {
+			// If we are testing, send the adjustments to the learning models and check their predictions again
+			List<AdaptationOption> classificationTrainOptions = new ArrayList<>();
+			List<AdaptationOption> regressionTrainOptions = new ArrayList<>();
+			final List<Integer> classificationResults = adjInspection.getJSONArray("classificationBefore")
+				.toList().stream()
+				.map(o -> Integer.parseInt(o.toString()))
+				.collect(Collectors.toList());
+			final List<Float> regressionResults = adjInspection.getJSONArray("regressionBefore")
+				.toList().stream()
+				.map(o -> Float.parseFloat(o.toString()))
+				.collect(Collectors.toList());
+
+			// Determine which adaptation options have to be sent back for the learning cycle
+			for (int i = 0; i < adaptationOptions.size(); i++) {
+				if (classificationResults.get(i).equals(1)) {
+					classificationTrainOptions.add(adaptationOptions.get(i));
+				}
+				if (regressionResults.get(i) < 10) {
+					regressionTrainOptions.add(adaptationOptions.get(i));
+				}
+			}
+
+			// In case the adaptation space of a prediction is 0, send all adaptations back
+			if (classificationResults.stream().noneMatch(o -> o == 1)) {
+				classificationTrainOptions = adaptationOptions;
+			}
+			if (regressionResults.stream().noneMatch(o -> o < 10)) {
+				regressionTrainOptions = adaptationOptions;
+			}
+
+			send(classificationTrainOptions, TaskType.CLASSIFICATION, Mode.TRAINING);
+			send(regressionTrainOptions, TaskType.REGRESSION, Mode.TRAINING);
+			addPredictionsToJSONArrays(adjInspection.getJSONArray("classificationAfter"),
+				adjInspection.getJSONArray("regressionAfter"));
+		}
+
+		send(adjInspection, TaskType.NONE, Mode.MLADJUSTMENT);
+	}
+
+
+
 	void comparison() {
-		JSONObject classificationResponse = send(parse(adaptationOptions, TaskType.CLASSIFICATION),
-				TaskType.CLASSIFICATION, Mode.TESTING);
-		JSONObject regressionResponse = send(parse(adaptationOptions, TaskType.REGRESSION), TaskType.REGRESSION,
-				Mode.TESTING);
+		JSONObject classificationResponse = send(adaptationOptions, TaskType.CLASSIFICATION, Mode.TESTING);
+		JSONObject regressionResponse = send(adaptationOptions, TaskType.REGRESSION, Mode.TESTING);
 		int classificationAdaptationSpace = Integer.parseInt(classificationResponse.get("adaptation_space").toString());
 		int regressionAdaptationSpace = Integer.parseInt(regressionResponse.get("adaptation_space").toString());
 		System.out.print(";" + classificationAdaptationSpace + ";" + regressionAdaptationSpace);
@@ -136,8 +269,8 @@ public class SMCConnector {
 			index++;
 		}
 		System.out.print(";" + activformAdapationSpace);
-		send(parse(classificationTrainingOptions, TaskType.CLASSIFICATION), TaskType.CLASSIFICATION, Mode.TRAINING);
-		send(parse(regressionTrainingOptions, TaskType.REGRESSION), TaskType.REGRESSION, Mode.TRAINING);
+		send(classificationTrainingOptions, TaskType.CLASSIFICATION, Mode.TRAINING);
+		send(regressionTrainingOptions, TaskType.REGRESSION, Mode.TRAINING);
 		send(comparison, TaskType.REGRESSION, Mode.COMPARISON);
 	}
 
@@ -151,11 +284,11 @@ public class SMCConnector {
 			// }
 		}
 		// System.out.print(";" + space);
-		send(parse(adaptationOptions, taskType), taskType, Mode.TRAINING);
+		send(adaptationOptions, taskType, Mode.TRAINING);
 	}
 
 	void testing(TaskType taskType) {
-		JSONObject response = send(parse(adaptationOptions, taskType), taskType, Mode.TESTING);
+		JSONObject response = send(adaptationOptions, taskType, Mode.TESTING);
 		int adaptationSpace = Integer.parseInt(response.get("adaptation_space").toString());
 		System.out.print(";" + adaptationSpace);
 
@@ -184,7 +317,7 @@ public class SMCConnector {
 			}
 			i++;
 		}
-		send(parse(qosEstimates, taskType), taskType, Mode.TRAINING);
+		send(qosEstimates, taskType, Mode.TRAINING);
 	}
 
 	void activform() {
@@ -235,10 +368,19 @@ public class SMCConnector {
 		return dataset;
 	}
 
-	JSONObject send(JSONObject dataset, TaskType taskType, Mode mode) {
+
+	private JSONObject send(List<AdaptationOption> adaptationOptions, TaskType taskType, Mode mode) {
+		return send(parse(adaptationOptions, taskType), taskType, mode);
+	}
+
+	private JSONObject send(JSONObject dataset, TaskType taskType, Mode mode) {
+		return send(dataset, taskType.val, mode.val);
+	}
+
+	JSONObject send(JSONObject dataset, String taskType, String mode) {
 		try {
 			HttpClient client = HttpClientBuilder.create().build();
-			HttpPost http = new HttpPost("http://localhost:8000/?task-type=" + taskType.val + "&mode=" + mode.val + "&cycle=" + cycles);
+			HttpPost http = new HttpPost("http://localhost:8000/?task-type=" + taskType + "&mode=" + mode + "&cycle=" + cycles);
 			http.setEntity(new StringEntity(dataset.toString()));
 			http.setHeader("Content-Type", "application/json");
 			long start = System.currentTimeMillis();
