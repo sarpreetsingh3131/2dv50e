@@ -1,10 +1,13 @@
 import traceback
+import os
 from sklearn.externals import joblib
 
 
 def get(model, model_name, dir_path):
     try:
-        model = joblib.load(dir_path + model_name + '.pkl')
+        pathFile = os.path.join(dir_path, model_name + '.pkl')
+        if os.path.isfile(pathFile):
+            model = joblib.load(pathFile)
     except Exception as e:
         traceback.print_tb(e.__traceback__)
     return model

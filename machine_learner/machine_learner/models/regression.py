@@ -3,7 +3,7 @@ from sklearn.preprocessing import MaxAbsScaler
 from sklearn.linear_model import SGDRegressor
 from machine_learner.utils import repository
 
-DIR_PATH = 'machine_learner/trained_models/regression/'
+DIR_PATH = os.path.join('machine_learner', 'trained_models', 'regression')
 
 
 def training(features, target):

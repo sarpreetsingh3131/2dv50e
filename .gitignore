@@ -12,3 +12,10 @@ target
 !.vscode/tasks.json
 !.vscode/launch.json
 !.vscode/extensions.json
+
+# Output files that should not be tracked
+machine_learner/machine_learner/collected_data/
+!machine_learner/machine_learner/collected_data/.gitkeep
+GraphOutputs
+*.pkl
+

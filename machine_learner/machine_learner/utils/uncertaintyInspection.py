@@ -24,7 +24,6 @@ def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, 
     """
     percent = 100 * (iteration / float(total))
     percentStr = f'{percent:.1f}'
-    # percent = ("{0:." + str(decimals) + "f}").format(100 * (iteration / float(total)))
     filledLength = int(length * iteration // total)
     bar = fill * filledLength + '-' * (length - filledLength)
     print('\r%s |%s| %s%% %s' % (prefix, bar, percentStr, suffix), end = '\r')
@@ -149,10 +148,10 @@ def analyseUncertainties():
         pass
         # plotLearningEvolution(filteredOptions[i], minEC, maxEC, f'filtered{i+1}')
     
-    printProgressBar(0, len(adapResults) - 1, prefix="Progress all graphs:", suffix='Complete', length=50)
+    print()
     for i in range(len(adapResults)):
         plotLearningEvolution(adapResults[i], minEC, maxEC, f'all{i+1}')
-        printProgressBar(i, len(adapResults) - 1, prefix="Progress all graphs:", suffix='Complete', length=50)
+        printProgressBar(i, len(adapResults) - 1, prefix="Progress all graphs:", suffix='Complete', length=30)
 
 
 

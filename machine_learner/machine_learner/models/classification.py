@@ -1,10 +1,11 @@
 import traceback
+import os
 import numpy as np
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.linear_model import SGDClassifier
 from machine_learner.utils import repository
 
-DIR_PATH = 'machine_learner/trained_models/classification/'
+DIR_PATH = os.path.join('machine_learner', 'trained_models', 'classification')
 
 
 def training(features, target):
