@@ -6,9 +6,14 @@ import java.util.List;
 import com.google.gson.Gson;
 
 public class Environment {
+
+	// The environmnt class seems to hold the uncertainties that impact the network performance
+	// such as the noise on a link (linkSNR) and the load
+
 	public List<SNR> linksSNR = new LinkedList<>();
 	public List<TrafficProbability> motesLoad = new LinkedList<>();
 
+	// Returns the current SNR on the link
 	public double getSNR(Link link) {
 		for (SNR snr : linksSNR) {
 			if (snr.source == link.getSource() && link.destination == link.getDestination()) {
@@ -18,6 +23,7 @@ public class Environment {
 		throw new RuntimeException("SNR not found of the given link:" + link);
 	}
 
+	// Sets the SNR of link to newSNR
 	public void setSNR(Link link, double newSNR) {
 		for (SNR snr : linksSNR) {
 			if (snr.source == link.getSource() && link.destination == link.getDestination()) {
@@ -28,12 +34,14 @@ public class Environment {
 		throw new RuntimeException("SNR not found of the given link:" + link);
 	}
 
+	//Returns a JSON object representing the object
 	@Override
 	public String toString() {
 		Gson gsn = new Gson();
 		return gsn.toJson(this);
 	}
 
+	// Returns a gopy of the object
 	public Environment getCopy() {
 		Environment env = new Environment();
 		for (SNR snr : linksSNR) {
@@ -46,6 +54,7 @@ public class Environment {
 		return env;
 	}
 
+	// Object to string.
 	public String toModelString() {
 		StringBuilder string = new StringBuilder();
 

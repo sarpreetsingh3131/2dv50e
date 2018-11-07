@@ -12,25 +12,50 @@ import deltaiot.client.Probe;
 
 public class FeedbackLoop {
 
+	//The probe and effector of the network being worked on.
 	Probe probe;
 	Effector effector;
 
 	// Knowledge
+
+	//TODO: distribution gap aanpassen om grotere space te creeeren, is enige mogelijkeid.
 	public static final int DISTRIBUTION_GAP = ConfigLoader.getInstance().getDistributionGap();
+	
+	//Dit zullen volledige staten(=configuratie) zijn van het netwerk op een bepaald moment
 	Configuration currentConfiguration;
 	Configuration previousConfiguration;
+
+	// TODO: Geen idee
+	// Als ik de class bekijk lijkt het alsof steps(i)
+	// de aanpassing is die je deed op het einde van cycle i+1
+	// aan de power en distribution
+	// Er moet echter verder inde code gekeken worden
 	List<PlanningStep> steps = new LinkedList<>();
+	
+	//Stellen de ruis op een bepaalde link voor (op een bepaald tijdstip?)
+	//Zijn ergens manueel ingetypt en komt van gemeten data van een week van het echte netwerk
 	List<SNREquation> snrEquations = new LinkedList<>();
+
+	// Adaption space
 	List<AdaptationOption> adaptationOptions = new LinkedList<>();
+	
+	// TODO: geen idee
 	List<AdaptationOption> verifiedOptions;
+
+	// De connector die met de machine learner connecteerd.
 	SMCConnector smcConnector = new SMCConnector();
 
-	public FeedbackLoop() {}
+	// Gets called from the main.
+	public FeedbackLoop() {
+		//TODO: leg me uit hoe die lamda werkt aub en waar de SNR equitions worden toegevoegd
+	}
 
+	//Sets the probe of the feedbackloop
 	public void setProbe(Probe probe) {
 		this.probe = probe;
 	}
 
+	//Sets the effector of the feedbackloop
 	public void setEffector(Effector effector) {
 		this.effector = effector;
 	}
@@ -39,31 +64,73 @@ public class FeedbackLoop {
 		snrEquations = equations;
 	}
 
+	//This is were the feedback loop really starts.
 	public void start() {
 		System.out.println("Feedback loop started.");
 
+		// TODO: wtf wil hij hiermee zeggen.
+		// if you change here, also update the printResult() in main/Main
+
+		// TODO: waarom 5? Hoe 5 keer monitor? will dit zeggen
+		// dat je maar 5 cyclussen doorloopt
+		//TODO: wat heb je hier veranderd en hoe werkt het?
 		for (int i = 1; i <= ConfigLoader.getInstance().getAmountOfCycles(); i++) {
 			System.out.print(i + ";" + System.currentTimeMillis());
+			
+			// Start the monitor part of the mapek loop
+			// The rest of the parts are each called in the previous parts
 			monitor();
 		}
 	}
 
+
 	void monitor() {
+
 		// System.out.println("Monitoring started:" + System.currentTimeMillis());
+		
+		// Get all the motes of the network 
 		ArrayList<deltaiot.services.Mote> motes = probe.getAllMotes();
+		
+		
 		List<Mote> newMotes = new LinkedList<>();
 
+		// configuratie/cyclus/state opschuiven
+		// CurrentCon.. is initialised as null.
+		// So prevConf will be null on the first cycle
+		// TODO: it isnt! Maybe Java does it for us.
 		previousConfiguration = currentConfiguration;
+
+		// Init new configuration
 		currentConfiguration = new Configuration();
 
+		// Maakt copy van netwerk in huidige staat
+
+		// Makes copy of the IoT network in its current state
 		Mote newMote;
 		Link newLink;
+
+		// Iterate through all the motes OF THE SIMULATOR
 		for (deltaiot.services.Mote mote : motes) {
+
+			// Make a new mote and give it the ID of the mote being iterated on
 			newMote = new Mote();
 			newMote.moteId = mote.getMoteid();
+
+			// Adds the current battery level to the mote
 			newMote.energyLevel = mote.getBattery();
+
+			// The motesLoad is a list with the load of the motes.
+			// I think every element of that list represents the load
+			// on the mote in a cycle in the past.
+			// Here you add a new load to the list for the current cycle
+			// TODO: the way the load is calculated should be looked at.
+			// TODO: the dataprobability is a constant? how can that be the load?
 			currentConfiguration.environment.motesLoad
 					.add(new TrafficProbability(mote.getMoteid(), mote.getDataProbability()));
+			
+			
+			// Copy the links and its SNR
+			//TODO: so the SNR and load never change for a mote throughout time?
 			for (deltaiot.services.Link link : mote.getLinks()) {
 				newLink = new Link();
 				newLink.source = link.getSource();
@@ -73,18 +140,44 @@ public class FeedbackLoop {
 				newMote.links.add(newLink);
 				currentConfiguration.environment.linksSNR.add(new SNR(link.getSource(), link.getDest(), link.getSNR()));
 			}
+			
+			// add the mote to the configuration
 			newMotes.add(newMote);
 		}
+
+		// This saves the architecture of the system to the new configuration by adding the 
+		// new motes which contain all the necessary data
 		currentConfiguration.system = new ManagedSystem(newMotes);
+		
+		//getNetworkQoS(n) returns a list of the QoS
+		// values of the n previous cycles.
+		//This returns the latest QoS and
+		// returns the first (and only) element of the list.
 		QoS qos = probe.getNetworkQoS(1).get(0);
+
+		//Hier neemt hij enkel deze 2 mee TODO
+		// Zie of je de latency enzo ook kunt meegeven
+		// Adds the QoS of the previous configuration to the current configuration,
+		// probably to pass on to the learner so he can use this to online learn
+		// TODO: modify this to multiple goals
 		currentConfiguration.qualities.packetLoss = qos.getPacketLoss();
 		currentConfiguration.qualities.energyConsumption = qos.getEnergyConsumption();
 
+		// Call the next step off the mapek
 		analysis();
 	}
 
+
+
+
+
+	// Gets called at the end of the monitor method
 	void analysis() {
+
 		// analyze all link settings
+		// returns false if no change has to be made.
+		// 
+		// Otherwise it returns true, to see when you should look at the definition below
 		boolean adaptationRequired = analysisRequired();
 
 		if (!adaptationRequired)

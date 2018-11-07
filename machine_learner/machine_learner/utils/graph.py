@@ -1,3 +1,12 @@
+"""This file is just for plotting the data I think
+
+You should review it to see how it adapts
+to multigoal and scaling
+and maybe add the function from the python
+machine learning book to visualise
+the classification.
+"""
+
 import numpy as np
 import json
 import matplotlib.pyplot as plt

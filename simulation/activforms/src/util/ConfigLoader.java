@@ -8,6 +8,8 @@ import java.io.InputStream;
 import java.nio.file.Paths;
 import java.util.Properties;
 
+//TODO: commentaar
+
 public class ConfigLoader {
 
 	private static String configFileLocation = Paths.get(System.getProperty("user.dir"), "SMCConfig.properties").toString();
