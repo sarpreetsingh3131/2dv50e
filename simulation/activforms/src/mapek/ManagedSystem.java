@@ -8,6 +8,12 @@ import com.google.gson.Gson;
 
 public class ManagedSystem {
 
+	// This class only holds the motes and their properties of the managed system
+	// However, the mote class keeps a list of the connected links
+	// which in turn contain their own properties.
+	// So the "managed system" and its properties can be 
+	// derived from this class.
+
 	public HashMap<Integer, Mote> motes = new LinkedHashMap<Integer, Mote>();
 
 	public ManagedSystem() {
