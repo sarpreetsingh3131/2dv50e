@@ -18,28 +18,22 @@ def training_testing(request):
 
             # Clear the models/output at the first adaptation cycle
             if int(cycle) == 1:
-                if (mode == 'initialcomparison') or (mode == 'mladjustment'):
-                    # Remove all the collected data files
+                if (mode == 'comparison') or (mode == 'mladjustment'):
+                    # Remove all the collected data files before saving the first time
+                    # The collected data files in question are .txt and .json files
                     dir_path = os.path.join('machine_learner', 'collected_data')
-                    files = os.listdir(dir_path)
-                    for item in files:
-                        if (item.endswith('.txt')) or (item.endswith('.json')):
-                            os.remove(os.path.join(dir_path, item))
-
+                    deleteFilesWithExt(dir_path, ['.txt', '.json'])
                 elif (mode == 'training') and ((task_type == 'classification') or (task_type == 'regression')):
-                    # Remove all the trained models for the specified mode
+                    # Remove all the trained models for the specified mode before they are trained for the first time
+                    # This is done by searching all the model files and deleting them (in the respective subdirectory per task_type)
                     dir_path = os.path.join('machine_learner', 'trained_models', task_type)
-                    files = os.listdir(dir_path)
-                    for item in files:
-                        if item.endswith('.pkl'):
-                            os.remove(os.path.join(dir_path, item))
+                    deleteFilesWithExt(dir_path, ['.pkl'])
 
             dataset = json.loads(request.body)
             response = {}
             if mode == 'comparison':
                 response = save_data(dataset)
             elif mode == 'mladjustment':
-                # similar to comparison
                 response = save_mlAdjustmentData(dataset)
             elif task_type == 'classification':
                 if mode == 'training':
@@ -59,6 +53,19 @@ def training_testing(request):
     except Exception as e:
         traceback.print_tb(e.__traceback__)
         return JsonResponse({'message': 'invalid request'})
+
+
+
+def deleteFilesWithExt(dir_path, extensions):
+    '''
+        Deletes all files with an extension provided in extensions under a given path.
+    '''
+    files = os.listdir(dir_path)
+    for item in files:
+        for extension in extensions:
+            if item.endswith(extension):
+                os.remove(os.path.join(dir_path, item))
+
 
 
 def save_mlAdjustmentData(data):

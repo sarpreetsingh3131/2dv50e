@@ -42,6 +42,7 @@ public class FeedbackLoop {
 	public void start() {
 		System.out.println("Feedback loop started.");
 
+		// Run the mape-k loop and simulator for the specified amount of cycles
 		for (int i = 1; i <= ConfigLoader.getInstance().getAmountOfCycles(); i++) {
 			System.out.print(i + ";" + System.currentTimeMillis());
 			monitor();
@@ -49,7 +50,7 @@ public class FeedbackLoop {
 	}
 
 	void monitor() {
-		// System.out.println("Monitoring started:" + System.currentTimeMillis());
+		// The method "probe.getAllMotes()" also makes sure the simulator is run for a single cycle
 		ArrayList<deltaiot.services.Mote> motes = probe.getAllMotes();
 		List<Mote> newMotes = new LinkedList<>();
 

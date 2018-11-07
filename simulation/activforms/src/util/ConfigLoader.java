@@ -8,6 +8,9 @@ import java.io.InputStream;
 import java.nio.file.Paths;
 import java.util.Properties;
 
+/**
+ * Class Used to load the properties listed in the SMCConfig.properties file.
+ */
 public class ConfigLoader {
 
 	private static String configFileLocation = Paths.get(System.getProperty("user.dir"), "SMCConfig.properties").toString();
@@ -22,6 +25,7 @@ public class ConfigLoader {
 	}
 
 	private ConfigLoader() {
+		// Only load the properties file once (singleton pattern)
 		properties = new Properties();
 		try {
 			InputStream inputStream = new FileInputStream(configFileLocation);

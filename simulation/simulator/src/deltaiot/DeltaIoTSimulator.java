@@ -137,13 +137,11 @@ public class DeltaIoTSimulator {
 		mote11.setActivationProbability(new Constant<>(0.50));
 		mote12.setActivationProbability(new Constant<>(0.50));
 
-		mote12.getLinkTo(mote3).setInterference(new FileProfile("deltaiot/scenario_data/SNR2.txt", 0.0));
-		// mote4.getLinkTo(gateway).setInterference(new DoubleRange(0.0, 25.0));
-
+		
 		mote10.getLinkTo(mote6).setInterference(new FileProfile("deltaiot/scenario_data/SNR1.txt", 0.0));
+		mote12.getLinkTo(mote3).setInterference(new FileProfile("deltaiot/scenario_data/SNR2.txt", 0.0));
 
 		// Add SNR equations new settings
-
 		mote2.getLinkTo(mote4).setSnrEquation(new SNREquation(0.0169, 7.4076));
 		mote3.getLinkTo(gateway).setSnrEquation(new SNREquation(0.4982, 1.2468));
 		mote4.getLinkTo(gateway).setSnrEquation(new SNREquation(0.8282, -8.1246));

@@ -7,7 +7,6 @@ import java.util.stream.Collectors;
 import deltaiot.client.Effector;
 import deltaiot.client.Probe;
 import deltaiot.client.SimulationClient;
-//import deltaiot.client.SimulationClient;
 import deltaiot.services.QoS;
 import mapek.FeedbackLoop;
 import mapek.SNREquation;
@@ -23,12 +22,16 @@ public class Main {
 
 	public void start() {
 		new Thread(() -> {
+			// Compile the list of SNREquations for all the links in the simulator
 			List<SNREquation> equations = new ArrayList<>();
+
+			// Firstly, assemble all the links in the simulator.
 			List<Link> links = simulator.getMotes().stream()
 				.map(Mote::getLinks)
 				.flatMap(List::stream)
 				.collect(Collectors.toList());
 
+			// Secondly, loop over all the links, and add their SNREquations to the overall list
 			for (Link link : links) {
 				equations.add(new SNREquation(link.getFrom().getId(),
 					link.getTo().getId(),

@@ -3,8 +3,6 @@ package deltaiot.client;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
-import javax.jws.WebMethod;
-import javax.jws.WebService;
 
 import deltaiot.DeltaIoTSimulator;
 import deltaiot.services.LinkSettings;

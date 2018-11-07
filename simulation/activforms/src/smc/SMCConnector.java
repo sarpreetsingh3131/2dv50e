@@ -38,6 +38,10 @@ public class SMCConnector {
 		TESTING("testing"), 
 		ACTIVFORM(""), 
 		COMPARISON("comparison"),
+		// The new mladjustment mode is similar to the comparison mode.
+		// The difference between the two is that mladjustment also checks for
+		// the adjustments made to the learners after online learning every cycle.
+		// This data is then send to the python server to be saved in an output file.
 		MLADJUSTMENT("mladjustment");
 
 		String val;
@@ -59,7 +63,10 @@ public class SMCConnector {
 	public enum TaskType {
 		CLASSIFICATION("classification"), 
 		REGRESSION("regression"), 
+		// None is used in case no learning task needs to be performed
+		// by the learners at the server side (e.g. when just saving data).
 		NONE("none");
+		
 		String val;
 
 		TaskType(String val) {
@@ -77,6 +84,7 @@ public class SMCConnector {
 	}
 
 	public SMCConnector() {
+		// Load the configurations specified in the properties file (mode and tasktype)
 		ConfigLoader configLoader = ConfigLoader.getInstance();
 		mode = configLoader.getRunMode();
 		taskType = configLoader.getTaskType();
@@ -121,7 +129,7 @@ public class SMCConnector {
 			cycles++;
 	}
 
-/**
+	/**
 	 * Helper function which adds the predictions of both learning models to their respective JSON arrays.
 	 * The predictions are made over the whole adaptation space.
 	 * @param classArray The JSON array which will hold the classification predictions.
@@ -143,7 +151,7 @@ public class SMCConnector {
 	 * FIXME remove later on, here for data analysis
 	 *
 	 * Similar execution as comparison, but also tracks the adjustments
-	 * made to the regression/classifications predictions after online learning.
+	 * made to the regression/classification predictions after online learning.
 	 * @param training Specifies whether the current cycle is still a training cycle.
 	 */
 	private void machineLearningAdjustmentInspection(boolean training) {
@@ -157,24 +165,26 @@ public class SMCConnector {
 
 		if (cycles == 1) {
 			// At the first cycle, no regression or classification output can be retrieved yet
+			// -> use -1 as dummy prediction values
 			IntStream.range(0, adaptationOptions.size()).forEach(i -> {
 				adjInspection.getJSONArray("regressionBefore").put(-1);
 				adjInspection.getJSONArray("classificationBefore").put(-1);
 			});
 		} else {
-			// If not at the first cycle, retrieve the results predicted before learning
+			// If not at the first cycle, retrieve the results predicted before online learning
 			addPredictionsToJSONArrays(adjInspection.getJSONArray("classificationBefore"),
 				adjInspection.getJSONArray("regressionBefore"));
 		}
 
 
-		// Check all the adaptation options
+		// Check all the adaptation options with activFORMS
 		for (AdaptationOption adaptationOption : adaptationOptions) {
 			smcChecker.checkCAO(adaptationOption.toModelString(), environment.toModelString(),
 				adaptationOption.verificationResults);
 			adjInspection.getJSONArray("packetLoss").put(adaptationOption.verificationResults.packetLoss);
 			adjInspection.getJSONArray("energyConsumption").put(adaptationOption.verificationResults.energyConsumption);
 		}
+
 
 		if (training) {
 			// If we are training, send the entire adaptation space to the learners and check what they have learned
@@ -187,6 +197,8 @@ public class SMCConnector {
 			// If we are testing, send the adjustments to the learning models and check their predictions again
 			List<AdaptationOption> classificationTrainOptions = new ArrayList<>();
 			List<AdaptationOption> regressionTrainOptions = new ArrayList<>();
+
+			// Parse the classification and regression results from the JSON responses.
 			final List<Integer> classificationResults = adjInspection.getJSONArray("classificationBefore")
 				.toList().stream()
 				.map(o -> Integer.parseInt(o.toString()))
@@ -196,7 +208,7 @@ public class SMCConnector {
 				.map(o -> Float.parseFloat(o.toString()))
 				.collect(Collectors.toList());
 
-			// Determine which adaptation options have to be sent back for the learning cycle
+			// Determine which adaptation options have to be sent back for the specific learners
 			for (int i = 0; i < adaptationOptions.size(); i++) {
 				if (classificationResults.get(i).equals(1)) {
 					classificationTrainOptions.add(adaptationOptions.get(i));
@@ -206,7 +218,7 @@ public class SMCConnector {
 				}
 			}
 
-			// In case the adaptation space of a prediction is 0, send all adaptations back
+			// In case the adaptation space of a prediction is 0, send all adaptations back for online learning
 			if (classificationResults.stream().noneMatch(o -> o == 1)) {
 				classificationTrainOptions = adaptationOptions;
 			}
@@ -214,12 +226,16 @@ public class SMCConnector {
 				regressionTrainOptions = adaptationOptions;
 			}
 
+			// Send the adaptation options specific to the learners back for online learning
 			send(classificationTrainOptions, TaskType.CLASSIFICATION, Mode.TRAINING);
 			send(regressionTrainOptions, TaskType.REGRESSION, Mode.TRAINING);
+
+			// Test the predictions of the learners again after online learning to track their adjustments
 			addPredictionsToJSONArrays(adjInspection.getJSONArray("classificationAfter"),
 				adjInspection.getJSONArray("regressionAfter"));
 		}
 
+		// Send the overall results to be saved on the server
 		send(adjInspection, TaskType.NONE, Mode.MLADJUSTMENT);
 	}
 
