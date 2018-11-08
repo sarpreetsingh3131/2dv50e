@@ -1,3 +1,7 @@
+/*
+ * This is the ActivFORMS model checker.
+ */
+
 package smc;
 
 import java.io.BufferedReader;
@@ -24,6 +28,8 @@ public class SMCChecker {
 			.toString();
 
 	SMCModelLoader modelLoader;
+
+	// The models send to the binary
 	List<SMCModel> models;
 
 	public SMCChecker(String configPath) {
@@ -42,6 +48,7 @@ public class SMCChecker {
 	}
 
 	/*
+	 * This is the same as the call function in the ExecuteCommand.java
 	 * Reference: http://www.mkyong.com/java/how-to-execute-shell-command-from-java/
 	 */
 	@SuppressWarnings("unused")
@@ -188,6 +195,9 @@ public class SMCChecker {
 		}
 	}
 
+
+	//TODO: VERY IMPORTANT FUNCTION
+	// so this should be the model checker
 	public void checkCAO(String adaptationOption, String environment, Qualities verificationResults) {
 
 		setInitialData(adaptationOption, environment, verificationResults);
@@ -196,6 +206,8 @@ public class SMCChecker {
 
 		for (SMCModel model : models) {
 			String command = getCommand(model.getPath(), model.alpha, model.epsilon);
+
+			// this immediatly also triggers the call() function
 			commands.add(new ExecuteCommand(command, model));
 		}
 		String[] values;
@@ -208,6 +220,8 @@ public class SMCChecker {
 		}
 
 		// collecting results
+
+		//TODO: add the latency model here somehow
 
 		for (ExecuteCommand command : commands) {
 
@@ -231,6 +245,9 @@ public class SMCChecker {
 		models = new LinkedList<>();
 		try {
 			for (SMCModel model : modelLoader.loadModels()) {
+
+				//TODO: would it be oke to just add here model.getKey().equals("LatencyWithoutPackets")? 
+				// plus the todo above
 				if (model.getKey().equals("packetLoss") || model.getKey().equals("energyConsumption")) {
 					String updatedModel = changeCAO(model.getModel(), cao, env);
 					Files.write(Paths.get(model.getPath()), updatedModel.getBytes(Charset.defaultCharset()));

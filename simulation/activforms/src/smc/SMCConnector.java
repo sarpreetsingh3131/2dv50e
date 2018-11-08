@@ -1,3 +1,11 @@
+/*
+* Predicts adaption options which fullfill goal(s).
+* This is called in the end of the analysis function
+* It connects the mapek loop to the model checker and the learner
+* Watch out, the goals are also hardcoded in the planning step.
+*/
+
+
 package smc;
 
 import java.util.ArrayList;
