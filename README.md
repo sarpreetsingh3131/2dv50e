@@ -47,7 +47,7 @@ This repository contains two main modules:
     
     2. `docker-compose up`
 
-    - This will start the feeback loop that will print out some data in each run. Below is the print format:
+    - This will start the feeback loop that will print out some data in each run. This data will be saved in `simulation/activforms/log/log.txt` file (you can view it live). Below is the print format of this data:
         
         - When **Mode = Testing, TaskType = Classification or Regrssion**:
             
