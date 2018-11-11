@@ -9,6 +9,7 @@ import deltaiot.services.QoS;
 import smc.SMCConnector;
 import util.ConfigLoader;
 import deltaiot.client.Probe;
+import smc.Goal;
 
 public class FeedbackLoop {
 
@@ -456,6 +457,10 @@ public class FeedbackLoop {
 
 		// For all options the smc and ml thought they would fullfill the goals
 		//TODO: here he selects the best option, has to be changed to my goals
+		// I have already made it independent from goals
+		// TODO: find how you can find the best one out of the adaption space
+		// Because your goals will be in 3D, maybe find the adaption 
+		// with the shortest distance/vector to (0,0,0)
 		for (int i = 0; i < verifiedOptions.size(); i++) {
 
 			//TODO: important changes have to be done here for more goals
@@ -463,8 +468,8 @@ public class FeedbackLoop {
 			// if the option satisfies the hardcoded packetloss goal, and
 			// the energy consumption is the best seen yet, change this to the 
 			// "best"option
-			if (Goals.satisfyGoalPacketLoss(verifiedOptions.get(i))
-					&& Goals.optimizationGoalEnergyCosnumption(bestAdaptationOption, verifiedOptions.get(i))) {
+			if (Goal.satisfyGoalPacketLoss(verifiedOptions.get(i))
+					&& Goal.optimizationGoalEnergyCosnumption(bestAdaptationOption, verifiedOptions.get(i))) {
 
 				bestAdaptationOption = verifiedOptions.get(i);
 			}
@@ -480,7 +485,7 @@ public class FeedbackLoop {
 			// If none is predicted to fullfill the goal, just take the one with the lowest energy consumption
 			// Bad. This should can be done in a smarter way, but there is no time.
 			for (int i = 0; i < verifiedOptions.size(); i++) {
-				if (Goals.optimizationGoalEnergyCosnumption(bestAdaptationOption, verifiedOptions.get(i))) {
+				if (Goal.optimizationGoalEnergyCosnumption(bestAdaptationOption, verifiedOptions.get(i))) {
 					bestAdaptationOption = verifiedOptions.get(i);
 				}
 			}

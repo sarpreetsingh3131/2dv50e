@@ -29,6 +29,12 @@ import mapek.Mote;
 import mapek.SNR;
 import mapek.TrafficProbability;
 import util.ConfigLoader;
+import java.io.IOException;
+import java.util.Properties;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStream;
+
 
 // Ik denk dat hij na iedere cycle print hoeveel adaption options er 
 // werden geselecteerd als die die voorspelt zijn om aan de goal te voldoen
@@ -49,6 +55,8 @@ public class SMCConnector {
 
 
 	List<AdaptationOption> adaptationOptions;
+
+	List<Goal> goals;
 
 	// De ruis en packets op een netwerk op een moment
 	Environment environment;
@@ -652,4 +660,71 @@ public class SMCConnector {
 			return null;
 		}
 	}
+
+	// reads the goals from the properties file and returns a list of them as Goal objects
+	static List<Goal> initGoals(String configPath)
+	{
+
+		Properties prop = new Properties();
+		InputStream input = null;
+		List<Goal> rgoals = new LinkedList<>();
+
+		try {
+
+			// TODO adjust this part to use the ConfigLoader class
+			File configFile = new File(configPath);
+			if (!configFile.exists()) {
+				throw new RuntimeException("SMCConfig.properties file not found at following path:" + configPath);
+			}
+
+
+			input = new FileInputStream(configPath);
+
+			// load a properties file
+			prop.load(input);
+
+			// get the property value
+			// load the requirements, aka the models to be predicted by the smc
+			String targets[] = prop.getProperty("targets").split(",");
+			String operators[] = prop.getProperty("operators").split(",");
+			String thressholds[] = prop.getProperty("tressholds").split(",");
+
+			double numThress[] = new double[thressholds.length];
+			for(int i = 0; i < thressholds.length; i++)
+			{
+				
+				numThress[i] = Double.parseDouble(thressholds[i].trim());
+
+			}
+
+			
+			for(int i = 0; i < targets.length; i++)
+			{
+
+				rgoals.add(new Goal( targets[i].trim(),
+				operators[i].trim(), numThress[i]));
+
+			}
+
+			return rgoals;
+
+		}
+		catch (IOException ex) {
+			ex.printStackTrace();
+			return null;
+		}
+		finally {
+			if (input != null) {
+				try {
+					input.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+		
+		}
+
+	}
 }
+
+
