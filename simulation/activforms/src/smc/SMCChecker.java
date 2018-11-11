@@ -280,8 +280,10 @@ public class SMCChecker {
 				// updates the model to include 
 				// some information about the adaption option and the environmetn (noise and load).
 				// I do not know why it is added or what.
-				String updatedModel = changeCAO(model.getModel(), cao, env);
-				Files.write(Paths.get(model.getPath()), updatedModel.getBytes(Charset.defaultCharset()));
+				if (model.getKey().equals("packetLoss") || model.getKey().equals("energyConsumption") || model.getKey().equals("latency")) {
+					String updatedModel = changeCAO(model.getModel(), cao, env);
+					Files.write(Paths.get(model.getPath()), updatedModel.getBytes(Charset.defaultCharset()));
+				}
 				
 				// add the updated form of the model to the models
 				models.add(model);

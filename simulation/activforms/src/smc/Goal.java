@@ -15,9 +15,9 @@ public class Goal {
     {
         this.target = target;
 
-        if (operator != "<" && operator != ">" && operator != "<=" && operator != ">=" && operator != "==" && operator != "!=")
+        if ( !("<".equals(operator) || ">".equals(operator) || "<=".equals(operator) || ">=".equals(operator) || "==".equals(operator) || "!=".equals(operator)))
         {
-            throw new IllegalArgumentException("The operator can only be < or > or <= or >= or == or != .");
+            throw new IllegalArgumentException("The operator can only be < or > or <= or >= or == or != , not "+operator+".");
         }
         this.operator = operator;
         this.tresshold = tresshold;
@@ -43,26 +43,26 @@ public class Goal {
         String op = getOperator();
         double tress = getTresshold();
 
-        if(op == "<")
+        if("<".equals(op))
         {
             return value < tress;
         }
-        else if(op == ">")
+        else if(">".equals(op))
         {
             return value > tress;
         }
-        else if(op == "<="){
+        else if("<=".equals(op)){
             return value <= tress;
         }
-        else if(op == ">=")
+        else if(">=".equals(op))
         {
             return value >= tress;
         }
-        else if(op == "==")
+        else if("==".equals(op))
         {
             return value == tress;
         }
-        else if(op == "!=")
+        else if("!=".equals(op))
         {
             return value != tress;
         }

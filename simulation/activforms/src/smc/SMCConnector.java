@@ -786,7 +786,7 @@ public class SMCConnector {
 			// load the requirements, aka the models to be predicted by the smc
 			String targets[] = prop.getProperty("targets").split(",");
 			String operators[] = prop.getProperty("operators").split(",");
-			String thressholds[] = prop.getProperty("tressholds").split(",");
+			String thressholds[] = prop.getProperty("thressholds").split(",");
 
 			double numThress[] = new double[thressholds.length];
 			for(int i = 0; i < thressholds.length; i++)
