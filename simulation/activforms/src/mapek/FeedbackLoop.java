@@ -10,6 +10,8 @@ import smc.SMCConnector;
 import util.ConfigLoader;
 import deltaiot.client.Probe;
 import smc.Goal;
+import smc.SMCChecker;
+import smc.SMCConnector;
 
 public class FeedbackLoop {
 
@@ -49,6 +51,9 @@ public class FeedbackLoop {
 
 	// De connector die met de machine learner connecteerd.
 	SMCConnector smcConnector = new SMCConnector();
+
+
+	List<Goal> goals = SMCConnector.initGoals(SMCChecker.DEFAULT_CONFIG_FILE_PATH);
 
 	/*
 	* Thressholds for when you want to addapt/change the network

@@ -38,7 +38,7 @@ public class Goal {
         return this.tresshold;
     }
 
-    public boolean evaluate(float value) throws IllegalArgumentException
+    public boolean evaluate(double value) throws IllegalArgumentException
     {
         String op = getOperator();
         double tress = getTresshold();

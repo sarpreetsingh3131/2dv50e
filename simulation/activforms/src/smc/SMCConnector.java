@@ -34,6 +34,7 @@ import java.util.Properties;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
+import smc.SMCChecker;
 
 
 // Ik denk dat hij na iedere cycle print hoeveel adaption options er 
@@ -56,13 +57,14 @@ public class SMCConnector {
 
 	List<AdaptationOption> adaptationOptions;
 
-	List<Goal> goals;
 
 	// De ruis en packets op een netwerk op een moment
 	Environment environment;
 
 	//Modelchecker denk ik
 	SMCChecker smcChecker = new SMCChecker();
+
+	List<Goal> goals;
 
 	List<AdaptationOption> verifiedOptions;
 
@@ -107,6 +109,10 @@ public class SMCConnector {
 	public enum TaskType {
 		CLASSIFICATION("classification"), 
 		REGRESSION("regression"), 
+
+		// I will use this for multiclass classification
+		MULTICLASS("multiclass"),
+		
 		// None is used in case no learning task needs to be performed
 		// by the learners at the server side (e.g. when just saving data).
 		NONE("none");
@@ -134,6 +140,7 @@ public class SMCConnector {
 		ConfigLoader configLoader = ConfigLoader.getInstance();
 		mode = configLoader.getRunMode();
 		taskType = configLoader.getTaskType();
+		goals = initGoals(SMCChecker.DEFAULT_CONFIG_FILE_PATH);
 	}
 
 
@@ -433,6 +440,7 @@ public class SMCConnector {
 		// System.out.print(";" + space);
 
 		//Je zend de data en type door om te training
+		// adaptionsoptions is a list, so this gets parsed.
 		send(adaptationOptions, taskType, Mode.TRAINING);
 	}
 
@@ -455,13 +463,34 @@ public class SMCConnector {
 		ArrayList<Float> predictions = new ArrayList<>();
 		List<AdaptationOption> qosEstimates = new LinkedList<>();
 
+		// for counting 8 classes in multiclass
+		int[] mclass = {0, 0, 0, 0, 0, 0, 0, 0};
+
 		// Blijkbaar krijg je dan een json terug met een prediction key die een lijst teruggeeft
 		// Hieronder zet je die lijst om naar een java lijst
 		JSONArray arr = response.getJSONArray("predictions");
 		for (int i = 0; i < arr.length(); i++) {
+			if(taskType == TaskType.MULTICLASS)
+			{
+				mclass[Integer.parseInt(arr.get(i).toString())]++;
+			}
 			predictions.add(Float.parseFloat(arr.get(i).toString()));
 		}
 
+		int nbCorrect = 0;
+		// Here I set nbCorrect to the highest ammount of 
+		// goals predicted correct for every option in the adaption space
+		if (taskType == TaskType.MULTICLASS)
+		{
+			// are there adaptions which fullfill all goals?
+			if(mclass[7] > 0) nbCorrect = 3;
+			// are there adaptions with 2 goals fullfilled?
+			else if(mclass[6] + mclass[5] + mclass[4] > 0) nbCorrect = 2;
+			// 1 correct
+			else if(mclass[3] + mclass[2] + mclass[1] > 0) nbCorrect = 1;
+			// 0
+			else nbCorrect = 0;
+		}
 
 		// Zet de incrmentloper op 0 als init
 		int i = 0;
@@ -471,15 +500,57 @@ public class SMCConnector {
 			
 			// Als de machine learner adaptation options voorspelt die aan de
 			// goals voldoen, doe:
+			// if nbcorrect == 0 , this will also be 0.
 			if (adaptationSpace != 0) {
+
+				boolean isPredictedCorrect = false;
 
 				//TODO: als je hier een andere classtype toevoegd zal dit niet meer werken.
 				//Hou dat in het achterhoofd
 				// Dat in de if geeft True of False terug door die predict.get
 				// En dat .. ? .. :.. zorgt gewoon dat het
 				// voor classificatie 1.0 voorspeld of minder dan 10 voor regressie
-				if (taskType == TaskType.CLASSIFICATION ? predictions.get(i) == 1.0 : predictions.get(i) < 10.0) {
-					
+				//if (taskType == TaskType.CLASSIFICATION ? predictions.get(i) == 1.0 : predictions.get(i) < 10.0) {
+				//	
+				//	//Indien voorspelt dat hij aan de goals voldoet zal de modelchecker hem draaien
+				//	smcChecker.checkCAO(adaptationOption.toModelString(), environment.toModelString(),
+				//			adaptationOption.verificationResults);
+
+					// options terug toevoegen om door te zenden naar de learner om te online learnen
+					// Hij learned dus de predicties van de SMC en niet wat er effectief gebeurde
+				//	qosEstimates.add(adaptationOption);
+				//}
+
+				if (taskType == TaskType.CLASSIFICATION)
+				{
+					if(predictions.get(i) == 1.0) isPredictedCorrect = true;
+				}
+				else if(taskType == TaskType.REGRESSION)
+				{
+					// I will work with another regression tasktype
+					if(predictions.get(i) < 10) isPredictedCorrect = true;
+				}
+				else if(taskType == TaskType.MULTICLASS)
+				{
+					double pred = predictions.get(i);
+
+					if( nbCorrect == 3)
+					{
+						if(pred == 7.0) isPredictedCorrect = true;
+					}
+					else if( nbCorrect == 2)
+					{
+						if(pred == 6.0 || pred == 5.0 || pred == 4.0) isPredictedCorrect = true;
+					}
+					else
+					{
+						if(pred == 3.0 || pred == 2.0 || pred == 1.0) isPredictedCorrect = true;
+					}
+
+				}
+
+				if(isPredictedCorrect)
+				{
 					//Indien voorspelt dat hij aan de goals voldoet zal de modelchecker hem draaien
 					smcChecker.checkCAO(adaptationOption.toModelString(), environment.toModelString(),
 							adaptationOption.verificationResults);
@@ -488,8 +559,9 @@ public class SMCConnector {
 					// Hij learned dus de predicties van de SMC en niet wat er effectief gebeurde
 					qosEstimates.add(adaptationOption);
 
+				}
 				// Als het voorspeld werd dat er niet aan de goals voldaan is
-				} else {
+				else {
 
 					// Ik denk dat dit een manier is om er voor te zorgen dat de model checker dit zeker niet selecteerd
 					adaptationOption.verificationResults.packetLoss = 100.0;
@@ -552,7 +624,34 @@ public class SMCConnector {
 			// TODO: pas dit aan naar jou klassen
 			if (taskType == TaskType.CLASSIFICATION) {
 				target.put(adaptationOption.verificationResults.packetLoss < 10.0 ? 1 : 0);
-			} else {
+			} 
+			// makes corresponding classes for multiclass verification
+			// There are 8 possible combinations for the goals
+			// The succes of a goal represent one bit in 
+			// 3 bits (a power of 2).
+			// So all possible combination can be represented in 3 bits.
+			// So a  number from 0-7 = class.
+			else if(taskType == TaskType.MULTICLASS)
+			{
+				int APClass = 0;
+
+				//What I do here is dirty
+				// but welcome to this project
+				Goal pl = goals.get(1), en = goals.get(1), la = goals.get(1);
+				for(Goal g : goals)
+				{
+					if(g.getTarget() == "packetLoss") pl = g;
+					else if(g.getTarget() == "latency") la = g;
+					else en = g;
+				}
+
+				if( pl.evaluate(adaptationOption.verificationResults.packetLoss)) APClass += 1;
+				if( en.evaluate(adaptationOption.verificationResults.energyConsumption)) APClass += 2;
+				if( la.evaluate(adaptationOption.verificationResults.latency)) APClass += 4;
+
+				target.put(APClass);
+			}
+			else {
 				target.put((int) adaptationOption.verificationResults.packetLoss);
 			}
 
@@ -662,7 +761,7 @@ public class SMCConnector {
 	}
 
 	// reads the goals from the properties file and returns a list of them as Goal objects
-	static List<Goal> initGoals(String configPath)
+	public static List<Goal> initGoals(String configPath)
 	{
 
 		Properties prop = new Properties();
