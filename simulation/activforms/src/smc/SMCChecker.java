@@ -163,6 +163,11 @@ public class SMCChecker {
 		return value;
 	}
 
+	// // (model.getModel(), cao, env)
+	// the getModel is the file of the model in the models folder,
+	// read in as bytes to a string
+	// so this should not change anything to the key of the model
+	// which is important for me later
 	static String changeCAO(String file, String cao, String env) {
 
 		String startText = "//&lt;Configuration&gt;";
@@ -172,6 +177,7 @@ public class SMCChecker {
 		return file;
 	}
 
+	
 	static String changeCAO(String file, @SuppressWarnings("rawtypes") HashMap cao) {
 
 		String startText = "//&lt;Configuration&amp;gt;\n";
@@ -200,16 +206,20 @@ public class SMCChecker {
 	// so this should be the model checker
 	public void checkCAO(String adaptationOption, String environment, Qualities verificationResults) {
 
+		// loads and updates the models and their values specified in the SMCConfig.properties
 		setInitialData(adaptationOption, environment, verificationResults);
 
 		LinkedList<ExecuteCommand> commands = new LinkedList<ExecuteCommand>();
 
+		// for alll models, exectue them
 		for (SMCModel model : models) {
 			String command = getCommand(model.getPath(), model.alpha, model.epsilon);
 
 			// this immediatly also triggers the call() function
 			commands.add(new ExecuteCommand(command, model));
 		}
+
+
 		String[] values;
 		double value = 0;
 
@@ -222,14 +232,29 @@ public class SMCChecker {
 		// collecting results
 
 		//TODO: add the latency model here somehow
+		// the commad for predicting the latency, pl and energy is already in here
+		// so should be okay
 
+		// TODO: the models are hardcoded here. But I dont have enough time.
 		for (ExecuteCommand command : commands) {
 
 			values = command.getResult().split("Verifying formula ");
 			value = 0;
 			if (command.getModel().getType() == ModelType.SIMULATION) {
-				value = getSimulatedValue(values[1]);
-				verificationResults.energyConsumption = value;
+
+				// latency is a simulation, so if the command was for latency:
+				if(command.getModel().getKey() == "latency")
+				{
+					value = getSimulatedValue(values[1]);
+					verificationResults.latency = value;
+				}
+				// the only other command will be for energyconsumption
+				// so an else will suffice
+				// I know it's dirty
+				else {
+					value = getSimulatedValue(values[1]);
+					verificationResults.energyConsumption = value;
+				}
 			} else if (command.getModel().getType() == ModelType.PROBABILITY) {
 				value = getProbability(values[1]);
 				verificationResults.packetLoss = value * 100;
@@ -242,17 +267,24 @@ public class SMCChecker {
 	}
 
 	public void setInitialData(String cao, String env, Qualities verificationResults) {
+		// cao is the adaption option
+
+
 		models = new LinkedList<>();
 		try {
-			for (SMCModel model : modelLoader.loadModels()) {
 
-				//TODO: would it be oke to just add here model.getKey().equals("LatencyWithoutPackets")? 
-				// plus the todo above
-				if (model.getKey().equals("packetLoss") || model.getKey().equals("energyConsumption")) {
-					String updatedModel = changeCAO(model.getModel(), cao, env);
-					Files.write(Paths.get(model.getPath()), updatedModel.getBytes(Charset.defaultCharset()));
-					models.add(model);
-				}
+			List<SMCModel> modelsLoadedFromProperties =  modelLoader.loadModels();
+
+			for (SMCModel model : modelsLoadedFromProperties) {
+
+				// updates the model to include 
+				// some information about the adaption option and the environmetn (noise and load).
+				// I do not know why it is added or what.
+				String updatedModel = changeCAO(model.getModel(), cao, env);
+				Files.write(Paths.get(model.getPath()), updatedModel.getBytes(Charset.defaultCharset()));
+				
+				// add the updated form of the model to the models
+				models.add(model);
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
