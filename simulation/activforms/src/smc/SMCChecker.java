@@ -21,8 +21,12 @@ import mapek.Qualities;
 public class SMCChecker {
 
 	String configFilePath;
+
+	// Linux or mac
+	// THis program does not work for  windows because of problems with spaces in path and .exe at the end and....
 	public static String command = Paths
 			.get(System.getProperty("user.dir"), "uppaal-verifyta", "verifyta -a %f -E %f -u %s").toString();
+
 
 	public static String DEFAULT_CONFIG_FILE_PATH = Paths.get(System.getProperty("user.dir"), "SMCConfig.properties")
 			.toString();
