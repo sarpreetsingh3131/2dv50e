@@ -21,6 +21,8 @@ def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, 
         decimals    - Optional  : positive number of decimals in percent complete (Int)
         length      - Optional  : character length of bar (Int)
         fill        - Optional  : bar fill character (Str)
+
+    Reference: https://stackoverflow.com/a/34325723
     """
     percent = 100 * (iteration / float(total))
     percentStr = f'{percent:.1f}'
@@ -35,20 +37,12 @@ def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, 
 
 class AdaptationResult:
     def __init__(self, ec, pl, clB, reB, clA, reA):
-        '''
-            ec = Energy consumption (as evaluated by uppaal)
-            pl = packet loss (as evaluated by uppaal)
-            clB = classification prediction before online training adjustment
-            clA = classification prediction after online training adjustment
-            reB = regression prediction before online training adjustment
-            reA = regression prediction after online training adjustment
-        '''
-        self.ec = ec
-        self.pl = pl
-        self.clB = clB
-        self.reB = reB
-        self.clA = clA
-        self.reA = reA
+        self.ec = ec    # ec = Energy consumption (as evaluated by uppaal)
+        self.pl = pl    # pl = packet loss (as evaluated by uppaal)
+        self.clB = clB  # clB = classification prediction before online training adjustment
+        self.reB = reB  # clA = classification prediction after online training adjustment
+        self.clA = clA  # reB = regression prediction before online training adjustment
+        self.reA = reA  # reA = regression prediction after online training adjustment
 
     # Returns a tuple about the correctness (before online learning) of
     # the prediction from classification and regression respectively
@@ -61,6 +55,8 @@ class AdaptationResult:
     def isPredictedWrong(self):
         tmp = self.isPredictedRight()
         return (not tmp[0], not tmp[1])
+
+
 
 class AdaptationResults:
     def __init__(self, adaptationIndex):
@@ -123,7 +119,11 @@ class AdaptationResults:
 
 def analyseUncertainties():
     pathFile = os.path.join('machine_learner', 'collected_data', 'overall_adaptation_options.json')
-    data = json.load(open(pathFile))
+    try:
+        data = json.load(open(pathFile))
+    except Exception:
+        print('Make sure this script is run from the machine_learner directory (same directory as \'manage.py\')')
+        sys.exit(1)
 
     # # Load the adaptation options once at startup
     adapResults = []
@@ -164,28 +164,35 @@ def analyseUncertainties():
     print()
 
 
+    # ===================
+    # Plotting of results
+    # ===================
+
+    # Plots for the 5 adaptation options with the worst scatter rate
     for i in range(5):
         pass
-        plotRegressionPredictions(worstScatterRate[i], minEC, maxEC, f'worstScatter{i+1}')
+        # plotRegressionPredictions(worstScatterRate[i], minEC, maxEC, f'worstScatter{i+1}')
         plotLearningEvolution(worstScatterRate[i], minEC, maxEC, f'worstScatter{i+1}')
-        plotEffectUncertainties(worstScatterRate[i], f'worstScatter{i+1}')
-        plotLearningEffectOneCycle(worstScatterRate[i], minEC, maxEC, f'worstScatter{i+1}')
-        plotLearningEffect2Cycles(worstScatterRate[i], minEC, maxEC, f'worstScatter{i+1}')
+        # plotEffectUncertainties(worstScatterRate[i], f'worstScatter{i+1}')
+        # plotLearningEffectOneCycle(worstScatterRate[i], minEC, maxEC, f'worstScatter{i+1}')
+        # plotLearningEffect2Cycles(worstScatterRate[i], minEC, maxEC, f'worstScatter{i+1}')
         printProgressBar(i+1, 5, prefix="Progress worst scatter rates:", suffix='Complete', length=30)
 
 
+    # Plots for the 20 adaptation options with the worst predictions
     for i in range(20):
         # print(f"Error rate configuration {i+1}: {worstPredictionRate[i].getAmtOfWrongPredictions()}")
         plotLearningEvolution(worstPredictionRate[i], minEC, maxEC, f'worstPrediction{i+1}')
         # plotEffectUncertainties(worstPredictionRate[i], f'worstPrediction{i+1}')
         printProgressBar(i+1, 20, prefix="Progress worst prediction graphs:", suffix='Complete', length=30)
 
-    # AdapOptions which have at most 100 samples more on either side of the cutoff line in comparison to the other side
+    # Plots for adaptationOptions which have at most 100 samples more on either side of the cutoff line in comparison to the other side
     filteredOptions = list(filter(lambda x: x.getScatterRate() <= 100, adapResults))
     for i in range(len(filteredOptions)):
         pass
         # plotLearningEvolution(filteredOptions[i], minEC, maxEC, f'filtered{i+1}')
     
+    # Plots for all adaptation options
     # for i in range(len(adapResults)):
     #     plotLearningEvolution(adapResults[i], minEC, maxEC, f'all{i+1}')
     #     printProgressBar(i+1, len(adapResults), prefix="Progress all graphs:", suffix='Complete', length=30)
@@ -217,7 +224,7 @@ def plotLearningEffectOneCycle(item, minEC, maxEC, graphName):
     outputDir = createOrGetDir('LearningEffect1Cycle')
     plt.savefig(os.path.join(outputDir, f'effectLearning1Cycle_{graphName}.png'), bbox_inches='tight')
     plt.close()
-    # plt.show()
+
 
 
 def plotLearningEffect2Cycles(item, minEC, maxEC, graphName):
@@ -269,9 +276,8 @@ def plotLearningEffect2Cycles(item, minEC, maxEC, graphName):
     
     outputDir = createOrGetDir('LearningEffect2Cycles')
     plt.savefig(os.path.join(outputDir, f'LearningEffect2Cycles_{graphName}.png'), bbox_inches='tight')
-
-    # plt.show()
     plt.close()
+
 
 
 def plotEffectUncertainties(item, graphName):
@@ -309,8 +315,6 @@ def plotEffectUncertainties(item, graphName):
     outputDir = createOrGetDir('EffectUncertainties')
     plt.savefig(os.path.join(outputDir, f'EffectUncertainties_{graphName}.png'), bbox_inches='tight')
     plt.close()
-    # plt.show()
-
 
 
         
@@ -370,7 +374,7 @@ def plotRegressionPredictions(item, minEC, maxEC, graphName):
     outputDir = createOrGetDir('RegressionPredictions')
     plt.savefig(os.path.join(outputDir, f'RegressionPredictions_{graphName}.png'), bbox_inches='tight')
     plt.close()
-    # plt.show()
+
 
 
 def plotLearningEvolution(item, minEC, maxEC, graphName):
@@ -384,8 +388,8 @@ def plotLearningEvolution(item, minEC, maxEC, graphName):
     fig = initialiseFigure('Effect of online learning adjustments (1 configuration, regression)')
 
     step = int(len(item) / 3)
-    for i in range(3):
-        cutOffA, cutOffB = i * step, min((i+1) * step, len(item))
+    for i in range(6):
+        cutOffA, cutOffB = (i%3) * step, min(((i%3)+1) * step, len(item))
         subPoints = item[cutOffA : cutOffB]
         ax = plt.subplot(2, 3, i+1)
         if i == 1:
@@ -399,10 +403,12 @@ def plotLearningEvolution(item, minEC, maxEC, graphName):
                     mpatches.Patch(color='xkcd:orange', label='Negative prediction from regressor')
                 ]
             )
-        ax.set_title(f'Cycles [{cutOffA}:{cutOffB}] before online learning')
+        stageLearning = 'before' if i < 3 else 'after'
+        ax.set_title(f'Cycles [{cutOffA}:{cutOffB}] {stageLearning} online learning')
 
         for point in subPoints:
-            color = 'xkcd:orange' if point.reB >= 10 else 'xkcd:green'
+            valToComp = point.reB if i < 3 else point.reA
+            color = 'xkcd:orange' if valToComp >= 10 else 'xkcd:green'
             plt.scatter(point.pl, point.ec, color=color, s=20)
 
         _, _, minY, maxY = plt.axis()
@@ -410,74 +416,35 @@ def plotLearningEvolution(item, minEC, maxEC, graphName):
         plt.xlabel('Packet Loss (%)')
         plt.ylabel('Energy Consumption (coulomb)')
         adjustXAxis((minPL, maxPL))
-
-
-    for i in range(3):
-        cutOffA, cutOffB = i * step, min((i+1) * step, len(item))
-        subPoints = item[cutOffA : cutOffB]
-        ax = plt.subplot(2, 3, i+4)
-        ax.set_title(f'Cycles [{cutOffA}:{cutOffB}] after online learning')
-
-        for point in subPoints:
-            color = 'xkcd:orange' if point.reA >= 10 else 'xkcd:green'
-            plt.scatter(point.pl, point.ec, color=color, s=20)
-
-        _, _, minY, maxY = plt.axis()
-        plt.plot([10, 10], [minY, maxY], color='red')
-        plt.xlabel('Packet Loss (%)')
-        plt.ylabel('Energy Consumption (coulomb)')
-        adjustXAxis((minPL, maxPL))
-
 
     plt.savefig(os.path.join(outputDir, f'LearningEvolution_regression_{graphName}.png'), bbox_inches='tight')
     plt.close()
 
 
-    # Classification part
+    # Classification part, similar to regression
     fig = initialiseFigure('Effect of online learning adjustments (1 configuration, classification)')
     step = int(len(item) / 3)
-    for i in range(3):
-
-        cutOffA, cutOffB = i * step, min((i+1) * step, len(item))
+    for i in range(6):
+        cutOffA, cutOffB = (i%3) * step, min(((i%3)+1) * step, len(item))
         subPoints = item[cutOffA : cutOffB]
         ax = plt.subplot(2, 3, i+1)
         if i == 1:
             plt.legend(
-                # bbox_to_anchor=(0., 1.1, 1., .102),
                 bbox_to_anchor=(-0.5, 1.08, 2., .122),
-                # loc=9,
                 ncol=2,
                 mode='expand',
                 fontsize='large',
-                # borderaxespad=-2.,
                 handles=[
                     mpatches.Patch(color='xkcd:blue', label='Positive prediction from classifier'),
                     mpatches.Patch(color='xkcd:orange', label='Negative prediction from classifier')
                 ]
             )
-        ax.set_title(f'Cycles [{cutOffA}:{cutOffB}] before online learning')
+        stageLearning = 'before' if i < 3 else 'after'
+        ax.set_title(f'Cycles [{cutOffA}:{cutOffB}] {stageLearning} online learning')
 
         for point in subPoints:
-            color = 'xkcd:orange' if point.clB == 0 else 'xkcd:blue'
-            plt.scatter(point.pl, point.ec, color=color, s=20)
-            # plt.scatter(point.pl, point.ec, color=color, s=20, label='Predicted by classifier' if point.clB else '')
-
-        _, _, minY, maxY = plt.axis()
-        plt.plot([10, 10], [minY, maxY], color='red')
-        plt.xlabel('Packet Loss (%)')
-        plt.ylabel('Energy Consumption (coulomb)')
-        adjustXAxis((minPL, maxPL))
-
-
-    for i in range(3):
-        cutOffA, cutOffB = i * step, min((i+1) * step, len(item))
-        subPoints = item[cutOffA : cutOffB]
-        ax = plt.subplot(2, 3, i+4)
-        ax.set_title(f'Cycles [{cutOffA}:{cutOffB}] after online learning')
-
-        # print(f'Amount of samples accepted in subPoints: {sum(1 if a.clA == 1 else 0 for a in subPoints)}')
-        for point in subPoints:
-            color = 'xkcd:orange' if point.clA == 0 else 'xkcd:blue'
+            valToComp = point.clB if i < 3 else point.clA
+            color = 'xkcd:orange' if valToComp == 0 else 'xkcd:blue'
             plt.scatter(point.pl, point.ec, color=color, s=20)
 
         _, _, minY, maxY = plt.axis()
@@ -488,6 +455,7 @@ def plotLearningEvolution(item, minEC, maxEC, graphName):
 
     plt.savefig(os.path.join(outputDir, f'LearningEvolution_classification_{graphName}.png'), bbox_inches='tight')
     plt.close()
+
 
 
 def getMinMax(arr1, arr2):
@@ -537,6 +505,9 @@ def initialiseFigure(title, fontsize=18, res=(1920, 1080), dpi=96):
 
 
 if __name__ == '__main__':
+    # NOTE: this program removes all files from the provided/default folder recursively
+    #       -> be careful when providing a custom directory
+    
     if len(sys.argv) != 2:
         print("Output directory not provided as commandline argument, using './GraphOutputs' by default")
         PLOT_OUTPUT_DIR = os.path.join('GraphOutputs')
