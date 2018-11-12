@@ -9,28 +9,22 @@ from sklearn.preprocessing import MaxAbsScaler
 from sklearn.linear_model import SGDRegressor
 from machine_learner.utils import repository
 
-#DIR_PATH = 'machine_learner/trained_models/regression/'
-# Made the above assignment platform independent
+# Path to the directory where the models are saved
 DIR_PATH = os.path.join('machine_learner', 'trained_models', 'regression')
 
 
 
-# This file has the exact same problems as classification
-# Fix it the same as here.
-
 # Als adapt to multiple goals, by different models
 # or maybe there is some other type of multiple goal model you can find
 # you would have to auto model select for every model
-def training(features, target):
+def training(features, target, cycle):
     try:
-
-        # same problem as with classification
-        # loads the existing model
-        model = repository.get(SGDRegressor(
-            loss='epsilon_insensitive', penalty='l2'), SGDRegressor.__name__, DIR_PATH)
-
-        scaler = repository.get(
-            MaxAbsScaler(), MaxAbsScaler.__name__, DIR_PATH)
+        if cycle != 1:
+            model = repository.get(SGDRegressor.__name__, DIR_PATH)
+            scaler = repository.get(MaxAbsScaler.__name__, DIR_PATH)
+        else:
+            model = SGDRegressor(loss='epsilon_insensitive', penalty='l2')
+            scaler = MaxAbsScaler()
 
         scaler.partial_fit(features)
 
@@ -49,14 +43,9 @@ def training(features, target):
 
 
 def testing(features):
-
     try:
-
-        model = repository.get(SGDRegressor(
-            loss='epsilon_insensitive', penalty='l2'), SGDRegressor.__name__, DIR_PATH)
-
-        scaler = repository.get(
-            MaxAbsScaler(), MaxAbsScaler.__name__, DIR_PATH)
+        model = repository.get(SGDRegressor.__name__, DIR_PATH)
+        scaler = repository.get(MaxAbsScaler.__name__, DIR_PATH)
 
         features = scaler.transform(features)
 

@@ -1,18 +1,18 @@
 """This file can load and save learning models from/to the hard drive."""
 import traceback
 import os
+import sys
 from sklearn.externals import joblib
 
 
-def get(model, model_name, dir_path):
+def get(model_name, dir_path):
     try:
         pathFile = os.path.join(dir_path, model_name + '.pkl')
-        # If the file already exists, load the model
         if os.path.isfile(pathFile):
-            model = joblib.load(pathFile)
+            return joblib.load(pathFile)
     except Exception as e:
         traceback.print_tb(e.__traceback__)
-    return model
+        sys.exit(1)
 
 
 def create(model, model_name, dir_path):

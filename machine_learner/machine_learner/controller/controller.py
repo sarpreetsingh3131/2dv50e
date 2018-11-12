@@ -30,11 +30,10 @@ def training_testing(request):
             # Do the same to get the value of mode
             mode = parse_qs(urlparse(path).query)['mode'][0]
 
-            cycle = parse_qs(urlparse(path).query)['cycle'][0]
+            cycle = int(parse_qs(urlparse(path).query)['cycle'][0])
 
             # Clear the models/output at the first adaptation cycle
-            # TODO: what is this? What are those modes? Is this only to remove the models?
-            if int(cycle) == 1:
+            if cycle == 1:
                 if (mode == 'comparison') or (mode == 'mladjustment'):
                     # Remove all the collected data files before saving the first time
                     # The collected data files in question are .txt and .json files
@@ -99,7 +98,7 @@ def training_testing(request):
                 
                 if mode == 'training':
                     response = classification.training(
-                        dataset['features'], dataset['target'])
+                        dataset['features'], dataset['target'], cycle)
 
                 elif mode == 'testing':
                     response = classification.testing(dataset['features'])
@@ -109,7 +108,7 @@ def training_testing(request):
 
                 if mode == 'training':
                     response = regression.training(
-                        dataset['features'], dataset['target'])
+                        dataset['features'], dataset['target'], cycle)
 
                 elif mode == 'testing':
                     response = regression.testing(dataset['features'])
