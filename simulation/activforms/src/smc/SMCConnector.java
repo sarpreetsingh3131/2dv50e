@@ -502,9 +502,11 @@ public class SMCConnector {
 	//
 	void activform() {
 		System.out.print(";" + adaptationOptions.size());
+		//System.out.println(environment);
 		for (AdaptationOption adaptationOption : adaptationOptions) {
 			smcChecker.checkCAO(adaptationOption.toModelString(), environment.toModelString(),
 					adaptationOption.verificationResults);
+			//System.out.println(adaptationOption);
 		}
 	}
 
