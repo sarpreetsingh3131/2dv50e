@@ -703,6 +703,7 @@ public class SMCConnector {
 				qos = new JSONObject();
 				qos.put("packetLoss", adaptationOption.verificationResults.packetLoss);
 				qos.put("latency", adaptationOption.verificationResults.latency);
+				qos.put("energyConsumption", adaptationOption.verificationResults.energyConsumption);
 				targets.put(qos);
 
 				
