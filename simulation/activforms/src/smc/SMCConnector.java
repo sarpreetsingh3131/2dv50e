@@ -14,6 +14,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import com.google.gson.Gson;
+
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
@@ -21,6 +23,13 @@ import org.apache.http.impl.client.BasicResponseHandler;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.json.JSONArray;
 import org.json.JSONObject;
+
+import java.io.FileWriter;
+import java.io.PrintWriter;
+import java.io.FileOutputStream;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Paths;
+import java.io.OutputStreamWriter;
 
 import mapek.AdaptationOption;
 import mapek.Environment;
@@ -74,11 +83,16 @@ public class SMCConnector {
 	Mode mode;
 	TaskType taskType;
 
+	// for collecting raw data with the activform mode
+	JSONObject rawData;
+	JSONArray features;
+	JSONArray targets;
+
 	//Gewoon de modes van hem op een string zetten
 	public enum Mode {
 		TRAINING("training"), 
 		TESTING("testing"), 
-		ACTIVFORM(""), 
+		ACTIVFORM("activform"), 
 		COMPARISON("comparison"),
 		// The new mladjustment mode is similar to the comparison mode.
 		// The difference between the two is that mladjustment also checks for
@@ -141,6 +155,12 @@ public class SMCConnector {
 		mode = configLoader.getRunMode();
 		taskType = configLoader.getTaskType();
 		goals = initGoals(SMCChecker.DEFAULT_CONFIG_FILE_PATH);
+		rawData = new JSONObject();
+		features =  new JSONArray();
+		targets = new JSONArray();
+		rawData.put("features", features);
+		rawData.put("targets", targets);
+
 	}
 
 
@@ -589,10 +609,122 @@ public class SMCConnector {
 	//Deze functie voert gewoon actiforms uit door alles terug te zenden.
 	//
 	void activform() {
-		System.out.print(";" + adaptationOptions.size());
-		for (AdaptationOption adaptationOption : adaptationOptions) {
-			smcChecker.checkCAO(adaptationOption.toModelString(), environment.toModelString(),
-					adaptationOption.verificationResults);
+		try 
+		{
+			File dat;
+
+			//System.out.println("Before getting paths");
+			String datPath = Paths.get(System.getProperty("user.dir"), "activforms", "log", "rawData.txt").toString();
+			//String jdatPath = Paths.get(System.getProperty("user.dir"), "activforms", "log", "rawData.json").toString();
+			
+			
+			if (cycles == 1)
+			{
+				dat = new File(datPath);
+
+				//System.out.println("Before file deletion");
+				if(dat.isFile())
+				{
+					dat.delete();
+				}
+				dat.createNewFile();
+			}
+			else
+			{
+				dat = new File(datPath);
+			}
+
+			//System.out.println("init printwriter");
+			PrintWriter writer = new PrintWriter(new OutputStreamWriter( new FileOutputStream(dat, true), StandardCharsets.UTF_8));
+			System.out.print(";" + adaptationOptions.size());
+
+
+
+			JSONArray dummyFeatures;
+			JSONObject qos;
+
+			Mote mote;
+
+			// prints the adaption options for the link.
+			//System.out.println("writing to txt");
+			writer.println(environment);
+
+			//System.out.println("before iterating");
+			for (AdaptationOption adaptationOption : adaptationOptions) {
+				smcChecker.checkCAO(adaptationOption.toModelString(), environment.toModelString(),
+						adaptationOption.verificationResults);
+
+				writer.println(adaptationOption);
+
+				// get features
+				// iterate over all 15 motes (is hashmap and want to be sure of order)
+				// TODO:HARDCODED
+				// TODO: for some reason there is no 1 mote but 2-15
+				dummyFeatures = new JSONArray();
+				//System.out.println("before motes");
+				//for(int s : adaptationOption.system.motes.keySet()) System.out.println(s);
+				for (int i = 2; i <=15; i++)
+				{
+					mote = adaptationOption.system.getMote(i);
+					//System.out.println("at mote "+i);
+					for (TrafficProbability t : environment.motesLoad)
+					{
+						//System.out.println("at traffic");
+						//System.out.println("traffic "+t.moteId);
+						//System.out.println("mote"+mote.getMoteId());
+						if(t.moteId == mote.getMoteId())
+						{
+							//System.out.println("at loading traffic");
+							dummyFeatures.put(t.load);
+						}
+					}
+					//System.out.println("before links");
+					for (Link link : mote.getLinks())
+					{
+						// power is usefull if we learn it or not, 
+						// because it does change every cycle.
+						// Sarpreet left this out, which is not so smart
+						// because it will confuse the learner
+						// because the same snr will sometimes have different
+						// class without anything else changing.
+						dummyFeatures.put(link.getPower());
+						dummyFeatures.put(link.getDistribution());
+						dummyFeatures.put(environment.getSNR(link));
+					}
+				}
+				//System.out.println("before putteing features");
+				features.put(dummyFeatures);
+
+
+				//System.out.println("before qos");
+				
+				// get qos
+				// This has to be processed for every mode, thats why I add objects.
+				qos = new JSONObject();
+				qos.put("packetLoss", adaptationOption.verificationResults.packetLoss);
+				qos.put("latency", adaptationOption.verificationResults.latency);
+				targets.put(qos);
+
+				
+
+				
+			}
+			writer.close();
+			
+			//System.out.print("before saving json");
+
+			// write at the end of all the cycles
+			if (this.cycles == ConfigLoader.getInstance().getAmountOfCycles())
+			{
+				FileWriter jsonWriter = new FileWriter(Paths.get(System.getProperty("user.dir"), "activforms", "log", "rawData.json").toString());
+				jsonWriter.write(rawData.toString());
+				jsonWriter.flush();
+				jsonWriter.close();
+			}
+		}
+		catch (Exception e) 
+		{
+			System.out.println("Problem writing to file.\n");
 		}
 	}
 
