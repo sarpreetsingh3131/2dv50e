@@ -97,6 +97,22 @@ class AdaptationResults:
         res = [i.isPredictedWrongPerSide() for i in self.results]
         return ((sum([i[0][0] for i in res]), sum([i[0][1] for i in res])),(sum([i[1][0] for i in res]), sum([i[1][1] for i in res])))
 
+    # Gets the confusion matrix for this configuration.
+    # Returns a dictionary, with mappings [TruePositives, TrueNegatives, FalsePositives, FalseNegatives]
+    def getConfusionMatrix(self, technique='classification'):
+        res = {'TruePositives': 0, 'TrueNegatives': 0, 'FalsePositives': 0, 'FalseNegatives': 0}
+        if technique == 'classification':
+            predictedGood = lambda x: x.clB == 1
+        elif technique == 'regression':
+            predictedGood = lambda x: x.reB < 10
+
+        for i in self.results:
+            if i.pl < 10:
+                res['TruePositives' if predictedGood(i) else 'FalseNegatives'] += 1
+            else:
+                res['FalsePositives' if predictedGood(i) else 'TrueNegatives'] += 1
+        
+        return res
 
 
 

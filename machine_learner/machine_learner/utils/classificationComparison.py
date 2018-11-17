@@ -4,15 +4,18 @@ import sys
 import os
 from dataLoader import loadData
 import csv
-from plotly import __version__
+from plotly import __version__, tools
 from plotly.offline import download_plotlyjs, init_notebook_mode, plot, iplot
 import plotly.io as pio
 import plotly.graph_objs as go
 from collections import OrderedDict
+from math import log, ceil
 
 
 
-CSV_OUTPUT_NAME = 'classificationComparison.csv'
+CSV_GENERAL_NAME = 'classificationComparison.csv'
+CSV_CONFALL_NAME = 'confusionMatricesAll.csv'
+CSV_CONFVERS_NAME = 'confusionMatricesVersatile.csv'
 PNG_OUTPUT_NAME = 'resultClassificationComparison.png'
 HTML_OUTPUT_NAME = 'resultClassificationComparison.html'
 
@@ -41,17 +44,136 @@ def getErrorRatePerSide(configs):
     return ((errBefore / totalBefore)*100, (errAfter / totalAfter)*100)
 
 
+def calculateLogarithmicLoss(configs):
+    '''
+    Metric used to evaluate machine learning techniques (closer to 0 eqauls better).
+    TODO verify if this is usable for our case (binary classification)
+    '''
+    totalSamples = sum([len(i) for i in configs])
+    chancePositiveRes = sum([i.getAmtResultsPerSide()[0] for i in configs]) / totalSamples
+    # print(chancePositiveRes)
+    logValsConf = lambda x: [log(chancePositiveRes) if i.pl < 10 else log(1-chancePositiveRes) for i in x]
+    return (-1 / totalSamples) * sum([sum(logValsConf(config)) for config in configs])
+
+
+def getCumulativeConfMatrices(configs):
+    # TODO might tidy this up later (centralise, also used in dataLoader)
+    res = {'TruePositives': 0, 'TrueNegatives': 0, 'FalsePositives': 0, 'FalseNegatives': 0}
+    for config in configs:
+        confM = config.getConfusionMatrix(technique='classification')
+        for key in res.keys():
+            res[key] += confM[key]
+    return res
+
+
+def calculateF1Score(confMatrix):
+    precision = confMatrix['TruePositives'] / (confMatrix['TruePositives'] + confMatrix['FalsePositives'])
+    recall = confMatrix['TruePositives'] / (confMatrix['TruePositives'] + confMatrix['FalseNegatives'])
+
+    return 2 / ((1/precision) + (1/recall))
+
+
+
+
+def printTable(data, outputPath):
+    headerColor, rowOddColor, rowEvenColor = '#CCE5FF', '#CCF3FF', 'white'
+
+    cellsData = {'values' : [], 'align': ['left', 'center'], 'height': 30}
+    for i in range(len(data['header'])):
+        cellsData['values'].append([])
+
+    for i in range(len(data['values'])):
+        for j in range(len(data['header'])):
+            cellsData['values'][j].append(data['values'][i][j])
+
+    colors = [headerColor] + [rowOddColor if i % 2 else rowEvenColor for i in range(len(data['header'])-1)]
+    cellsData['fill'] = {'color': colors}
+
+    trace = go.Table(header={'values' : data['header'], 'fill': {'color':headerColor}}, cells=cellsData, \
+        columnwidth=[250, 200])
+
+    layout = dict(width=1800, height=600, font=dict(family='"Open Sans", verdana, arial, sans-serif', size=18, color='#444'))
+    fig = dict(data=[trace], layout=layout)
+    plot(fig, filename=os.path.join(outputPath, HTML_OUTPUT_NAME))
+    pio.write_image(fig, os.path.join(outputPath, PNG_OUTPUT_NAME))
+
+
+
+def printConfusionMatrix(confMatrix, outputPath, filename, technique):
+    # Temporarily used until print of all matrices is fixed
+    amtSamples = sum(confMatrix.values())
+
+    trace = go.Table(header={'values': [f'Samples = {amtSamples}', 'Predicted good', 'Predicted bad']}, \
+        cells={'values': [['Actually good', 'Actually bad'], \
+            [confMatrix['TruePositives'], confMatrix['FalsePositives']], \
+            [confMatrix['FalseNegatives'], confMatrix['TrueNegatives']]], \
+            'height': 40})
+    layout = dict(width=700, height=300, font=dict(family='"Open Sans", verdana, arial, sans-serif', size=18, color='#444'), \
+        title=f'Confusion matrix {technique}')
+    fig = dict(data=[trace], layout=layout)
+    pio.write_image(fig, os.path.join(outputPath, filename + '.png'))
+
+
+def printConfusionMatrices(confMatrices, outputPath, filename):
+    # TODO find out why this will not print more than one table
+    s_row = ceil(len(confMatrices)/2)
+    # fig = tools.make_subplots(rows=2, cols=s_row, subplot_titles=list(confMatrices.keys()))
+    data = []
+
+    for _, confMatrix in sorted(confMatrices.items()):
+        index = confMatrices.index(confMatrix)
+        amtSamples = sum(confMatrix.values())
+
+        row, col = 1 if index < s_row else 2, (index % s_row) + 1
+        trace = go.Table(header={'values': [f'Samples = {amtSamples}', 'Predicted good', 'Predicted bad']}, \
+            cells={'values': [['Actually good', 'Actually bad'], \
+                [confMatrix['TruePositives'], confMatrix['FalsePositives']], \
+                [confMatrix['FalseNegatives'], confMatrix['TrueNegatives']]], \
+                'height': 40})
+        data.append(trace)
+        # fig.append_trace(trace, row, col)
+
+    layout = dict(width=1500, height=1000, font=dict(family='"Open Sans", verdana, arial, sans-serif', size=18, color='#444'), \
+        title='Confusion matrices')
+    # fig = dict(data=data, layout=layout)
+    fig = go.Figure(data=data, layout=layout)
+    # fig['layout'].update(width=1500, height=1000, font=dict(family='"Open Sans", verdana, arial, sans-serif', size=18, color='#444'), \
+        # title='Confusion matrices')
+    # print(data)
+    # plot(fig, filename=os.path.join(outputPath, 'tmp.html'))
+    pio.write_image(fig, os.path.join(outputPath, filename + '.png'))
+
+
+def writeConfMatricesToFiles(matrices, filename, outputPath):
+    csvOutputFile = open(os.path.join(outputPath, filename), mode='w')
+    csvOutputWriter = csv.writer(csvOutputFile, delimiter=',')
+    keys = list(list(matrices.values())[0].keys())
+    csvOutputWriter.writerow(['technique'] + keys)
+
+    for technique, matrix in sorted(matrices.items()):
+        # Make sure the order of the initial line is kept when storing the data in the csv
+        csvOutputWriter.writerow([technique] + [matrix[key] for key in keys])
+
+    csvOutputFile.close()
+
+
+
+
+
+
 
 def compareResultsClassifiers(inputPath, outputPath):
     data = loadDataFromFiles(inputPath)
     header = ['Technique','Overall error percentage', 'Error rate < 10% packet loss', 'Error rate > 10% packet loss', \
         'Error rate versatile configurations', 'Error rate < 10% packet loss (versatile configurations)', \
-        'Error rate > 10% packet loss (versatile configurations)']
+        'Error rate > 10% packet loss (versatile configurations)', 'F1 score (all)', 'F1 score (versatile)']
     outputData = {'header' : header[:2] + header[4:], 'values' : []}
 
-    csvOutputFile = open(os.path.join(outputPath, CSV_OUTPUT_NAME), mode='w')
+    csvOutputFile = open(os.path.join(outputPath, CSV_GENERAL_NAME), mode='w')
     csvOutputWriter = csv.writer(csvOutputFile, delimiter=',')
     csvOutputWriter.writerow(header)
+
+    confMatrices = {'all': {}, 'versatile': {}}
 
     # The key is the used classifier, value is the data associated with the classifier
     for key, configurations in sorted(data.items()):
@@ -75,42 +197,30 @@ def compareResultsClassifiers(inputPath, outputPath):
         errRateVBefore, errRateVAfter = getErrorRatePerSide(versatileConfigurations)
 
 
-        # print(f'Results for classification technique: {key}')
-        # print(f'\tOverall error rate classification: {errorPercentageOverall:.2f}%')
-        # print(f'\tError rates before/after cutoff line respectively: {errRateBefore:.2f}% - {errRateAfter:.2f}%')
-        # print(f'\tError rate for versatile configurations: {errorPercentageVersatile:.2f}%')
-        # print(f'\tError rates before/after cutoff line respectively: {errRateVBefore:.2f}% - {errRateVAfter:.2f}%')
+        # The confusion matrices
+        # TODO merge all confusion matrices into single plot
+        overallConfMatrix, versConfMatrix = getCumulativeConfMatrices(configurations), getCumulativeConfMatrices(versatileConfigurations)
+        confMatrices['all'][key] = (overallConfMatrix)
+        confMatrices['versatile'][key] = (versConfMatrix)
+        printConfusionMatrix(overallConfMatrix, outputPath, f'ConfusionMatrixAll_{key}', key + ' (all)')
+        printConfusionMatrix(versConfMatrix, outputPath, f'ConfusionMatrixVers_{key}', key + ' (versatile)')
 
+        # F1 values of the configuration (sub)sets
+        F1All, F1Vers = calculateF1Score(overallConfMatrix), calculateF1Score(versConfMatrix)
 
         row = [key, f'{errorPercentageOverall:.2f}%', f'{errRateBefore:.2f}%', f'{errRateAfter:.2f}%', f'{errorPercentageVersatile:.2f}%', \
-            f'{errRateVBefore:.2f}%', f'{errRateVAfter:.2f}%']
+            f'{errRateVBefore:.2f}%', f'{errRateVAfter:.2f}%', f'{F1All:.4f}', f'{F1Vers:.4f}']
         outputData['values'].append(row[:2] + row[4:])
         csvOutputWriter.writerow(row)
     
     csvOutputFile.close()
+    # printConfusionMatrices(confMatrices['all'], outputPath, 'ConfMatricesAll')
+    # printConfusionMatrices(confMatrices['versatile'], outputPath, 'ConfMatricesVersatile')
+
     printTable(outputData, outputPath)
+    writeConfMatricesToFiles(confMatrices['all'], CSV_CONFALL_NAME, outputPath)
+    writeConfMatricesToFiles(confMatrices['versatile'], CSV_CONFVERS_NAME, outputPath)
 
-
-def printTable(data, outputPath):
-    headerColor, rowOddColor, rowEvenColor = '#CCE5FF', '#CCF3FF', 'white'
-
-    cellsData = {'values' : [], 'align': ['left', 'center'], 'height': 30}
-    for i in range(len(data['header'])):
-        cellsData['values'].append([])
-
-    for i in range(len(data['values'])):
-        for j in range(len(data['header'])):
-            cellsData['values'][j].append(data['values'][i][j])
-
-    colors = [headerColor] + [rowOddColor if i % 2 else rowEvenColor for i in range(len(data['header'])-1)]
-    cellsData['fill'] = {'color': colors}
-
-    trace = go.Table(header={'values' : data['header'], 'fill': {'color':headerColor}}, cells=cellsData)
-
-    layout = dict(width=1700, height=400, font=dict(family='"Open Sans", verdana, arial, sans-serif', size=18, color='#444'))
-    fig = dict(data=[trace], layout=layout)
-    plot(fig, filename=os.path.join(outputPath, HTML_OUTPUT_NAME))
-    pio.write_image(fig, os.path.join(outputPath, PNG_OUTPUT_NAME))
 
 
 
