@@ -88,7 +88,7 @@ public class SMCChecker {
 
 	public static String getCommand(String modelPath, double alpha, double epsilon) {
 		String cmd = String.format(command, alpha, epsilon, modelPath);
-		// System.out.println(cmd);
+		//System.out.println(cmd);
 		return cmd;
 	}
 
@@ -244,10 +244,14 @@ public class SMCChecker {
 
 			values = command.getResult().split("Verifying formula ");
 			value = 0;
+
+			//System.out.println( command.getModel().getKey());
+
 			if (command.getModel().getType() == ModelType.SIMULATION) {
 
+
 				// latency is a simulation, so if the command was for latency:
-				if(command.getModel().getKey() == "latency")
+				if(command.getModel().getKey().equals("latency"))
 				{
 					value = getSimulatedValue(values[1]);
 					verificationResults.latency = value;

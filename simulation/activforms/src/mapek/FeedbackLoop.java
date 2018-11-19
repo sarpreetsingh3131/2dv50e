@@ -12,6 +12,8 @@ import deltaiot.client.Probe;
 import smc.Goal;
 import smc.SMCChecker;
 import smc.SMCConnector;
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoField;
 
 public class FeedbackLoop {
 
@@ -23,7 +25,10 @@ public class FeedbackLoop {
 
 	//TODO: distribution gap aanpassen om grotere space te creeeren, is enige mogelijkeid.
 	public static final int DISTRIBUTION_GAP = ConfigLoader.getInstance().getDistributionGap();
+
+	public static final boolean human = ConfigLoader.getInstance().getHuman();
 	
+
 	//Dit zullen volledige staten(=configuratie) zijn van het netwerk op een bepaald moment
 	Configuration currentConfiguration;
 	Configuration previousConfiguration;
@@ -103,9 +108,21 @@ public class FeedbackLoop {
 	public void start() {
 		System.out.println("Feedback loop started.");
 
+		LocalDateTime now;
+
 		// Run the mape-k loop and simulator for the specified amount of cycles
 		for (int i = 1; i <= ConfigLoader.getInstance().getAmountOfCycles(); i++) {
-			System.out.print(i + ";" + System.currentTimeMillis());
+		
+			if(!human)
+			{
+				System.out.print(i + ";" + System.currentTimeMillis());
+			}
+			else
+			{
+				now = LocalDateTime.now();
+				System.out.print(i + "; " + String.format("%02d:%02d:%02d", 
+					now.getHour(), now.getMinute(), now.getSecond()) + " ");
+			}
 			
 			// Start the monitor part of the mapek loop
 			// The rest of the parts are each called in the previous parts
@@ -622,7 +639,18 @@ public class FeedbackLoop {
 		steps.clear();
 
 		// print current time, to be able to tell later how long everything took
-		System.out.print(";" + System.currentTimeMillis() + "\n");
+		LocalDateTime now;
+
+		if(!human)
+		{
+			System.out.print(";" + System.currentTimeMillis() + "\n");
+		}
+		else
+		{
+			now = LocalDateTime.now();
+			System.out.print("; " + String.format("%02d:%02d:%02d", 
+				now.getHour(), now.getMinute(), now.getSecond()) + "\n");
+		}
 	}
 
 
