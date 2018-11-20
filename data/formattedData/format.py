@@ -5,7 +5,6 @@ and the formatted data.
 Than add the function to the mlTypes variable.
 The directory and file will be created automatically.
 
-This file should be executed form the rawData folder.
 """
 import json
 import os
