@@ -63,4 +63,44 @@ public class ConfigLoader {
 	{
 		return this.getProperty("human").toLowerCase().trim().equals("true");
 	}
+
+	public double getLatencyGoal()
+	{
+		String targets[] = this.getProperty("targets").split(",");
+		String thressholds[] = this.getProperty("thressholds").split(",");
+		double r = 0;
+		int i = 0;
+		boolean t = true;
+		while ( t ) 
+		{
+			if (targets[i].trim().equals("latency"))
+			{
+				t = false;
+				r = Double.parseDouble(thressholds[i].trim());
+			}
+			i++;
+		}
+		return r;
+	}
+	public double getPacketLossGoal()
+	{
+		String targets[] = this.getProperty("targets").split(",");
+		String thressholds[] = this.getProperty("thressholds").split(",");
+		double r = 0;
+		int i = 0;
+		boolean t = true;
+		while ( t ) 
+		{
+			if (targets[i].trim().equals("packetLoss"))
+			{
+				t = false;
+				r = Double.parseDouble(thressholds[i].trim());
+			}
+			i++;
+		}
+		return r;
+	}
+
 }
+
+

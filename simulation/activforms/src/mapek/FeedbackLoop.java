@@ -11,7 +11,7 @@ import util.ConfigLoader;
 import deltaiot.client.Probe;
 import smc.Goal;
 import smc.SMCChecker;
-import smc.SMCConnector;
+import smc.SMCConnector.TaskType;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoField;
 
@@ -82,6 +82,7 @@ public class FeedbackLoop {
 	// WIll cause problems when simulating the other network.
 	static final int MAX_LINKS = 17;
 	static final int MAX_MOTES = 15;
+
 
 
 
@@ -476,6 +477,7 @@ public class FeedbackLoop {
 
 		// init an adaption option
 		AdaptationOption bestAdaptationOption = null;
+		AdaptationOption backUp = null;
 
 		// For all options the smc and ml thought they would fullfill the goals
 		//TODO: here he selects the best option, has to be changed to my goals
@@ -487,16 +489,37 @@ public class FeedbackLoop {
 
 			//TODO: important changes have to be done here for more goals
 			
+			if (ConfigLoader.getInstance().getTaskType().equals(TaskType.PLLAMULTICLASS))
+			{
+				double la = ConfigLoader.getInstance().getLatencyGoal();
+				double pl = ConfigLoader.getInstance().getPacketLossGoal();
+
+				if(verifiedOptions.get(i).verificationResults.latency <= la &&
+					verifiedOptions.get(i).verificationResults.packetLoss <= pl &&
+					Goal.optimizationGoalEnergyCosnumption(bestAdaptationOption, verifiedOptions.get(i)))
+				{
+					bestAdaptationOption = verifiedOptions.get(i);
+				}
+
+			}
+			
 			// if the option satisfies the hardcoded packetloss goal, and
 			// the energy consumption is the best seen yet, change this to the 
 			// "best"option
 			if (Goal.satisfyGoalPacketLoss(verifiedOptions.get(i))
 					&& Goal.optimizationGoalEnergyCosnumption(bestAdaptationOption, verifiedOptions.get(i))) {
 
-				bestAdaptationOption = verifiedOptions.get(i);
+				backUp = verifiedOptions.get(i);
 			}
+
 		}
 
+		if (!ConfigLoader.getInstance().getTaskType().equals(TaskType.PLLAMULTICLASS) || 
+			bestAdaptationOption == null )
+		{
+			bestAdaptationOption = backUp;
+		}
+			
 
 		// if none of the verified options fullfilled the goals
 		if (bestAdaptationOption == null) {
