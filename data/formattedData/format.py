@@ -10,13 +10,17 @@ This file should be executed form the rawData folder.
 import json
 import os
 from os.path import realpath, join, dirname
+import sys
 
-# change this to the name of the raw data file (without trailing .json)
-RDATA_FILE = "456Cycles20Dist"
+if len(sys.argv) == 2:
+    RDATA_FILE = sys.argv[1]
+else:
+    #TODO: change this to the name of the raw data file (without trailing .json)
+    RDATA_FILE = "456Cycles20Dist"
 
 
 PACKETLOSS_GOAL = 10.0
-LATENCY_GOAL = 10.0
+LATENCY_GOAL = 0.0135
 
 def plRegression(targets):
 
@@ -61,12 +65,12 @@ def plLaClassification(targets):
 # no exception catching because I want to read error
 def main():
 
-    # add the function of the machine learner types you want to format for
+    #TODO: add the function of the machine learner types you want to format for
     mlTypes = [plLaClassification]
 
     # locate file
     rawDataPath = realpath(__file__)
-    for i in range(1,5): 
+    for i in range(1,4): 
         rawDataPath = dirname(rawDataPath)
 
     rawDataPath = join(rawDataPath, "data", "rawSimData", RDATA_FILE + ".json")
