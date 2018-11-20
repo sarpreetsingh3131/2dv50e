@@ -29,6 +29,7 @@ import java.io.PrintWriter;
 import java.io.FileOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
+import java.nio.file.Path;
 import java.io.OutputStreamWriter;
 
 import mapek.AdaptationOption;
@@ -125,7 +126,7 @@ public class SMCConnector {
 		REGRESSION("regression"), 
 
 		// I will use this for multiclass classification
-		MULTICLASS("multiclass"),
+		PLLAMULTICLASS("plLaClassification"),
 		
 		// None is used in case no learning task needs to be performed
 		// by the learners at the server side (e.g. when just saving data).
@@ -484,13 +485,13 @@ public class SMCConnector {
 		List<AdaptationOption> qosEstimates = new LinkedList<>();
 
 		// for counting 8 classes in multiclass
-		int[] mclass = {0, 0, 0, 0, 0, 0, 0, 0};
+		int[] mclass = {0, 0, 0, 0};
 
 		// Blijkbaar krijg je dan een json terug met een prediction key die een lijst teruggeeft
 		// Hieronder zet je die lijst om naar een java lijst
 		JSONArray arr = response.getJSONArray("predictions");
 		for (int i = 0; i < arr.length(); i++) {
-			if(taskType == TaskType.MULTICLASS)
+			if(taskType == TaskType.PLLAMULTICLASS)
 			{
 				mclass[Integer.parseInt(arr.get(i).toString())]++;
 			}
@@ -500,15 +501,12 @@ public class SMCConnector {
 		int nbCorrect = 0;
 		// Here I set nbCorrect to the highest ammount of 
 		// goals predicted correct for every option in the adaption space
-		if (taskType == TaskType.MULTICLASS)
+		if (taskType == TaskType.PLLAMULTICLASS)
 		{
 			// are there adaptions which fullfill all goals?
-			if(mclass[7] > 0) nbCorrect = 3;
-			// are there adaptions with 2 goals fullfilled?
-			else if(mclass[6] + mclass[5] + mclass[4] > 0) nbCorrect = 2;
-			// 1 correct
-			else if(mclass[3] + mclass[2] + mclass[1] > 0) nbCorrect = 1;
-			// 0
+			if(mclass[3] > 0) nbCorrect = 2;
+			// are there adaptions with 1 goals fullfilled?
+			else if(mclass[2] + mclass[1] > 0) nbCorrect = 1;
 			else nbCorrect = 0;
 		}
 
@@ -550,21 +548,17 @@ public class SMCConnector {
 					// I will work with another regression tasktype
 					if(predictions.get(i) < 10) isPredictedCorrect = true;
 				}
-				else if(taskType == TaskType.MULTICLASS)
+				else if(taskType == TaskType.PLLAMULTICLASS)
 				{
 					double pred = predictions.get(i);
 
-					if( nbCorrect == 3)
+					if( nbCorrect == 2)
 					{
-						if(pred == 7.0) isPredictedCorrect = true;
+						if(pred == 3.0) isPredictedCorrect = true;
 					}
-					else if( nbCorrect == 2)
+					else if( nbCorrect == 1)
 					{
-						if(pred == 6.0 || pred == 5.0 || pred == 4.0) isPredictedCorrect = true;
-					}
-					else
-					{
-						if(pred == 3.0 || pred == 2.0 || pred == 1.0) isPredictedCorrect = true;
+						if(pred == 2.0 || pred == 1.0) isPredictedCorrect = true;
 					}
 
 				}
@@ -612,6 +606,7 @@ public class SMCConnector {
 		try 
 		{
 			File dat;
+			Path p;
 
 			//System.out.println("Before getting paths");
 			String datPath = Paths.get(System.getProperty("user.dir"), "activforms", "log", "rawData.txt").toString();
@@ -717,7 +712,34 @@ public class SMCConnector {
 			// write at the end of all the cycles
 			if (this.cycles == ConfigLoader.getInstance().getAmountOfCycles())
 			{
-				FileWriter jsonWriter = new FileWriter(Paths.get(System.getProperty("user.dir"), "activforms", "log", "rawData.json").toString());
+				p = Paths.get(Paths.get(System.getProperty("user.dir")).toString(), "activforms", "log");
+
+				//System.out.println(p.toString());
+				// find none existing file
+				int i = 1;
+				boolean done = false;
+				File f = null;
+				int cyc = ConfigLoader.getInstance().getAmountOfCycles();
+				int dist = ConfigLoader.getInstance().getDistributionGap();
+				while(!done)
+				{
+
+					f = new File(Paths.get(p.toString(),
+					 	cyc+"Cycles"+dist+"Dist_run"+i+".json").toString());
+					//System.out.println(f.getAbsolutePath());
+					if(!f.exists())
+					{
+						done = true;
+					}
+					else
+					{
+						i++;
+					}
+
+				}
+
+				FileWriter jsonWriter = new FileWriter(Paths.get(p.toString(), 
+					cyc+"Cycles"+dist+"Dist_run"+i+".json").toString());
 				jsonWriter.write(rawData.toString());
 				jsonWriter.flush();
 				jsonWriter.close();
@@ -764,23 +786,21 @@ public class SMCConnector {
 			// 3 bits (a power of 2).
 			// So all possible combination can be represented in 3 bits.
 			// So a  number from 0-7 = class.
-			else if(taskType == TaskType.MULTICLASS)
+			else if(taskType == TaskType.PLLAMULTICLASS)
 			{
 				int APClass = 0;
 
 				//What I do here is dirty
 				// but welcome to this project
-				Goal pl = goals.get(1), en = goals.get(1), la = goals.get(1);
+				Goal pl = goals.get(1), la = goals.get(1);
 				for(Goal g : goals)
 				{
 					if(g.getTarget() == "packetLoss") pl = g;
-					else if(g.getTarget() == "latency") la = g;
-					else en = g;
+					else la = g;
 				}
 
 				if( pl.evaluate(adaptationOption.verificationResults.packetLoss)) APClass += 1;
-				if( en.evaluate(adaptationOption.verificationResults.energyConsumption)) APClass += 2;
-				if( la.evaluate(adaptationOption.verificationResults.latency)) APClass += 4;
+				if( la.evaluate(adaptationOption.verificationResults.latency)) APClass += 2;
 
 				target.put(APClass);
 			}

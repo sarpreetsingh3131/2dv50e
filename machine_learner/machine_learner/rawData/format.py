@@ -9,9 +9,10 @@ This file should be executed form the rawData folder.
 """
 import json
 import os
+from os.path import realpath, join, dirname
 
 # change this to the name of the raw data file (without trailing .json)
-RDATA_FILE = "testData"
+RDATA_FILE = "456Cycles20Dist"
 
 
 PACKETLOSS_GOAL = 10.0
@@ -61,11 +62,19 @@ def plLaClassification(targets):
 def main():
 
     # add the function of the machine learner types you want to format for
-    mlTypes = [plRegression, plClassification, plLaClassification]
+    mlTypes = [plLaClassification]
 
-    # load raw unformatted data
-    with open(os.path.join("unformatted", RDATA_FILE + ".json"), 'r') as f:
+    # locate file
+    rawDataPath = realpath(__file__)
+    for i in range(1,5): 
+        rawDataPath = dirname(rawDataPath)
+
+    rawDataPath = join(rawDataPath, "data", "rawSimData", RDATA_FILE + ".json")
+
+    # load data
+    with open(rawDataPath, 'r') as f:
         unformatted = json.load(f)
+
 
     # for all ml types
     for mlType in mlTypes:
