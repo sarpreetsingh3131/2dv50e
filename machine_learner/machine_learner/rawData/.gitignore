@@ -1,0 +1,6 @@
+
+# exclude raw data files (create them as you need them
+*/*
+
+# except the ones that are unformatted
+!unformatted/*
