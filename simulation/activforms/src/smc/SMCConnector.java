@@ -1,3 +1,11 @@
+/*
+* Predicts adaption options which fullfill goal(s).
+* This is called in the end of the analysis function
+* It connects the mapek loop to the model checker and the learner
+* Watch out, the goals are also hardcoded in the planning step.
+*/
+
+
 package smc;
 
 import java.util.ArrayList;
@@ -5,6 +13,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+
+import com.google.gson.Gson;
 
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpPost;
@@ -14,6 +24,14 @@ import org.apache.http.impl.client.HttpClientBuilder;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import java.io.FileWriter;
+import java.io.PrintWriter;
+import java.io.FileOutputStream;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Paths;
+import java.nio.file.Path;
+import java.io.OutputStreamWriter;
+
 import mapek.AdaptationOption;
 import mapek.Environment;
 import mapek.Link;
@@ -21,6 +39,13 @@ import mapek.Mote;
 import mapek.SNR;
 import mapek.TrafficProbability;
 import util.ConfigLoader;
+import java.io.IOException;
+import java.util.Properties;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStream;
+import smc.SMCChecker;
+
 
 // Ik denk dat hij na iedere cycle print hoeveel adaption options er 
 // werden geselecteerd als die die voorspelt zijn om aan de goal te voldoen
@@ -42,11 +67,14 @@ public class SMCConnector {
 
 	List<AdaptationOption> adaptationOptions;
 
+
 	// De ruis en packets op een netwerk op een moment
 	Environment environment;
 
 	//Modelchecker denk ik
 	SMCChecker smcChecker = new SMCChecker();
+
+	List<Goal> goals;
 
 	List<AdaptationOption> verifiedOptions;
 
@@ -56,11 +84,16 @@ public class SMCConnector {
 	Mode mode;
 	TaskType taskType;
 
+	// for collecting raw data with the activform mode
+	JSONObject rawData;
+	JSONArray features;
+	JSONArray targets;
+
 	//Gewoon de modes van hem op een string zetten
 	public enum Mode {
 		TRAINING("training"), 
 		TESTING("testing"), 
-		ACTIVFORM(""), 
+		ACTIVFORM("activform"), 
 		COMPARISON("comparison"),
 		// The new mladjustment mode is similar to the comparison mode.
 		// The difference between the two is that mladjustment also checks for
@@ -91,6 +124,10 @@ public class SMCConnector {
 	public enum TaskType {
 		CLASSIFICATION("classification"), 
 		REGRESSION("regression"), 
+
+		// I will use this for multiclass classification
+		PLLAMULTICLASS("plLaClassification"),
+		
 		// None is used in case no learning task needs to be performed
 		// by the learners at the server side (e.g. when just saving data).
 		NONE("none");
@@ -118,6 +155,13 @@ public class SMCConnector {
 		ConfigLoader configLoader = ConfigLoader.getInstance();
 		mode = configLoader.getRunMode();
 		taskType = configLoader.getTaskType();
+		goals = initGoals(SMCChecker.DEFAULT_CONFIG_FILE_PATH);
+		rawData = new JSONObject();
+		features =  new JSONArray();
+		targets = new JSONArray();
+		rawData.put("features", features);
+		rawData.put("targets", targets);
+
 	}
 
 
@@ -417,6 +461,7 @@ public class SMCConnector {
 		// System.out.print(";" + space);
 
 		//Je zend de data en type door om te training
+		// adaptionsoptions is a list, so this gets parsed.
 		send(adaptationOptions, taskType, Mode.TRAINING);
 	}
 
@@ -439,13 +484,31 @@ public class SMCConnector {
 		ArrayList<Float> predictions = new ArrayList<>();
 		List<AdaptationOption> qosEstimates = new LinkedList<>();
 
+		// for counting 8 classes in multiclass
+		int[] mclass = {0, 0, 0, 0};
+
 		// Blijkbaar krijg je dan een json terug met een prediction key die een lijst teruggeeft
 		// Hieronder zet je die lijst om naar een java lijst
 		JSONArray arr = response.getJSONArray("predictions");
 		for (int i = 0; i < arr.length(); i++) {
+			if(taskType == TaskType.PLLAMULTICLASS)
+			{
+				mclass[Integer.parseInt(arr.get(i).toString())]++;
+			}
 			predictions.add(Float.parseFloat(arr.get(i).toString()));
 		}
 
+		int nbCorrect = 0;
+		// Here I set nbCorrect to the highest ammount of 
+		// goals predicted correct for every option in the adaption space
+		if (taskType == TaskType.PLLAMULTICLASS)
+		{
+			// are there adaptions which fullfill all goals?
+			if(mclass[3] > 0) nbCorrect = 2;
+			// are there adaptions with 1 goals fullfilled?
+			else if(mclass[2] + mclass[1] > 0) nbCorrect = 1;
+			else nbCorrect = 0;
+		}
 
 		// Zet de incrmentloper op 0 als init
 		int i = 0;
@@ -455,15 +518,53 @@ public class SMCConnector {
 			
 			// Als de machine learner adaptation options voorspelt die aan de
 			// goals voldoen, doe:
+			// if nbcorrect == 0 , this will also be 0.
 			if (adaptationSpace != 0) {
+
+				boolean isPredictedCorrect = false;
 
 				//TODO: als je hier een andere classtype toevoegd zal dit niet meer werken.
 				//Hou dat in het achterhoofd
 				// Dat in de if geeft True of False terug door die predict.get
 				// En dat .. ? .. :.. zorgt gewoon dat het
 				// voor classificatie 1.0 voorspeld of minder dan 10 voor regressie
-				if (taskType == TaskType.CLASSIFICATION ? predictions.get(i) == 1.0 : predictions.get(i) < 10.0) {
-					
+				//if (taskType == TaskType.CLASSIFICATION ? predictions.get(i) == 1.0 : predictions.get(i) < 10.0) {
+				//	
+				//	//Indien voorspelt dat hij aan de goals voldoet zal de modelchecker hem draaien
+				//	smcChecker.checkCAO(adaptationOption.toModelString(), environment.toModelString(),
+				//			adaptationOption.verificationResults);
+
+					// options terug toevoegen om door te zenden naar de learner om te online learnen
+					// Hij learned dus de predicties van de SMC en niet wat er effectief gebeurde
+				//	qosEstimates.add(adaptationOption);
+				//}
+
+				if (taskType == TaskType.CLASSIFICATION)
+				{
+					if(predictions.get(i) == 1.0) isPredictedCorrect = true;
+				}
+				else if(taskType == TaskType.REGRESSION)
+				{
+					// I will work with another regression tasktype
+					if(predictions.get(i) < 10) isPredictedCorrect = true;
+				}
+				else if(taskType == TaskType.PLLAMULTICLASS)
+				{
+					double pred = predictions.get(i);
+
+					if( nbCorrect == 2)
+					{
+						if(pred == 3.0) isPredictedCorrect = true;
+					}
+					else if( nbCorrect == 1)
+					{
+						if(pred == 2.0 || pred == 1.0) isPredictedCorrect = true;
+					}
+
+				}
+
+				if(isPredictedCorrect)
+				{
 					//Indien voorspelt dat hij aan de goals voldoet zal de modelchecker hem draaien
 					smcChecker.checkCAO(adaptationOption.toModelString(), environment.toModelString(),
 							adaptationOption.verificationResults);
@@ -472,8 +573,9 @@ public class SMCConnector {
 					// Hij learned dus de predicties van de SMC en niet wat er effectief gebeurde
 					qosEstimates.add(adaptationOption);
 
+				}
 				// Als het voorspeld werd dat er niet aan de goals voldaan is
-				} else {
+				else {
 
 					// Ik denk dat dit een manier is om er voor te zorgen dat de model checker dit zeker niet selecteerd
 					adaptationOption.verificationResults.packetLoss = 100.0;
@@ -501,12 +603,151 @@ public class SMCConnector {
 	//Deze functie voert gewoon actiforms uit door alles terug te zenden.
 	//
 	void activform() {
-		System.out.print(";" + adaptationOptions.size());
-		//System.out.println(environment);
-		for (AdaptationOption adaptationOption : adaptationOptions) {
-			smcChecker.checkCAO(adaptationOption.toModelString(), environment.toModelString(),
-					adaptationOption.verificationResults);
-			//System.out.println(adaptationOption);
+		try 
+		{
+			File dat;
+			Path p;
+
+			//System.out.println("Before getting paths");
+			String datPath = Paths.get(System.getProperty("user.dir"), "activforms", "log", "rawData.txt").toString();
+			//String jdatPath = Paths.get(System.getProperty("user.dir"), "activforms", "log", "rawData.json").toString();
+			
+			
+			if (cycles == 1)
+			{
+				dat = new File(datPath);
+
+				//System.out.println("Before file deletion");
+				if(dat.isFile())
+				{
+					dat.delete();
+				}
+				dat.createNewFile();
+			}
+			else
+			{
+				dat = new File(datPath);
+			}
+
+			//System.out.println("init printwriter");
+			PrintWriter writer = new PrintWriter(new OutputStreamWriter( new FileOutputStream(dat, true), StandardCharsets.UTF_8));
+			System.out.print(";" + adaptationOptions.size());
+
+
+
+			JSONArray dummyFeatures;
+			JSONObject qos;
+
+			Mote mote;
+
+			// prints the adaption options for the link.
+			//System.out.println("writing to txt");
+			writer.println(environment);
+
+			//System.out.println("before iterating");
+			for (AdaptationOption adaptationOption : adaptationOptions) {
+				smcChecker.checkCAO(adaptationOption.toModelString(), environment.toModelString(),
+						adaptationOption.verificationResults);
+
+				writer.println(adaptationOption);
+
+				// get features
+				// iterate over all 15 motes (is hashmap and want to be sure of order)
+				// TODO:HARDCODED
+				// TODO: for some reason there is no 1 mote but 2-15
+				dummyFeatures = new JSONArray();
+				//System.out.println("before motes");
+				//for(int s : adaptationOption.system.motes.keySet()) System.out.println(s);
+				for (int i = 2; i <=15; i++)
+				{
+					mote = adaptationOption.system.getMote(i);
+					//System.out.println("at mote "+i);
+					for (TrafficProbability t : environment.motesLoad)
+					{
+						//System.out.println("at traffic");
+						//System.out.println("traffic "+t.moteId);
+						//System.out.println("mote"+mote.getMoteId());
+						if(t.moteId == mote.getMoteId())
+						{
+							//System.out.println("at loading traffic");
+							dummyFeatures.put(t.load);
+						}
+					}
+					//System.out.println("before links");
+					for (Link link : mote.getLinks())
+					{
+						// power is usefull if we learn it or not, 
+						// because it does change every cycle.
+						// Sarpreet left this out, which is not so smart
+						// because it will confuse the learner
+						// because the same snr will sometimes have different
+						// class without anything else changing.
+						dummyFeatures.put(link.getPower());
+						dummyFeatures.put(link.getDistribution());
+						dummyFeatures.put(environment.getSNR(link));
+					}
+				}
+				//System.out.println("before putteing features");
+				features.put(dummyFeatures);
+
+
+				//System.out.println("before qos");
+				
+				// get qos
+				// This has to be processed for every mode, thats why I add objects.
+				qos = new JSONObject();
+				qos.put("packetLoss", adaptationOption.verificationResults.packetLoss);
+				qos.put("latency", adaptationOption.verificationResults.latency);
+				qos.put("energyConsumption", adaptationOption.verificationResults.energyConsumption);
+				targets.put(qos);
+
+				
+
+				
+			}
+			writer.close();
+			
+			//System.out.print("before saving json");
+
+			// write at the end of all the cycles
+			if (this.cycles == ConfigLoader.getInstance().getAmountOfCycles())
+			{
+				p = Paths.get(Paths.get(System.getProperty("user.dir")).toString(), "activforms", "log");
+
+				//System.out.println(p.toString());
+				// find none existing file
+				int i = 1;
+				boolean done = false;
+				File f = null;
+				int cyc = ConfigLoader.getInstance().getAmountOfCycles();
+				int dist = ConfigLoader.getInstance().getDistributionGap();
+				while(!done)
+				{
+
+					f = new File(Paths.get(p.toString(),
+					 	cyc+"Cycles"+dist+"Dist_run"+i+".json").toString());
+					//System.out.println(f.getAbsolutePath());
+					if(!f.exists())
+					{
+						done = true;
+					}
+					else
+					{
+						i++;
+					}
+
+				}
+
+				FileWriter jsonWriter = new FileWriter(Paths.get(p.toString(), 
+					cyc+"Cycles"+dist+"Dist_run"+i+".json").toString());
+				jsonWriter.write(rawData.toString());
+				jsonWriter.flush();
+				jsonWriter.close();
+			}
+		}
+		catch (Exception e) 
+		{
+			System.out.println("Problem writing to file.\n");
 		}
 	}
 
@@ -538,7 +779,32 @@ public class SMCConnector {
 			// TODO: pas dit aan naar jou klassen
 			if (taskType == TaskType.CLASSIFICATION) {
 				target.put(adaptationOption.verificationResults.packetLoss < 10.0 ? 1 : 0);
-			} else {
+			} 
+			// makes corresponding classes for multiclass verification
+			// There are 8 possible combinations for the goals
+			// The succes of a goal represent one bit in 
+			// 3 bits (a power of 2).
+			// So all possible combination can be represented in 3 bits.
+			// So a  number from 0-7 = class.
+			else if(taskType == TaskType.PLLAMULTICLASS)
+			{
+				int APClass = 0;
+
+				//What I do here is dirty
+				// but welcome to this project
+				Goal pl = goals.get(1), la = goals.get(1);
+				for(Goal g : goals)
+				{
+					if(g.getTarget() == "packetLoss") pl = g;
+					else la = g;
+				}
+
+				if( pl.evaluate(adaptationOption.verificationResults.packetLoss)) APClass += 1;
+				if( la.evaluate(adaptationOption.verificationResults.latency)) APClass += 2;
+
+				target.put(APClass);
+			}
+			else {
 				target.put((int) adaptationOption.verificationResults.packetLoss);
 			}
 
@@ -646,4 +912,71 @@ public class SMCConnector {
 			return null;
 		}
 	}
+
+	// reads the goals from the properties file and returns a list of them as Goal objects
+	public static List<Goal> initGoals(String configPath)
+	{
+
+		Properties prop = new Properties();
+		InputStream input = null;
+		List<Goal> rgoals = new LinkedList<>();
+
+		try {
+
+			// TODO adjust this part to use the ConfigLoader class
+			File configFile = new File(configPath);
+			if (!configFile.exists()) {
+				throw new RuntimeException("SMCConfig.properties file not found at following path:" + configPath);
+			}
+
+
+			input = new FileInputStream(configPath);
+
+			// load a properties file
+			prop.load(input);
+
+			// get the property value
+			// load the requirements, aka the models to be predicted by the smc
+			String targets[] = prop.getProperty("targets").split(",");
+			String operators[] = prop.getProperty("operators").split(",");
+			String thressholds[] = prop.getProperty("thressholds").split(",");
+
+			double numThress[] = new double[thressholds.length];
+			for(int i = 0; i < thressholds.length; i++)
+			{
+				
+				numThress[i] = Double.parseDouble(thressholds[i].trim());
+
+			}
+
+			
+			for(int i = 0; i < targets.length; i++)
+			{
+
+				rgoals.add(new Goal( targets[i].trim(),
+				operators[i].trim(), numThress[i]));
+
+			}
+
+			return rgoals;
+
+		}
+		catch (IOException ex) {
+			ex.printStackTrace();
+			return null;
+		}
+		finally {
+			if (input != null) {
+				try {
+					input.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+		
+		}
+
+	}
 }
+
+
