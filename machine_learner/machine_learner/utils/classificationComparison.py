@@ -90,16 +90,16 @@ def printTable(data, outputPath):
     cellsData['fill'] = {'color': colors}
 
     trace = go.Table(header={'values' : data['header'], 'fill': {'color':headerColor}}, cells=cellsData, \
-        columnwidth=[250, 200])
+        columnwidth=[250, 180])
 
-    layout = dict(width=1800, height=600, font=dict(family='"Open Sans", verdana, arial, sans-serif', size=18, color='#444'))
+    layout = dict(width=1800, height=1000, font=dict(family='"Open Sans", verdana, arial, sans-serif', size=18, color='#444'))
     fig = dict(data=[trace], layout=layout)
     plot(fig, filename=os.path.join(outputPath, HTML_OUTPUT_NAME))
     pio.write_image(fig, os.path.join(outputPath, PNG_OUTPUT_NAME))
 
 
 
-def printConfusionMatrix(confMatrix, outputPath, filename, technique):
+def printConfusionMatrix(confMatrix, outputPath, filename, technique, loss, scaler):
     # Temporarily used until print of all matrices is fixed
     amtSamples = sum(confMatrix.values())
 
@@ -108,8 +108,8 @@ def printConfusionMatrix(confMatrix, outputPath, filename, technique):
             [confMatrix['TruePositives'], confMatrix['FalsePositives']], \
             [confMatrix['FalseNegatives'], confMatrix['TrueNegatives']]], \
             'height': 40})
-    layout = dict(width=700, height=300, font=dict(family='"Open Sans", verdana, arial, sans-serif', size=18, color='#444'), \
-        title=f'Confusion matrix {technique}')
+    layout = dict(width=700, height=400, font=dict(family='"Open Sans", verdana, arial, sans-serif', size=18, color='#444'), \
+        title=f'Confusion matrix {technique}<br>Scaler={scaler}' + (f', Loss={loss}' if loss != None else ''))
     fig = dict(data=[trace], layout=layout)
     pio.write_image(fig, os.path.join(outputPath, filename + '.png'))
 
@@ -148,11 +148,12 @@ def writeConfMatricesToFiles(matrices, filename, outputPath):
     csvOutputFile = open(os.path.join(outputPath, filename), mode='w')
     csvOutputWriter = csv.writer(csvOutputFile, delimiter=',')
     keys = list(list(matrices.values())[0].keys())
-    csvOutputWriter.writerow(['technique'] + keys)
+    csvOutputWriter.writerow(['technique', 'loss function', 'scaler'] + keys)
 
     for technique, matrix in sorted(matrices.items()):
+        technique, loss, scaler = technique.split('_')
         # Make sure the order of the initial line is kept when storing the data in the csv
-        csvOutputWriter.writerow([technique] + [matrix[key] for key in keys])
+        csvOutputWriter.writerow([technique, '-' if loss=='None' else loss, scaler] + [matrix[key] for key in keys])
 
     csvOutputFile.close()
 
@@ -164,10 +165,10 @@ def writeConfMatricesToFiles(matrices, filename, outputPath):
 
 def compareResultsClassifiers(inputPath, outputPath):
     data = loadDataFromFiles(inputPath)
-    header = ['Technique','Overall error percentage', 'Error rate < 10% packet loss', 'Error rate > 10% packet loss', \
+    header = ['Technique', 'Loss function', 'Scaler','Overall error percentage', 'Error rate < 10% packet loss', 'Error rate > 10% packet loss', \
         'Error rate versatile configurations', 'Error rate < 10% packet loss (versatile configurations)', \
         'Error rate > 10% packet loss (versatile configurations)', 'F1 score (all)', 'F1 score (versatile)']
-    outputData = {'header' : header[:2] + header[4:], 'values' : []}
+    outputData = {'header' : header[:4] + header[6:], 'values' : []}
 
     csvOutputFile = open(os.path.join(outputPath, CSV_GENERAL_NAME), mode='w')
     csvOutputWriter = csv.writer(csvOutputFile, delimiter=',')
@@ -177,6 +178,15 @@ def compareResultsClassifiers(inputPath, outputPath):
 
     # The key is the used classifier, value is the data associated with the classifier
     for key, configurations in sorted(data.items()):
+        key = key.split('_')
+
+        if len(key) == 2:
+            # The loss function is not applicable in this case
+            loss = None
+            classifier, scaler = key
+        else:
+            classifier, loss, scaler = key
+
         amtCycles = len(configurations[0])
 
         # The overall percentage of errors in the predicted values
@@ -200,17 +210,17 @@ def compareResultsClassifiers(inputPath, outputPath):
         # The confusion matrices
         # TODO merge all confusion matrices into single plot
         overallConfMatrix, versConfMatrix = getCumulativeConfMatrices(configurations), getCumulativeConfMatrices(versatileConfigurations)
-        confMatrices['all'][key] = (overallConfMatrix)
-        confMatrices['versatile'][key] = (versConfMatrix)
-        printConfusionMatrix(overallConfMatrix, outputPath, f'ConfusionMatrixAll_{key}', key + ' (all)')
-        printConfusionMatrix(versConfMatrix, outputPath, f'ConfusionMatrixVers_{key}', key + ' (versatile)')
+        confMatrices['all'][f'{classifier}_{loss}_{scaler}'] = (overallConfMatrix)
+        confMatrices['versatile'][f'{classifier}_{loss}_{scaler}'] = (versConfMatrix)
+        printConfusionMatrix(overallConfMatrix, outputPath, f'ConfusionMatrixAll_{classifier}_{loss}_{scaler}', classifier + ' (all)', loss, scaler)
+        printConfusionMatrix(versConfMatrix, outputPath, f'ConfusionMatrixVers_{classifier}_{loss}_{scaler}', classifier + ' (versatile)', loss, scaler)
 
         # F1 values of the configuration (sub)sets
         F1All, F1Vers = calculateF1Score(overallConfMatrix), calculateF1Score(versConfMatrix)
 
-        row = [key, f'{errorPercentageOverall:.2f}%', f'{errRateBefore:.2f}%', f'{errRateAfter:.2f}%', f'{errorPercentageVersatile:.2f}%', \
-            f'{errRateVBefore:.2f}%', f'{errRateVAfter:.2f}%', f'{F1All:.4f}', f'{F1Vers:.4f}']
-        outputData['values'].append(row[:2] + row[4:])
+        row = [classifier, '-' if loss==None else loss, scaler, f'{errorPercentageOverall:.2f}%', f'{errRateBefore:.2f}%', f'{errRateAfter:.2f}%', \
+            f'{errorPercentageVersatile:.2f}%', f'{errRateVBefore:.2f}%', f'{errRateVAfter:.2f}%', f'{F1All:.4f}', f'{F1Vers:.4f}']
+        outputData['values'].append(row[:4] + row[6:])
         csvOutputWriter.writerow(row)
     
     csvOutputFile.close()
