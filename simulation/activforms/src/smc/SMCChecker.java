@@ -1,3 +1,7 @@
+/*
+ * This is the ActivFORMS model checker.
+ */
+
 package smc;
 
 import java.io.BufferedReader;
@@ -17,13 +21,19 @@ import mapek.Qualities;
 public class SMCChecker {
 
 	String configFilePath;
+
+	// Linux or mac
+	// THis program does not work for  windows because of problems with spaces in path and .exe at the end and....
 	public static String command = Paths
 			.get(System.getProperty("user.dir"), "uppaal-verifyta", "verifyta -a %f -E %f -u %s").toString();
+
 
 	public static String DEFAULT_CONFIG_FILE_PATH = Paths.get(System.getProperty("user.dir"), "SMCConfig.properties")
 			.toString();
 
 	SMCModelLoader modelLoader;
+
+	// The models send to the binary
 	List<SMCModel> models;
 
 	public SMCChecker(String configPath) {
@@ -42,6 +52,7 @@ public class SMCChecker {
 	}
 
 	/*
+	 * This is the same as the call function in the ExecuteCommand.java
 	 * Reference: http://www.mkyong.com/java/how-to-execute-shell-command-from-java/
 	 */
 	@SuppressWarnings("unused")
@@ -77,7 +88,7 @@ public class SMCChecker {
 
 	public static String getCommand(String modelPath, double alpha, double epsilon) {
 		String cmd = String.format(command, alpha, epsilon, modelPath);
-		// System.out.println(cmd);
+		//System.out.println(cmd);
 		return cmd;
 	}
 
@@ -156,6 +167,11 @@ public class SMCChecker {
 		return value;
 	}
 
+	// // (model.getModel(), cao, env)
+	// the getModel is the file of the model in the models folder,
+	// read in as bytes to a string
+	// so this should not change anything to the key of the model
+	// which is important for me later
 	static String changeCAO(String file, String cao, String env) {
 
 		String startText = "//&lt;Configuration&gt;";
@@ -165,6 +181,7 @@ public class SMCChecker {
 		return file;
 	}
 
+	
 	static String changeCAO(String file, @SuppressWarnings("rawtypes") HashMap cao) {
 
 		String startText = "//&lt;Configuration&amp;gt;\n";
@@ -188,16 +205,25 @@ public class SMCChecker {
 		}
 	}
 
+
+	//TODO: VERY IMPORTANT FUNCTION
+	// so this should be the model checker
 	public void checkCAO(String adaptationOption, String environment, Qualities verificationResults) {
 
+		// loads and updates the models and their values specified in the SMCConfig.properties
 		setInitialData(adaptationOption, environment, verificationResults);
 
 		LinkedList<ExecuteCommand> commands = new LinkedList<ExecuteCommand>();
 
+		// for alll models, exectue them
 		for (SMCModel model : models) {
 			String command = getCommand(model.getPath(), model.alpha, model.epsilon);
+
+			// this immediatly also triggers the call() function
 			commands.add(new ExecuteCommand(command, model));
 		}
+
+
 		String[] values;
 		double value = 0;
 
@@ -209,13 +235,34 @@ public class SMCChecker {
 
 		// collecting results
 
+		//TODO: add the latency model here somehow
+		// the commad for predicting the latency, pl and energy is already in here
+		// so should be okay
+
+		// TODO: the models are hardcoded here. But I dont have enough time.
 		for (ExecuteCommand command : commands) {
 
 			values = command.getResult().split("Verifying formula ");
 			value = 0;
+
+			//System.out.println( command.getModel().getKey());
+
 			if (command.getModel().getType() == ModelType.SIMULATION) {
-				value = getSimulatedValue(values[1]);
-				verificationResults.energyConsumption = value;
+
+
+				// latency is a simulation, so if the command was for latency:
+				if(command.getModel().getKey().equals("latency"))
+				{
+					value = getSimulatedValue(values[1]);
+					verificationResults.latency = value;
+				}
+				// the only other command will be for energyconsumption
+				// so an else will suffice
+				// I know it's dirty
+				else {
+					value = getSimulatedValue(values[1]);
+					verificationResults.energyConsumption = value;
+				}
 			} else if (command.getModel().getType() == ModelType.PROBABILITY) {
 				value = getProbability(values[1]);
 				verificationResults.packetLoss = value * 100;
@@ -228,14 +275,26 @@ public class SMCChecker {
 	}
 
 	public void setInitialData(String cao, String env, Qualities verificationResults) {
+		// cao is the adaption option
+
+
 		models = new LinkedList<>();
 		try {
-			for (SMCModel model : modelLoader.loadModels()) {
-				if (model.getKey().equals("packetLoss") || model.getKey().equals("energyConsumption")) {
+
+			List<SMCModel> modelsLoadedFromProperties =  modelLoader.loadModels();
+
+			for (SMCModel model : modelsLoadedFromProperties) {
+
+				// updates the model to include 
+				// some information about the adaption option and the environmetn (noise and load).
+				// I do not know why it is added or what.
+				if (model.getKey().equals("packetLoss") || model.getKey().equals("energyConsumption") || model.getKey().equals("latency")) {
 					String updatedModel = changeCAO(model.getModel(), cao, env);
 					Files.write(Paths.get(model.getPath()), updatedModel.getBytes(Charset.defaultCharset()));
-					models.add(model);
 				}
+				
+				// add the updated form of the model to the models
+				models.add(model);
 			}
 		} catch (IOException e) {
 			e.printStackTrace();

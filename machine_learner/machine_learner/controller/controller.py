@@ -4,7 +4,7 @@ import traceback
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from urllib.parse import urlparse, parse_qs
-from machine_learner.models import classification, regression
+from machine_learner.models import classification, regression, plLaClassification
 
 
 @csrf_exempt
@@ -33,7 +33,17 @@ def training_testing(request):
             cycle = int(parse_qs(urlparse(path).query)['cycle'][0])
 
             # Clear the models/output at the first adaptation cycle
+<<<<<<< HEAD
             if cycle == 1:
+=======
+            # TODO: maybe make this optional, becuase
+            # when we want to see how good ml can get,
+            # it should be used on models who were trained
+            # on tens of thousands of cases
+            # an not the usual 30*216
+            # We can do this buy training on a lot of data and than using those model.
+            if int(cycle) == 1:
+>>>>>>> latency
                 if (mode == 'comparison') or (mode == 'mladjustment'):
                     # Remove all the collected data files before saving the first time
                     # The collected data files in question are .txt and .json files
@@ -102,6 +112,17 @@ def training_testing(request):
 
                 elif mode == 'testing':
                     response = classification.testing(dataset['features'])
+
+
+            elif task_type == 'plLaClassification':
+                
+                if mode == 'training':
+                    response = plLaClassification.training(
+                        dataset['features'], dataset['target'])
+
+                elif mode == 'testing':
+                    response = plLaClassification.testing(dataset['features'])
+
 
 
             elif task_type == 'regression':

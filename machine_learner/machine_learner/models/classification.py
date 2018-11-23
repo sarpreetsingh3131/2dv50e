@@ -81,6 +81,8 @@ def testing(features):
             response['predictions'].append(int(prediction))
             
             # TODO: change this 
+            # if this happens in multiclass, add 1 if the predicted class is 0
+            # because then the model checker will run on all of the adaption options
             if prediction == 1:
                 response['adaptation_space'] += 1
         
