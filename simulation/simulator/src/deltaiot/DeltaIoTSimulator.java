@@ -39,8 +39,8 @@ public class DeltaIoTSimulator {
 	Simulator simul;
 
 	public DeltaIoTSimulator() {
-		this.simul = createSimulatorForDeltaIoT();
-		// this.simul = createSimulatorForDeltaIoT5Motes();
+		// this.simul = createSimulatorForDeltaIoT();
+		this.simul = createSimulatorForDeltaIoTv2();
 	}
 
 	int getPower() {
@@ -200,6 +200,146 @@ public class DeltaIoTSimulator {
 		simul.getRunInfo().setGlobalInterference(new DoubleRange(3.0, 6.0));
 		simul.setMaxTimeSlots(maxQueueSlots);
 
+		return simul;
+	}
+
+	public static Simulator createSimulatorForDeltaIoTv2() {
+		Simulator simul = new Simulator();
+
+		// Motes
+		int load = 10;
+		double battery = 11880.0;
+		int maxQueueSize = 60;
+		int keepAliveTime = 1;
+		int maxQueueSlots = 40;
+		double posScale = 2;
+
+		List<Integer> leafMotes = List.of(7, 9, 13, 16, 24, 34, 35, 36, 37);
+		List<Mote> motes = new ArrayList<>();
+		for (int i = 2; i < 38; i++) {
+			motes.add(new Mote(i, battery, load, maxQueueSize, keepAliveTime, new Position(i*posScale, i*posScale), leafMotes.contains(i)));
+		}
+		Mote[] allMotes = new Mote[motes.size()];
+		allMotes = motes.toArray(allMotes);
+		simul.addMotes(allMotes);
+
+		// Gateway
+		Gateway gateway = new Gateway(GATEWAY_ID, new Position(1 * posScale, 1 * posScale));
+		gateway.setView(allMotes);
+		simul.addGateways(gateway);
+
+		// Links
+		int power = 15;
+		int distribution = 100;
+		boolean packetDuplication = false;
+		simul.setPacketDuplication(packetDuplication);
+		allMotes[2-2].addLinkTo(allMotes[3-2], gateway, power, distribution);
+		allMotes[3-2].addLinkTo(allMotes[4-2], gateway, power, packetDuplication ? 100 : 50);
+		allMotes[3-2].addLinkTo(allMotes[6-2], gateway, power, packetDuplication ? 100 : 50);
+		allMotes[4-2].addLinkTo(allMotes[5-2], gateway, power, distribution);
+		allMotes[5-2].addLinkTo(gateway, gateway, power, distribution);
+		allMotes[6-2].addLinkTo(allMotes[5-2], gateway, power, distribution);
+		allMotes[7-2].addLinkTo(allMotes[8-2], gateway, power, packetDuplication ? 100 : 50);
+		allMotes[7-2].addLinkTo(allMotes[22-2], gateway, power, packetDuplication ? 100 : 50);
+		allMotes[8-2].addLinkTo(allMotes[21-2], gateway, power, distribution);
+		allMotes[9-2].addLinkTo(allMotes[2-2], gateway, power, distribution);
+		allMotes[10-2].addLinkTo(allMotes[11-2], gateway, power, distribution);
+		allMotes[11-2].addLinkTo(allMotes[12-2], gateway, power, distribution);
+		allMotes[12-2].addLinkTo(gateway, gateway, power, distribution);
+		allMotes[13-2].addLinkTo(allMotes[14-2], gateway, power, distribution);
+		allMotes[14-2].addLinkTo(allMotes[25-2], gateway, power, packetDuplication ? 100 : 50);
+		allMotes[14-2].addLinkTo(allMotes[26-2], gateway, power, packetDuplication ? 100 : 50);
+		allMotes[15-2].addLinkTo(allMotes[10-2], gateway, power, distribution);
+		allMotes[16-2].addLinkTo(allMotes[17-2], gateway, power, packetDuplication ? 100 : 50);
+		allMotes[16-2].addLinkTo(allMotes[19-2], gateway, power, packetDuplication ? 100 : 50);
+		allMotes[17-2].addLinkTo(allMotes[18-2], gateway, power, distribution);
+		allMotes[18-2].addLinkTo(gateway, gateway, power, distribution);
+		allMotes[19-2].addLinkTo(allMotes[18-2], gateway, power, distribution);
+		allMotes[20-2].addLinkTo(gateway, gateway, power, distribution);
+		allMotes[21-2].addLinkTo(gateway, gateway, power, distribution);
+		allMotes[22-2].addLinkTo(allMotes[21-2], gateway, power, packetDuplication ? 100 : 50);
+		allMotes[22-2].addLinkTo(allMotes[23-2], gateway, power, packetDuplication ? 100 : 50);
+		allMotes[23-2].addLinkTo(allMotes[21-2], gateway, power, distribution);
+		allMotes[24-2].addLinkTo(allMotes[21-2], gateway, power, packetDuplication ? 100 : 50);
+		allMotes[24-2].addLinkTo(allMotes[23-2], gateway, power, packetDuplication ? 100 : 50);
+		allMotes[25-2].addLinkTo(allMotes[10-2], gateway, power, distribution);
+		allMotes[26-2].addLinkTo(allMotes[15-2], gateway, power, distribution);
+		allMotes[27-2].addLinkTo(allMotes[28-2], gateway, power, distribution);
+		allMotes[28-2].addLinkTo(allMotes[20-2], gateway, power, distribution);
+		allMotes[29-2].addLinkTo(allMotes[20-2], gateway, power, distribution);
+		allMotes[30-2].addLinkTo(allMotes[31-2], gateway, power, distribution);
+		allMotes[31-2].addLinkTo(gateway, gateway, power, distribution);
+		allMotes[32-2].addLinkTo(allMotes[31-2], gateway, power, distribution);
+		allMotes[33-2].addLinkTo(allMotes[29-2], gateway, power, distribution);
+		allMotes[34-2].addLinkTo(allMotes[33-2], gateway, power, distribution);
+		allMotes[35-2].addLinkTo(allMotes[27-2], gateway, power, packetDuplication ? 100 : 50);
+		allMotes[35-2].addLinkTo(allMotes[30-2], gateway, power, packetDuplication ? 100 : 50);
+		allMotes[36-2].addLinkTo(allMotes[32-2], gateway, power, distribution);
+		allMotes[37-2].addLinkTo(allMotes[32-2], gateway, power, distribution);
+
+		// Set order
+		simul.setTurnOrder(7,9,13,16,24,34,35,36,37,2,8,14,17,19,22,27,30,32,33,3,18,23,25,26,28,29,31,4,6,15,20,21,5,10,11,12);
+
+		// Activation probabilites for all the motes
+		int[] heatSensors = {2,4,7,9,13,15,17,18,21,22,28,31,34};
+		int[] RFIDSensors = {3,6,8,12,14,20,24,26,30,35,36,37};
+		int[] infraredSensors = {5,10,11,16,19,23,25,27,29,32,33};
+		for (int i : infraredSensors) {
+			allMotes[i-2].setActivationProbability(new Constant<>(0.50));
+		}
+		for (int i : RFIDSensors) {
+			allMotes[i-2].setActivationProbability(new Constant<>(0.50));
+		}
+
+		
+		// Interference on all the links
+		allMotes[2-2].getLinkTo(allMotes[3-2]).setSnrEquation(new SNREquation(0.7231,-7.4954));
+		allMotes[3-2].getLinkTo(allMotes[4-2]).setSnrEquation(new SNREquation(0.3906,-5.9390));
+		allMotes[3-2].getLinkTo(allMotes[6-2]).setSnrEquation(new SNREquation(0.4548,3.0171));
+		allMotes[4-2].getLinkTo(allMotes[5-2]).setSnrEquation(new SNREquation(0.3905,-2.4642));
+		allMotes[5-2].getLinkTo(gateway).setSnrEquation(new SNREquation(0.4294,-5.9005));
+		allMotes[6-2].getLinkTo(allMotes[5-2]).setSnrEquation(new SNREquation(0.4571,-1.4886));
+		allMotes[7-2].getLinkTo(allMotes[8-2]).setSnrEquation(new SNREquation(0.4085,4.6870));
+		allMotes[7-2].getLinkTo(allMotes[22-2]).setSnrEquation(new SNREquation(1.0000,-5.0489));
+		allMotes[8-2].getLinkTo(allMotes[21-2]).setSnrEquation(new SNREquation(0.3323,-4.4125));
+		allMotes[9-2].getLinkTo(allMotes[2-2]).setSnrEquation(new SNREquation(0.4602,5.4036));
+		allMotes[10-2].getLinkTo(allMotes[11-2]).setSnrEquation(new SNREquation(0.6508,-2.5972));
+		allMotes[11-2].getLinkTo(allMotes[12-2]).setSnrEquation(new SNREquation(0.3563,-2.5603));
+		allMotes[12-2].getLinkTo(gateway).setSnrEquation(new SNREquation(0.6803,-5.2136));
+		allMotes[13-2].getLinkTo(allMotes[14-2]).setSnrEquation(new SNREquation(0.2850,-2.1999));
+		allMotes[14-2].getLinkTo(allMotes[25-2]).setSnrEquation(new SNREquation(0.6745,-2.1041));
+		allMotes[14-2].getLinkTo(allMotes[26-2]).setSnrEquation(new SNREquation(0.4489,-5.9915));
+		allMotes[15-2].getLinkTo(allMotes[10-2]).setSnrEquation(new SNREquation(0.6656,-3.4782));
+		allMotes[16-2].getLinkTo(allMotes[17-2]).setSnrEquation(new SNREquation(0.5635,-7.7281));
+		allMotes[16-2].getLinkTo(allMotes[19-2]).setSnrEquation(new SNREquation(0.4041,6.7458));
+		allMotes[17-2].getLinkTo(allMotes[18-2]).setSnrEquation(new SNREquation(0.3706,3.1184));
+		allMotes[18-2].getLinkTo(gateway).setSnrEquation(new SNREquation(0.6432,3.0667));
+		allMotes[19-2].getLinkTo(allMotes[18-2]).setSnrEquation(new SNREquation(0.2954,-5.5948));
+		allMotes[20-2].getLinkTo(gateway).setSnrEquation(new SNREquation(0.5469,-3.5889));
+		allMotes[21-2].getLinkTo(gateway).setSnrEquation(new SNREquation(0.4259,-3.9652));
+		allMotes[22-2].getLinkTo(allMotes[21-2]).setSnrEquation(new SNREquation(0.5604,-6.2108));
+		allMotes[22-2].getLinkTo(allMotes[23-2]).setSnrEquation(new SNREquation(0.1332,-4.0037));
+		allMotes[23-2].getLinkTo(allMotes[21-2]).setSnrEquation(new SNREquation(0.2662,-0.9520));
+		allMotes[24-2].getLinkTo(allMotes[21-2]).setSnrEquation(new SNREquation(0.5877,4.4264));
+		allMotes[24-2].getLinkTo(allMotes[23-2]).setSnrEquation(new SNREquation(0.7052,-3.8654));
+		allMotes[25-2].getLinkTo(allMotes[10-2]).setSnrEquation(new SNREquation(0.5531,6.5996));
+		allMotes[26-2].getLinkTo(allMotes[15-2]).setSnrEquation(new SNREquation(0.1958,-5.6936));
+		allMotes[27-2].getLinkTo(allMotes[28-2]).setSnrEquation(new SNREquation(0.2693,-4.0252));
+		allMotes[28-2].getLinkTo(allMotes[20-2]).setSnrEquation(new SNREquation(0.5760,4.9590));
+		allMotes[29-2].getLinkTo(allMotes[20-2]).setSnrEquation(new SNREquation(0.4258,-7.9851));
+		allMotes[30-2].getLinkTo(allMotes[31-2]).setSnrEquation(new SNREquation(0.5634,-6.5998));
+		allMotes[31-2].getLinkTo(gateway).setSnrEquation(new SNREquation(0.4025,-4.8609));
+		allMotes[32-2].getLinkTo(allMotes[31-2]).setSnrEquation(new SNREquation(0.5601,-7.9440));
+		allMotes[33-2].getLinkTo(allMotes[29-2]).setSnrEquation(new SNREquation(0.6674,-7.8050));
+		allMotes[34-2].getLinkTo(allMotes[33-2]).setSnrEquation(new SNREquation(0.1744,-4.9619));
+		allMotes[35-2].getLinkTo(allMotes[27-2]).setSnrEquation(new SNREquation(0.4798,4.1792));
+		allMotes[35-2].getLinkTo(allMotes[30-2]).setSnrEquation(new SNREquation(0.7006,-5.2376));
+		allMotes[36-2].getLinkTo(allMotes[32-2]).setSnrEquation(new SNREquation(0.3771,-6.4021));
+		allMotes[37-2].getLinkTo(allMotes[32-2]).setSnrEquation(new SNREquation(0.2405,-5.0953));
+
+
+		simul.getRunInfo().setGlobalInterference(new DoubleRange(3.0, 6.0));
+		simul.setMaxTimeSlots(maxQueueSlots);
 		return simul;
 	}
 
