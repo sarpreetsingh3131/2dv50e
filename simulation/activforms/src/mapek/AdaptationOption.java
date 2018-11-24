@@ -21,9 +21,9 @@ public class AdaptationOption {
 
 	public String toModelString() {
 		StringBuilder string = new StringBuilder();
-		string.append("\nManagedSystem deltaIoT = {{\n");
+		string.append("\nManagedSystem deltaIoT = {{");
 		Mote mote;
-		for (int i = 2; i <= 15; i++) {
+		for (int i : system.motes.keySet()) {
 			mote = system.getMote(i);
 
 			string.append(mote.getModelString());
