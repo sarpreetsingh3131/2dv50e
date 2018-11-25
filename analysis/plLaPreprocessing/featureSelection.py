@@ -1,4 +1,4 @@
-from util import getData
+from util import getData, constructDataWithSelectedFeatures
 import json
 import numpy as np
 import pandas as pd
@@ -6,6 +6,7 @@ from sklearn.ensemble import ExtraTreesClassifier
 from sklearn.feature_selection import chi2, SelectKBest, f_classif
 import matplotlib.pyplot as plt
 from sklearn.preprocessing import MinMaxScaler
+import os
 
 P_VALUE = 0.05
 
@@ -96,9 +97,16 @@ def main():
     plt.title("Feature selection packet loss and latency. \n (gap in xtick represents one mote and its links)")
     plt.legend()
     plt.show()
-    fig.savefig('featureSelection.eps', format='eps', dpi=1200)
-    fig.savefig('featureSelection.svg', format='svg', dpi=1200)
-    fig.savefig('featureSelection.png', format='png', dpi=1200)
+    fig.savefig(os.path.join("fsFigures",'featureSelection.eps'), format='eps', dpi=1200)
+    fig.savefig(os.path.join("fsFigures",'featureSelection.svg'), format='svg', dpi=1200)
+    fig.savefig(os.path.join("fsFigures",'featureSelection.png'), format='png', dpi=1200)
+
+    x = "asdf"
+    while( x != 'y' and x != 'n' ):
+        x = input("Do you want to create data with the features selected by f_classif? [y/n]\n")
+    if (x == 'y'):
+        constructDataWithSelectedFeatures(no)
+    
  
 
 
