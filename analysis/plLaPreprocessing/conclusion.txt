@@ -7,6 +7,6 @@ We will also select the link distribution of the links of motes 7, 10 and 12.
 
 Furthermore, because of the importance and chi2 statistic, we will also select the mote load of motes 10 and 13.
 
-It should be noted the results of the chi2 contained a lot of NaNs, because for some cases there were not enough instances. 
-This means the results are not reliable, because smaller intervals should be taken.
+It should be noted the results of the chi2 contained a lot of NaNs, because some features were constant. 
+This means the results are not reliable.
 Given they correspond to the results of the tree importances however, we will not do this and work with the above results.

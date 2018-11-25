@@ -3,7 +3,7 @@ import json
 import numpy as np
 import pandas as pd
 from sklearn.ensemble import ExtraTreesClassifier
-from sklearn.feature_selection import chi2, SelectKBest
+from sklearn.feature_selection import chi2, SelectKBest, f_classif
 import matplotlib.pyplot as plt
 from sklearn.preprocessing import MinMaxScaler
 
@@ -70,9 +70,9 @@ def main():
     plt.bar(dists, dist, color='g', label="Importance link distribution")
     plt.bar(snrs, snr, color='black', label="Importance link SNR")
 
-    sf = MinMaxScaler().fit_transform(features)
-    print(sf.shape)
-    c, p = chi2(sf, targets)
+    #sf = MinMaxScaler().fit_transform(features)
+    #print(sf.shape)
+    c, p = f_classif(features, targets)
 
     yes = []
     no = []
@@ -89,8 +89,8 @@ def main():
     for i in range(0,len(nop)):
         nop[i] = nop[i] + 1
     
-    plt.plot(yesp, importances[yes], 'rx', label="Not rejected by chi2")
-    plt.plot(nop, importances[no], 'y*', label="Rejected by chi2\n at significance level "+str(P_VALUE))
+    plt.plot(yesp, importances[yes], 'rx', label="Not rejected by f_classif")
+    plt.plot(nop, importances[no], 'y*', label="Rejected by f_classif\n at significance level "+str(P_VALUE))
     
     plt.xticks(ticks)
     plt.title("Feature selection packet loss and latency. \n (gap in xtick represents one mote and its links)")
