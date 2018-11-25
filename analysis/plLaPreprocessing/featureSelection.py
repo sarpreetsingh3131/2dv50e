@@ -3,8 +3,9 @@ import json
 import numpy as np
 import pandas as pd
 from sklearn.ensemble import ExtraTreesClassifier
-from sklearn.feature_selection import chi2
+from sklearn.feature_selection import chi2, SelectKBest
 import matplotlib.pyplot as plt
+from sklearn.preprocessing import MinMaxScaler
 
 P_VALUE = 0.05
 
@@ -25,8 +26,83 @@ def main():
     importances = tree.feature_importances_
 
 
-    plt.subplots()
+    load = []
+    power = []
+    dist = []
+    snr = []
+    loads = []
+    powers = []
+    dists = []
+    snrs = []
+    ticks = []
 
+    fig = plt.figure()
+
+    i=0
+    ticks.append(1)
+    while (i < features.shape[1]):
+
+        load.append(importances[i])
+        loads.append(i+1)
+        power.append(importances[i+1])
+        powers.append(i+2)
+        dist.append(importances[i+2])
+        dists.append(i+3)
+        snr.append(importances[i+3])
+        snrs.append(i+4)
+
+        if (i == 5*4 or i == 8* 4 + 3 or i == 10*4 + 6):
+
+            power.append(importances[i+4])
+            powers.append(i+5)
+            dist.append(importances[i+5])
+            dists.append(i+6)
+            snr.append(importances[i+6])
+            snrs.append(i+7)
+
+            i += 7
+        else:
+            i += 4
+        ticks.append(i+1)
+    
+    plt.bar(loads, load, color='r', label = 'Importance mote load')
+    plt.bar(powers, power, color='b', label="Importance link power")
+    plt.bar(dists, dist, color='g', label="Importance link distribution")
+    plt.bar(snrs, snr, color='black', label="Importance link SNR")
+
+    sf = MinMaxScaler().fit_transform(features)
+    print(sf.shape)
+    c, p = chi2(sf, targets)
+
+    yes = []
+    no = []
+    for i in range(0,len(p)):
+        if p[i] < P_VALUE:
+            no.append(i)
+        else:
+            yes.append(i)
+
+    yesp = yes.copy()
+    nop = no.copy()
+    for i in range(0,len(yesp)):
+        yesp[i] = yesp[i] + 1
+    for i in range(0,len(nop)):
+        nop[i] = nop[i] + 1
+    
+    plt.plot(yesp, importances[yes], 'rx', label="Not rejected by chi2")
+    plt.plot(nop, importances[no], 'y*', label="Rejected by chi2\n at significance level "+str(P_VALUE))
+    
+    plt.xticks(ticks)
+    plt.title("Feature selection packet loss and latency. \n (gap in xtick represents one mote and its links)")
+    plt.legend()
+    plt.show()
+    fig.savefig('featureSelection.eps', format='eps', dpi=1200)
+    fig.savefig('featureSelection.svg', format='svg', dpi=1200)
+    fig.savefig('featureSelection.png', format='png', dpi=1200)
+ 
+
+
+"""
     i = 0
     while i <= len(targets):
         j = i
@@ -53,11 +129,8 @@ def main():
             plt.bar(j+5, importances[j+4], 'g/')
             plt.bar(j+6, importances[j+5], 'b/')
             plt.bar(j+7, importances[j+6], 'p/')
+"""
     
-    plt.show()
-    input()
- 
-
         
 
 
