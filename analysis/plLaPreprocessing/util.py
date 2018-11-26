@@ -2,7 +2,11 @@ from os.path import join, realpath, dirname, exists
 import os
 import json
 
-
+# change this filename to analyze a different file from 
+# the formatted plLaClassification
+# You should just be able to run featureSelection first,
+# and if you answer yes to the question to construct data with selected features
+# you can just execute modelSelection.py
 RDATA_FILE = "456Cycles20Dist"
 
 def getData():
@@ -40,5 +44,17 @@ def constructDataWithSelectedFeatures( selectedFeatures ):
         
         fs["features"].append(r)
 
+
     with open( join(path, RDATA_FILE + ".json"), 'w') as f:
         json.dump(fs,f)
+
+def getDataWithSelectedFeatures():
+
+    path = realpath(__file__)
+    path = join(dirname(path), "dataWithSelectedFeatures", RDATA_FILE + ".json")
+
+    with open( path, 'r') as f:
+        data = json.load(f)
+
+    return data
+    

@@ -8,6 +8,9 @@ import matplotlib.pyplot as plt
 from sklearn.preprocessing import MinMaxScaler
 import os
 
+# the file to be analysed is set in the util.py file
+
+
 P_VALUE = 0.05
 
 def main():
