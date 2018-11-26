@@ -1,8 +1,3 @@
-"""This file does the classification learning
-
-There is a lot to be done here
-"""
-
 import traceback
 import os
 import numpy as np
@@ -10,8 +5,6 @@ from sklearn.preprocessing import MinMaxScaler
 from sklearn.linear_model import SGDClassifier
 from machine_learner.utils import repository
 
-#DIR_PATH = 'machine_learner/trained_models/classification/'
-#changed the above path to be platform independent
 DIR_PATH = os.path.join('machine_learner', 'trained_models', 'plLaClassification')
 
 #TODO: addapt to a flexible model and multiple goals
@@ -19,23 +12,8 @@ DIR_PATH = os.path.join('machine_learner', 'trained_models', 'plLaClassification
 # this and activforms
 # however, I do not think much has to be done here except the multiclass
 # methode to choose
-def training(features, target):
-
+def training(features, target, cycle):
     try:
-
-        # he makes this model and replaces it if he is able
-        # to load the previous model
-        # If not, he returns the classifier given to him 
-        # This is an extremely lazy way of 
-        # coding: if file doesn't exist, make one
-        # This is inneficient
-        # You make the model every time, every cycle...
-        # Remove this later, same story for the scaler
-
-        #The SGDClassifier.__name__ just returns a string
-        # "SGDClassifier" and I presume it does the same 
-        # equivalent thing for the other names
-
 
         # also, you could do the automated model selection here
         # if it return null
@@ -44,17 +22,13 @@ def training(features, target):
         # n_jobs is the amout of CPUs to use.
         # you should change it to 4 if your pc can handle it
         # SGDClassifier uses OVA.
-        model = SGDClassifier(loss='hinge', penalty='l1')
         modelName = SGDClassifier.__name__
-
-        model = repository.get(model , modelName, DIR_PATH)
-
-        # same for the scaler
-        # TODO: set selected scaler
-        scaler = MinMaxScaler()
-        scalerName = MinMaxScaler.__name__
-
-        scaler = repository.get(scaler, scalerName, DIR_PATH)
+        if cycle != 1:
+            model = repository.get(SGDClassifier.__name__, DIR_PATH)
+            scaler = repository.get(MinMaxScaler.__name__, DIR_PATH)
+        else:
+            model = SGDClassifier(loss='hinge', penalty='l1')
+            scaler = MinMaxScaler()
 
         #TODO: make dimensionality reduction here.
 
@@ -86,21 +60,8 @@ def testing(features):
 
     try:
     
-        # The same problem with get as above but even worse
-        # Here he would test on a completely new model
-        # if non found.
-        # TODO: change to final model
-        model = SGDClassifier(loss='hinge', penalty='l1')
-        modelName = SGDClassifier.__name__
-
-        model = repository.get(model, modelName, DIR_PATH)
-
-        # same problem as above
-        # TODO: change to final scaler
-        scaler = MinMaxScaler()
-        scalerName = MinMaxScaler.__name__
-
-        scaler = repository.get(scaler, scalerName, DIR_PATH)
+        model = repository.get(SGDClassifier.__name__, DIR_PATH)
+        scaler = repository.get(MinMaxScaler.__name__, DIR_PATH)
 
         # TODO: dimensionality reduction
         

@@ -33,17 +33,8 @@ def training_testing(request):
             cycle = int(parse_qs(urlparse(path).query)['cycle'][0])
 
             # Clear the models/output at the first adaptation cycle
-<<<<<<< HEAD
+            # TODO make this optional for potentially larger scaled problems later on
             if cycle == 1:
-=======
-            # TODO: maybe make this optional, becuase
-            # when we want to see how good ml can get,
-            # it should be used on models who were trained
-            # on tens of thousands of cases
-            # an not the usual 30*216
-            # We can do this buy training on a lot of data and than using those model.
-            if int(cycle) == 1:
->>>>>>> latency
                 if (mode == 'comparison') or (mode == 'mladjustment'):
                     # Remove all the collected data files before saving the first time
                     # The collected data files in question are .txt and .json files
@@ -118,7 +109,7 @@ def training_testing(request):
                 
                 if mode == 'training':
                     response = plLaClassification.training(
-                        dataset['features'], dataset['target'])
+                        dataset['features'], dataset['target'], cycle)
 
                 elif mode == 'testing':
                     response = plLaClassification.testing(dataset['features'])
