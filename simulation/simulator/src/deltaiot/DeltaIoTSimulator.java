@@ -260,8 +260,7 @@ public class DeltaIoTSimulator {
 		allMotes[22-2].addLinkTo(allMotes[21-2], gateway, power, packetDuplication ? 100 : 50);
 		allMotes[22-2].addLinkTo(allMotes[23-2], gateway, power, packetDuplication ? 100 : 50);
 		allMotes[23-2].addLinkTo(allMotes[21-2], gateway, power, distribution);
-		allMotes[24-2].addLinkTo(allMotes[21-2], gateway, power, packetDuplication ? 100 : 50);
-		allMotes[24-2].addLinkTo(allMotes[23-2], gateway, power, packetDuplication ? 100 : 50);
+		allMotes[24-2].addLinkTo(allMotes[21-2], gateway, power, distribution);
 		allMotes[25-2].addLinkTo(allMotes[10-2], gateway, power, distribution);
 		allMotes[26-2].addLinkTo(allMotes[15-2], gateway, power, distribution);
 		allMotes[27-2].addLinkTo(allMotes[28-2], gateway, power, distribution);
@@ -321,7 +320,6 @@ public class DeltaIoTSimulator {
 		allMotes[22-2].getLinkTo(allMotes[23-2]).setSnrEquation(new SNREquation(0.1332,-4.0037));
 		allMotes[23-2].getLinkTo(allMotes[21-2]).setSnrEquation(new SNREquation(0.2662,-0.9520));
 		allMotes[24-2].getLinkTo(allMotes[21-2]).setSnrEquation(new SNREquation(0.5877,4.4264));
-		allMotes[24-2].getLinkTo(allMotes[23-2]).setSnrEquation(new SNREquation(0.7052,-3.8654));
 		allMotes[25-2].getLinkTo(allMotes[10-2]).setSnrEquation(new SNREquation(0.5531,6.5996));
 		allMotes[26-2].getLinkTo(allMotes[15-2]).setSnrEquation(new SNREquation(0.1958,-5.6936));
 		allMotes[27-2].getLinkTo(allMotes[28-2]).setSnrEquation(new SNREquation(0.2693,-4.0252));
