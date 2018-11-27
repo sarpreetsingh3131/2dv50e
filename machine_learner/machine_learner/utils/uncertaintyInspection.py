@@ -6,6 +6,7 @@ import functools
 import sys
 import os
 import shutil
+from dataLoader import *
 
 PLOT_OUTPUT_DIR = ''
 
@@ -35,119 +36,13 @@ def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, 
 
 
 
-class AdaptationResult:
-    def __init__(self, ec, pl, clB, reB, clA, reA):
-        self.ec = ec    # ec = Energy consumption (as evaluated by uppaal)
-        self.pl = pl    # pl = packet loss (as evaluated by uppaal)
-        self.clB = clB  # clB = classification prediction before online training adjustment
-        self.reB = reB  # clA = classification prediction after online training adjustment
-        self.clA = clA  # reB = regression prediction before online training adjustment
-        self.reA = reA  # reA = regression prediction after online training adjustment
-
-    # Returns a tuple about the correctness (before online learning) of
-    # the prediction from classification and regression respectively
-    def isPredictedRight(self):
-        # For classification, check if the predicted class is correct for the evaluated packet loss
-        # For regression, make sure the sign of the predicted and actual packet loss value -10 is equal
-        return (True if (self.pl < 10) == self.clB else False, ((self.pl - 10) < 0) == ((self.reB - 10) < 0))
-
-    # Negation of isPredictedRight method
-    def isPredictedWrong(self):
-        tmp = self.isPredictedRight()
-        return (not tmp[0], not tmp[1])
-
-
-
-class AdaptationResults:
-    def __init__(self, adaptationIndex):
-        self.results = []
-        self.index = adaptationIndex
-
-    def __iter__(self):
-        for i in self.results:
-            yield i
-
-    def __getitem__(self, indices):
-        if not isinstance(indices, tuple):
-            return self.results[indices]
-        raise Exception()
-
-    def __len__(self):
-        return len(self.results)
-
-    def addResult(self, ec, pl, clB, reB, clA, reA):
-        self.results.append(AdaptationResult(ec, pl, clB, reB, clA, reA))
-
-    def getResults(self):
-        return self.results
-
-    # Gets a factor used to determine how much the sample is scattered between the cutoff line of packet loss
-    # This is computed as follows: abs((#samples <= 10%) - (#samples > 10%))
-    # The lower the factor, the more the results of this adaptation option is spread out over this cutoff line
-    def getScatterRate(self):
-        tmp = [i.pl for i in self.results]
-        return abs((sum(1 if i < 10.0 else 0 for i in tmp)*2) - len(tmp))
-
-
-    # Computes the maximum distance of 2 distinct result
-    def getMaxDistPL(self):
-        tmp = [i.pl for i in self.results]
-        return max(tmp) - min(tmp)
-
-    # Gets the mean distance of all tuples (x1, x2) 
-    def getMeanDistPL(self):
-        # NOTE: this functions assumes that the amount of cycles run is even
-        sortedList = np.array(sorted([i.pl for i in self.results]))
-        return np.mean([sortedList[-(i + 1)] - sortedList[i] for i in range(len(sortedList) >> 1)])
-        
-
-    def getMaxDistEC(self):
-        tmp = [i.ec for i in self.results]
-        return max(tmp) - min(tmp)
-
-    # Gets the amount of wrong predictions for classification and regression respectively
-    # Returns a tuple: (#err classification, #err regression)
-    def getAmtOfWrongPredictions(self):
-        predicts = [i.isPredictedWrong() for i in self.results]
-        # Count the cycles where the prediction of the respective learners went wrong
-        return tuple([sum(x) for x in zip(*predicts)])
-
-
-
-
-
 
 def analyseUncertainties():
     pathFile = os.path.join('machine_learner', 'collected_data', 'overall_adaptation_options.json')
-    try:
-        data = json.load(open(pathFile))
-    except Exception:
-        print('Make sure this script is run from the machine_learner directory (same directory as \'manage.py\')')
-        sys.exit(1)
 
-    # # Load the adaptation options once at startup
-    adapResults = []
-    for i in range(len(data[0]['adaptationOptions'])):
-        adapResults.append(AdaptationResults(i))
+    adapResults = loadData(pathFile)
 
-    for i in range(len(data)):
-        dataCycleI = data[i]['adaptationOptions']
-
-        for adaptationOption in range(len(dataCycleI)):
-            ai, pl, ec, clB, reB, clA, reA = \
-                dataCycleI[adaptationOption]['adaptationOption'], \
-                dataCycleI[adaptationOption]['packetLoss'], \
-                dataCycleI[adaptationOption]['energyConsumption'], \
-                dataCycleI[adaptationOption]['classificationBefore'], \
-                dataCycleI[adaptationOption]['regressionBefore'], \
-                dataCycleI[adaptationOption]['classificationAfter'], \
-                dataCycleI[adaptationOption]['regressionAfter']
-
-            # FIXME Amount of learning cycles hardcoded for now
-            if i > 29:
-                adapResults[ai].addResult(ec, pl, clB, reB, clA, reA)
-
-
+    
     # Get the minimum and maximum value for energy consumption over all configurations (used in graphs)
     ecResults = [[ao.ec for ao in adapResult] for adapResult in adapResults]
     # flatten the list
