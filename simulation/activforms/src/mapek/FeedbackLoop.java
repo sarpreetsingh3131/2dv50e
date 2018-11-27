@@ -147,8 +147,6 @@ public class FeedbackLoop {
 		// Init new configuration
 		currentConfiguration = new Configuration();
 
-		// Maakt copy van netwerk in huidige staat
-
 		// Makes copy of the IoT network in its current state
 		Mote newMote;
 		Link newLink;
@@ -156,25 +154,20 @@ public class FeedbackLoop {
 		// Iterate through all the motes OF THE SIMULATOR
 		for (deltaiot.services.Mote mote : motes) {
 
-			// Make a new mote and give it the ID of the mote being iterated on
 			newMote = new Mote();
 			newMote.moteId = mote.getMoteid();
-
-			// Adds the current battery level to the mote
 			newMote.energyLevel = mote.getBattery();
+			// TODO should more attributes of the motes (such as energy level, queue size, ...) be added as well?
 
 			// The motesLoad is a list with the load of the motes.
 			// I think every element of that list represents the load
 			// on the mote in a cycle in the past.
 			// Here you add a new load to the list for the current cycle
-			// TODO: the way the load is calculated should be looked at.
-			// TODO: the dataprobability is a constant? how can that be the load?
 			currentConfiguration.environment.motesLoad
 					.add(new TrafficProbability(mote.getMoteid(), mote.getDataProbability()));
 			
 			
 			// Copy the links and its SNR
-			//TODO: so the SNR and load never change for a mote throughout time?
 			for (deltaiot.services.Link link : mote.getLinks()) {
 				newLink = new Link();
 				newLink.source = link.getSource();

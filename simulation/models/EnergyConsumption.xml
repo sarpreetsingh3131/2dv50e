@@ -152,25 +152,17 @@ Link selectNextLink(){
 }
 
 int getReceiveQueue(int slots){
-        int q;
-   // int SLOTS = sendQ == 0? MAX_SLOTS: MAX_SLOTS-sendQ;
-
-   // if (SLOTS &gt;= queue[moteId]){
-   //     q = queue[moteId];
-   //     queue[moteId] = 0;
-   // }
-   // else if (SLOTS &lt; queue[moteId]){
-    //    q = SLOTS;
-    //    queue[moteId] = queue[moteId] - SLOTS;
-    //}
-     if(slots &gt;= queue[moteId]){
-           q = queue[moteId];
+    int q;
+    if(slots &gt;= queue[moteId]){
+        q = queue[moteId];
         queue[moteId] = 0;
     }
     else{
-            q=slots;
-            queue[moteId] = queue[moteId]-slots;
-        }
+        q=slots;
+        // TODO does this create a discrepancy with the simulator since the 'lifetime' of packets is set to 1,
+        // but packets which could not be sent at the current cycle are still kept in the buffer
+        queue[moteId] = queue[moteId]-slots;
+    }
                  
     return q;
 }
@@ -325,13 +317,17 @@ double getSendEnergy(){
 }
 
 double getTimeSlotsEnergy(){
-    return (((MAX_MOTES -5)  * 40) * receptionTime * receptionCost)/CoulombUnit; // 40 is time slots here, 5 leaf motes, one gateway
-                                                                                 // but 4 receives 2 times 40 slots from mote 6 and 2
+    // 14 motes, of which 5 are leaf motes (do not receive packets)
+    // of the 9 motes left, 4 of them receive packets from 2 motes
+    // =&gt; there are 13 receive windows
+    // return (13 * MAX_SLOTS * receptionTime * receptionCost) / CoulombUnit;
+
+    // 5 leaf motes, one gateway
+    // but 4 receives 2 times 40 slots from mote 6 and 2
+    return (((MAX_MOTES -5) * MAX_SLOTS) * receptionTime * receptionCost)/CoulombUnit; 
 }
 
 double getMotesEnergyConsumption(){
-   // if (periods &lt;1)
-   //     return 0;
     return getSendEnergy()+ getTimeSlotsEnergy();
 }
 

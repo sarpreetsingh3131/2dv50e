@@ -248,8 +248,10 @@ public class Mote extends Node {
 				link.getTo().calcualtePacketReceiveBatteryConsumption(timeSlots);
 			}
 		} else {
-			if (links.size() > 0)
+			if (links.size() > 0) {
+				// FIXME figure out what to do when the mote has more than 1 parent -> both should receive for all timeSlots?
 				links.get(0).getTo().calcualtePacketReceiveBatteryConsumption(timeSlots);
+			}
 		}
 	}
 

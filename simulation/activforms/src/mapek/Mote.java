@@ -39,7 +39,10 @@ public class Mote {
 	public String getModelString() {
 		StringBuilder string = new StringBuilder();
 		string.append("\n{");
-		// {2, 10, 11744, 1, 0,
+		
+		// TODO is the load of 10 chosen here for conservative reasons?
+		// TODO similar question about the queuesize (0)
+		// TODO also energy level (11744)
 		string.append(String.format("%d, 10, 11744, %d, 0,{", moteId, links.size()));
 		for (Link link : links) {
 			string.append(

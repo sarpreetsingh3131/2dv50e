@@ -82,8 +82,7 @@ int topology[d_id] = {8,10,13,14,15,5,6,11,12,9,7,2,3,4,1};
 //&lt;/Topology&gt;
 broadcast chan data[d_id], turn[d_id], done;
 
-double batteryUsage;
-int packets, expected;
+int packets;
 </declaration>
 	<template>
 		<name>MoteAutomaton</name>
@@ -125,7 +124,7 @@ Link selectNextLink(){
 
 int getReceiveQueue(){
     int q;
-    int SLOTS = sendQ == 0? MAX_SLOTS: MAX_SLOTS-sendQ;
+    int SLOTS = MAX_SLOTS-sendQ;
 
     if (SLOTS &gt;= deltaIoT.motes[moteId].queueSize){
         q = deltaIoT.motes[moteId].queueSize;
@@ -139,8 +138,7 @@ int getReceiveQueue(){
 }
 
 int getBuffer(){
-    sendQ = deltaIoT.motes[moteId].load;
-    return sendQ;
+    return deltaIoT.motes[moteId].load;
 }
 
 void initialize(){
@@ -151,7 +149,7 @@ void initialize(){
 }
 
 void receivePackets(int numPackets){
-        deltaIoT.motes[moteId].queueSize += numPackets;
+    deltaIoT.motes[moteId].queueSize += numPackets;
     if (deltaIoT.motes[moteId].queueSize &gt; MAX_QUEUE)
         deltaIoT.motes[moteId].queueSize = MAX_QUEUE;
 }
@@ -278,24 +276,19 @@ selectNextLink()</label>
 		<name>Gateway</name>
 		<declaration>int periods = 0;
 double recvdPackets;
-int expectedPackets;
 double totalPackets;
-void recvPackets(int packets){
-    recvdPackets = recvdPackets +  packets;
-    expectedPackets += expected;
-}
 int queuedPackets;
-int totalQueuedPackets;
 double latency;
 double totalLatency;
 double avgLatency;
 
 void reset(){
     recvdPackets = 0;
-    expectedPackets = 0;
 }
 
-
+void recvPackets(int packets){
+    recvdPackets = recvdPackets +  packets;
+}
 
 
 int getQueuedPacketsFromAllMotes(){
@@ -315,8 +308,8 @@ int getQueuedPacketsFromAllMotes(){
 		<transition>
 			<source ref="id9"/>
 			<target ref="id10"/>
-			<label kind="synchronisation" x="-119" y="34">done!</label>
-			<label kind="assignment" x="-119" y="51">queuedPackets = getQueuedPacketsFromAllMotes(),
+			<label kind="synchronisation" x="-102" y="42">done!</label>
+			<label kind="assignment" x="-102" y="59">queuedPackets = getQueuedPacketsFromAllMotes(),
 totalPackets = recvdPackets + queuedPackets,
 latency = queuedPackets / totalPackets,
 totalLatency = totalLatency + latency,
