@@ -8,6 +8,7 @@ import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Properties;
@@ -70,11 +71,17 @@ public class SMCModelLoader {
 				
 				key = req.trim();
 				
-				// hardcoded path
-				// path = modelsFolderPath + "/" + prop.getProperty(key + ".modelFileName");
-				//Get path to model
-				mfp = Paths.get(modelsFolderPath, prop.getProperty(key + ".modelFileName"));
-				path = mfp.toString();
+				// Get path to model
+				String modelFileName = prop.getProperty(key + ".modelFileName");
+				mfp = Paths.get(modelsFolderPath, modelFileName);
+				
+				// In case the target folder does not exist yet, create it
+				new File(Paths.get(modelsFolderPath, "target").toString()).mkdir();
+
+				// Copy the model to the target folder so that it is only modified there
+				Files.copy(mfp, Paths.get(modelsFolderPath, "target", modelFileName), StandardCopyOption.REPLACE_EXISTING);
+				
+				path = Paths.get(modelsFolderPath, "target", modelFileName).toString();
 
 				// this and the if else statement gets info on how to execute the model from the properties file
 				String modelType = prop.getProperty(key + ".type");

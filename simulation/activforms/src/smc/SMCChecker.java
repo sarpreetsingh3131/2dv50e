@@ -213,65 +213,45 @@ public class SMCChecker {
 		// loads and updates the models and their values specified in the SMCConfig.properties
 		setInitialData(adaptationOption, environment, verificationResults);
 
+		
+		// Add commands to verify all the different quality models
 		LinkedList<ExecuteCommand> commands = new LinkedList<ExecuteCommand>();
-
-		// for alll models, exectue them
 		for (SMCModel model : models) {
 			String command = getCommand(model.getPath(), model.alpha, model.epsilon);
-
-			// this immediatly also triggers the call() function
 			commands.add(new ExecuteCommand(command, model));
 		}
 
-
 		String[] values;
-		double value = 0;
-
 		try {
 			cachedPool.invokeAll(commands);
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
 
-		// collecting results
-
-		//TODO: add the latency model here somehow
-		// the commad for predicting the latency, pl and energy is already in here
-		// so should be okay
-
-		// TODO: the models are hardcoded here. But I dont have enough time.
+		// Collection of all the results from the model verifications
 		for (ExecuteCommand command : commands) {
-
+			// Get the part of the output from the command that contains the results of the verifier
 			values = command.getResult().split("Verifying formula ");
-			value = 0;
 
-			//System.out.println( command.getModel().getKey());
+			ModelType simType = command.getModel().getType();
+			String quality = command.getModel().getKey();
 
-			if (command.getModel().getType() == ModelType.SIMULATION) {
-
-
-				// latency is a simulation, so if the command was for latency:
-				if(command.getModel().getKey().equals("latency"))
-				{
-					value = getSimulatedValue(values[1]);
-					verificationResults.latency = value;
-				}
-				// the only other command will be for energyconsumption
-				// so an else will suffice
-				// I know it's dirty
-				else {
-					value = getSimulatedValue(values[1]);
-					verificationResults.energyConsumption = value;
-				}
-			} else if (command.getModel().getType() == ModelType.PROBABILITY) {
-				value = getProbability(values[1]);
-				verificationResults.packetLoss = value * 100;
+			// Retrieve the results for the different qualities, dependent on the model type (simulation or probability)
+			switch (quality) {
+				case "latency":
+					verificationResults.latency = simType == ModelType.SIMULATION ?
+						getSimulatedValue(values[1]) : getProbability(values[1]) * 100;
+					break;
+				case "energyConsumption":
+					verificationResults.energyConsumption = simType == ModelType.SIMULATION ?
+						getSimulatedValue(values[1]) : getProbability(values[1]) * 100;
+					break;
+				case "packetLoss":
+					verificationResults.energyConsumption = simType == ModelType.SIMULATION ?
+						getSimulatedValue(values[1]) : getProbability(values[1]) * 100;
+					break;
 			}
-			// System.out.print(value + ",");
-			// value = Double.parseDouble(String.format("%.2f", value));
-			// verificationResults.put(command.getModel().getKey(), value);
 		}
-		// System.out.println();
 	}
 
 	public void setInitialData(String cao, String env, Qualities verificationResults) {

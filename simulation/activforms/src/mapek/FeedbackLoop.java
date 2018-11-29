@@ -3,6 +3,8 @@ package mapek;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
+
 import deltaiot.client.Effector;
 import deltaiot.services.LinkSettings;
 import deltaiot.services.QoS;
@@ -33,13 +35,6 @@ public class FeedbackLoop {
 	Configuration currentConfiguration;
 	Configuration previousConfiguration;
 
-	// TODO: Geen idee
-	// Als ik de class bekijk lijkt het alsof steps(i)
-	// de aanpassing is die je deed op het einde van cycle i+1
-	// aan de power en distribution
-	// Er moet echter verder inde code gekeken worden
-
-	// The above seems wrong.
 	// As far as I can tell, this gets filled by the planner each cycle
 	// and probably emptied by the executor after executing the step (changes) the planner planned.
 	List<PlanningStep> steps = new LinkedList<>();
@@ -78,10 +73,6 @@ public class FeedbackLoop {
 	// but also when it is smaller then minus this
 	static final int MOTES_TRAFFIC_THRESHOLD = 10;
 
-	// TODO: Hardcoded number of motes and links in the network.
-	// WIll cause problems when simulating the other network.
-	static final int MAX_LINKS = 17;
-	static final int MAX_MOTES = 15;
 
 
 
@@ -269,7 +260,7 @@ public class FeedbackLoop {
 						moteOptions.add(mote.getCopy());
 					}
 
-					initialValue = 20;
+					initialValue = DISTRIBUTION_GAP;
 
 					// add the new option to the global (feedbackloop object) adaption options for the mote
 					saveAdaptationOptions(newConfiguration, moteOptions, mote.getMoteId());
@@ -385,10 +376,13 @@ public class FeedbackLoop {
 		if (previousConfiguration == null)
 			return true;
 
+		Map<Integer, Mote> motes = currentConfiguration.system.motes;
+		
+		// Retrieve the amount of links present in the system (count links for each mote)
+		final int MAX_LINKS = (int) motes.values().stream().map(o -> o.links.size()).count();
 		// Check LinksSNR
-		double linksSNR;
 		for (int j = 0; j < MAX_LINKS; j++) {
-			linksSNR = currentConfiguration.environment.linksSNR.get(j).SNR;
+			double linksSNR = currentConfiguration.environment.linksSNR.get(j).SNR;
 			if (linksSNR < SNR_BELOW_THRESHOLD || linksSNR > SNR_UPPER_THRESHOLD) {
 				return true;
 			}
@@ -397,7 +391,7 @@ public class FeedbackLoop {
 		// Check MotesTraffic
 		double diff;
 
-		for (int i = 2; i <= MAX_MOTES; i++) {
+		for (int i : motes.keySet()) {
 			diff = currentConfiguration.environment.motesLoad.get(i).load
 					- previousConfiguration.environment.motesLoad.get(i).load;
 			if (diff > MOTES_TRAFFIC_THRESHOLD || diff > -MOTES_TRAFFIC_THRESHOLD) {
