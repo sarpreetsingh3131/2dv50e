@@ -294,7 +294,7 @@ public class FeedbackLoop {
 						moteOptions.add(mote.getCopy());
 					}
 
-					initialValue = 20;
+					initialValue = DISTRIBUTION_GAP;
 
 					// add the new option to the global (feedbackloop object) adaption options for the mote
 					saveAdaptationOptions(newConfiguration, moteOptions, mote.getMoteId());
