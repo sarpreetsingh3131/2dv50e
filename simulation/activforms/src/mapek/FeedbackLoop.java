@@ -104,7 +104,6 @@ public class FeedbackLoop {
 		snrEquations = equations;
 	}
 
-	//This is were the feedback loop really starts.
 	public void start() {
 		System.out.println("Feedback loop started.");
 
@@ -135,29 +134,21 @@ public class FeedbackLoop {
 		// The method "probe.getAllMotes()" also makes sure the simulator is run for a single cycle
 		ArrayList<deltaiot.services.Mote> motes = probe.getAllMotes();
 		
-		
 		List<Mote> newMotes = new LinkedList<>();
-
-		// configuratie/cyclus/state opschuiven
-		// CurrentCon.. is initialised as null.
-		// So prevConf will be null on the first cycle
-		// TODO: it isnt! Maybe Java does it for us.
 		previousConfiguration = currentConfiguration;
-
-		// Init new configuration
 		currentConfiguration = new Configuration();
 
-		// Makes copy of the IoT network in its current state
+		// Make a copy of the IoT network in its current state
 		Mote newMote;
 		Link newLink;
 
-		// Iterate through all the motes OF THE SIMULATOR
+		// Iterate through all the motes of the simulator
 		for (deltaiot.services.Mote mote : motes) {
 
 			newMote = new Mote();
 			newMote.moteId = mote.getMoteid();
 			newMote.energyLevel = mote.getBattery();
-			// TODO should more attributes of the motes (such as energy level, queue size, ...) be added as well?
+			// TODO: should more attributes of the motes (such as energy level, queue size, ...) be added as well?
 
 			// The motesLoad is a list with the load of the motes.
 			// I think every element of that list represents the load
@@ -192,11 +183,9 @@ public class FeedbackLoop {
 		// returns the first (and only) element of the list.
 		QoS qos = probe.getNetworkQoS(1).get(0);
 
-		//Hier neemt hij enkel deze 2 mee TODO
-		// Zie of je de latency enzo ook kunt meegeven
 		// Adds the QoS of the previous configuration to the current configuration,
 		// probably to pass on to the learner so he can use this to online learn
-		// TODO: modify this to multiple goals
+		// TODO: modify this to multiple goals (latency)
 		currentConfiguration.qualities.packetLoss = qos.getPacketLoss();
 		currentConfiguration.qualities.energyConsumption = qos.getEnergyConsumption();
 
@@ -206,21 +195,10 @@ public class FeedbackLoop {
 
 
 
-
-
-	// Gets called at the end of the monitor method
 	void analysis() {
 
-		// analyze all link settings
-		// returns false if no change has to be made.
-		// 
-		// Otherwise it returns true, to see when you should look at the definition below
-		// The tressholds are stated in the beginning of the class.
 		boolean adaptationRequired = analysisRequired();
 
-		// Return when no adaption is needed
-		// this returns you to the end of the monitor function which return to a new cycle
-		// It stops from doing the other steps
 		if (!adaptationRequired)
 			return;
 
@@ -237,8 +215,9 @@ public class FeedbackLoop {
 		// Seems weird, why do this. Its dirty programming, but what is the origin of the problem.
 		removePacketDuplication(newPowerSettingsConfig);
 
-		// See the function below
 		// This adds the possible link distributions to the motes who have 2 outgoing links
+		// FIXME: the new power settings configuration is not actually used 
+		//	(the options are only created once, and not adjusted afterwards)
 		composeAdaptationOptions(newPowerSettingsConfig);
 
 		//TODO: this todo is to show this is very important
@@ -264,32 +243,26 @@ public class FeedbackLoop {
 	// TODO: hardcoded for 2 parents
 	// Not good if the next network has more then 2.
 	void composeAdaptationOptions(AdaptationOption newConfiguration) {
-
-		// init new list of motes
 		List<Mote> moteOptions = new LinkedList<>();
 		
 		
 		// This adaptionOptions are the ones of the feedbackloop that is directly accessed
 		// TODO: make and use a getter for this, its very unclear like this 
 		// is this only for the first adaption or also the second?
-		if (adaptationOptions.size() <= 1) 
-		{
-			// adaptationOptions.add(newConfiguration);
+		if (adaptationOptions.size() <= 1) {
 			// generate adaptation options for the first time
 			int initialValue = 0;
 
+			// FIXME: this algorithm assumes that the initial distribution of a mote with 2 parents is 0-100 respectively
+			// 			-> adjust this so that this is enforced first (the property is not enforced at the sim creation)
+
 			// For all motes in the system/network
 			for (Mote mote : newConfiguration.system.motes.values()) {
-
-				// If two links
-				// TODO: hardcoded
 				if (mote.getLinks().size() == 2) {
-					
-					//make a copy of the mote and make the moteoptions empty
 					mote = mote.getCopy();
 					moteOptions.clear();
 
-					// Add the different districution options for 2 parent links
+					// Add the different distribution options motes with 2 parents
 					for (int i = initialValue; i <= 100; i += DISTRIBUTION_GAP) {
 						mote.getLink(0).setDistribution(i);
 						mote.getLink(1).setDistribution(100 - i);
@@ -308,7 +281,6 @@ public class FeedbackLoop {
 	private void saveAdaptationOptions(AdaptationOption firstConfiguration, List<Mote> moteOptions, int moteId) {
 		AdaptationOption newAdaptationOption;
 
-		// If feedbackloops adaptions options are empty
 		if (adaptationOptions.isEmpty()) {
 
 			// for the new options, add them to the global options
@@ -316,7 +288,6 @@ public class FeedbackLoop {
 				newAdaptationOption = firstConfiguration.getCopy();
 				newAdaptationOption.system.motes.put(moteId, moteOptions.get(j));
 
-				// here your add them
 				adaptationOptions.add(newAdaptationOption);
 			}
 
@@ -340,42 +311,30 @@ public class FeedbackLoop {
 
 	// Gets called to make a new adaption in analyse()
 	private void analyzePowerSettings(AdaptationOption newConfiguration) {
-
-
 		int powerSetting;
 		double newSNR;
 
 		// Iterate over the motes of the managed system (values returns a list or array with the motes)
 		for (Mote mote : newConfiguration.system.motes.values()) {
-
-			// iterate over the links of the motes
-			// TODO: are these outgoing and ingoing or one of the two?
-			// I think it are only the outgoing links
+			// Iterate over all the outgoing links of the mote
 			for (Link link : mote.getLinks()) {
 
-				// Get the link power
 				powerSetting = link.getPower();
-
-				// get the SNR of the link
 				newSNR = currentConfiguration.environment.getSNR(link);
-
-				// TODO: what does the followoing?
-
+				
 				// find interference
 				double diffSNR = getSNR(link.getSource(), link.getDestination(), powerSetting) - newSNR;
 
+				// Calculate the most optimal power setting (higher if packet loss, lower if energy can be reserved)
+				// FIXME missing & (I presume)
 				if (powerSetting < 15 & newSNR < 0 && newSNR != -50) {
 
 					while (powerSetting < 15 && newSNR < 0) {
 						newSNR = getSNR(link.getSource(), link.getDestination(), ++powerSetting) - diffSNR;
 					}
 
-				}
-				
-				else if (newSNR > 0 && powerSetting > 0) 
-				{
+				} else if (newSNR > 0 && powerSetting > 0) {
 					do {
-
 						newSNR = getSNR(link.getSource(), link.getDestination(), powerSetting - 1) - diffSNR;
 
 						if (newSNR >= 0) {
@@ -385,10 +344,9 @@ public class FeedbackLoop {
 					} while (powerSetting > 0 && newSNR >= 0);
 				}
 
+				// Adjust the powersetting of the link if it is not yet the optimal one
 				if (link.getPower() != powerSetting) {
-
 					link.setPower(powerSetting);
-
 					currentConfiguration.environment.setSNR(link,
 							getSNR(link.getSource(), link.getDestination(), powerSetting) - diffSNR);
 				}

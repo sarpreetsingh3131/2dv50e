@@ -11,7 +11,6 @@ import java.nio.file.Paths;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Properties;
-import java.nio.file.Paths;
 
 public class SMCModelLoader {
 
