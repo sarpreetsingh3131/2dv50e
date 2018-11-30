@@ -1,9 +1,12 @@
 package mapek;
 
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import deltaiot.client.Effector;
 import deltaiot.services.LinkSettings;
@@ -40,8 +43,11 @@ public class FeedbackLoop {
 	//Zijn ergens manueel ingetypt en komt van gemeten data van een week van het echte netwerk
 	List<SNREquation> snrEquations = new LinkedList<>();
 
-	// Adaption space
-	List<AdaptationOption> adaptationOptions = new LinkedList<>();
+	// The current adaptation options are the options specific to the current cycle
+	List<AdaptationOption> currentAdaptationOptions = new LinkedList<>();
+	// The overall adaptation options keeps track of all the encountered options so far
+	Set<AdaptationOption> overallAdaptationOptions = new LinkedHashSet<>();
+	
 	List<AdaptationOption> verifiedOptions;
 
 	// De connector die met de machine learner connecteerd.
@@ -123,15 +129,12 @@ public class FeedbackLoop {
 			newMote.load = mote.getLoad() * mote.getDataProbability() / 100;
 			newMote.queueSize = mote.getCurrentQSize();
 
-			// The motesLoad is a list with the load of the motes.
-			// I think every element of that list represents the load
-			// on the mote in a cycle in the past.
-			// Here you add a new load to the list for the current cycle
+			// motesLoad holds a list of the probabilities that certain motes generate packets (probability in range [0, 100])
 			currentConfiguration.environment.motesLoad
 					.add(new TrafficProbability(mote.getMoteid(), mote.getDataProbability()));
 			
 			
-			// Copy the links and its SNR
+			// Copy the links and their SNR values
 			for (deltaiot.services.Link link : mote.getLinks()) {
 				newLink = new Link();
 				newLink.source = link.getSource();
@@ -193,9 +196,8 @@ public class FeedbackLoop {
 		//	(the options are only created once, and not adjusted afterwards)
 		composeAdaptationOptions(newPowerSettingsConfig);
 
-		//TODO: this todo is to show this is very important
-		// You pass the adaptionOptions and the environment (noise and load) to the connector
-		smcConnector.setAdaptationOptions(adaptationOptions, currentConfiguration.environment);
+		// Pass the adaptionOptions and the environment (noise and load) to the connector
+		smcConnector.setAdaptationOptions(currentAdaptationOptions, currentConfiguration.environment);
 
 		// let the model checker and/or machine learner start to predict which adaption options will
 		// fullfill the goals definied in the connector
@@ -205,78 +207,83 @@ public class FeedbackLoop {
 		// to the options it thinks will suffiece the goals
 		// verifiedOptions is also an argument of the feedbackloop object
 		// and should require a setter...
-		verifiedOptions = adaptationOptions;
+		verifiedOptions = currentAdaptationOptions;
 
 		// Continue to the planning step.
 		planning();
 	}
 
-
-	// This should be done in the init or something...
-	// TODO: hardcoded for 2 parents
-	// Not good if the next network has more then 2.
-	void composeAdaptationOptions(AdaptationOption newConfiguration) {
-		List<Mote> moteOptions = new LinkedList<>();
-		
-		
-		// This adaptionOptions are the ones of the feedbackloop that is directly accessed
-		// TODO: make and use a getter for this, its very unclear like this 
-		// is this only for the first adaption or also the second?
-		if (adaptationOptions.size() <= 1) {
-			// generate adaptation options for the first time
-			int initialValue = 0;
-
-			// FIXME: this algorithm assumes that the initial distribution of a mote with 2 parents is 0-100 respectively
-			// 			-> adjust this so that this is enforced first (the property is not enforced at the sim creation)
-
-			// For all motes in the system/network
-			for (Mote mote : newConfiguration.system.motes.values()) {
-				if (mote.getLinks().size() == 2) {
-					mote = mote.getCopy();
-					moteOptions.clear();
-
-					// Add the different distribution options motes with 2 parents
-					for (int i = initialValue; i <= 100; i += DISTRIBUTION_GAP) {
-						mote.getLink(0).setDistribution(i);
-						mote.getLink(1).setDistribution(100 - i);
-						moteOptions.add(mote.getCopy());
-					}
-
-					initialValue = DISTRIBUTION_GAP;
-
-					// add the new option to the global (feedbackloop object) adaption options for the mote
-					saveAdaptationOptions(newConfiguration, moteOptions, mote.getMoteId());
-				}
+	/**
+	 * Sets the distributions for the links of motes with 2 parents to 0-100 respectively.
+	 */
+	void initializeMoteDistributions(AdaptationOption newConfiguration) {
+		for (Mote mote : newConfiguration.system.motes.values()) {
+			if (mote.getLinks().size() == 2) {
+				mote.getLink(0).setDistribution(0);
+				mote.getLink(1).setDistribution(100);
 			}
 		}
+	}
+
+	void composeAdaptationOptions(AdaptationOption newConfiguration) {
+		// Clear the previous list of adaptation options
+		currentAdaptationOptions.clear();
+		List<Mote> moteOptions = new LinkedList<>();
+		
+		initializeMoteDistributions(newConfiguration);
+
+		int initialValue = 0;
+		for (Mote mote : newConfiguration.system.motes.values()) {
+			// Search for the motes with 2 parents
+			if (mote.getLinks().size() == 2) {
+				mote = mote.getCopy();
+				moteOptions.clear();
+
+				// iterate over all the possible distribution options
+				for (int i = initialValue; i <= Math.ceil(100 / DISTRIBUTION_GAP); i++) {
+					int distributionValue = Math.max(i * DISTRIBUTION_GAP, 100);
+					mote.getLink(0).setDistribution(distributionValue);
+					mote.getLink(1).setDistribution(100-distributionValue);
+					moteOptions.add(mote.getCopy());
+				}
+				initialValue = 1;
+
+				// add the new option to the global (feedbackloop object) adaption options for the mote
+				saveAdaptationOptions(newConfiguration, moteOptions, mote.getMoteId());
+			}
+
+		}
+
+		// Save the adaptation options in the overall set of adaptation options
+		overallAdaptationOptions.addAll(currentAdaptationOptions);
 	}
 
 	private void saveAdaptationOptions(AdaptationOption firstConfiguration, List<Mote> moteOptions, int moteId) {
 		AdaptationOption newAdaptationOption;
 
-		if (adaptationOptions.isEmpty()) {
+		if (currentAdaptationOptions.isEmpty()) {
 
 			// for the new options, add them to the global options
 			for (int j = 0; j < moteOptions.size(); j++) {
 				newAdaptationOption = firstConfiguration.getCopy();
 				newAdaptationOption.system.motes.put(moteId, moteOptions.get(j));
 
-				adaptationOptions.add(newAdaptationOption);
+				currentAdaptationOptions.add(newAdaptationOption);
 			}
 
 		// if there are already addaption options
 		} else {
 			
-			int size = adaptationOptions.size();
+			int size = currentAdaptationOptions.size();
 			
 			//for all adaption options
 			for (int i = 0; i < size; i++) {
 			
 				//for the new moteOptions
 				for (int j = 0; j < moteOptions.size(); j++) {
-					newAdaptationOption = adaptationOptions.get(i).getCopy();
+					newAdaptationOption = currentAdaptationOptions.get(i).getCopy();
 					newAdaptationOption.system.motes.put(moteId, moteOptions.get(j));
-					adaptationOptions.add(newAdaptationOption);
+					currentAdaptationOptions.add(newAdaptationOption);
 				}
 			}
 		}

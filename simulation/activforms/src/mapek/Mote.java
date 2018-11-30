@@ -31,6 +31,8 @@ public class Mote {
 		Mote mote = new Mote();
 		mote.moteId = this.moteId;
 		mote.energyLevel = this.energyLevel;
+		mote.load = this.load;
+		mote.queueSize = this.queueSize;
 
 		for (Link link : links) {
 			mote.links.add(link.getCopy());
