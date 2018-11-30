@@ -77,7 +77,6 @@ public class SMCConnector {
 
 	List<AdaptationOption> verifiedOptions;
 
-	// aantal training sycles
 	final int TRAINING_CYCLE = ConfigLoader.getInstance().getAmountOfLearningCycles();
 	int cycles = 1;
 	Mode mode;
@@ -88,7 +87,7 @@ public class SMCConnector {
 	JSONArray features;
 	JSONArray targets;
 
-	//Gewoon de modes van hem op een string zetten
+
 	public enum Mode {
 		TRAINING("training"), 
 		TESTING("testing"), 
@@ -97,7 +96,7 @@ public class SMCConnector {
 		// The new mladjustment mode is similar to the comparison mode.
 		// The difference between the two is that mladjustment also checks for
 		// the adjustments made to the learners after online learning every cycle.
-		// This data is then send to the python server to be saved in an output file.
+		// This data is then sent to the python server to be saved in an output file.
 		MLADJUSTMENT("mladjustment");
 
 		String val;
@@ -148,7 +147,6 @@ public class SMCConnector {
 	}
 
 
-	//TODO: dit stond hier nog niet, waarom is dit nu wel nodig?
 	public SMCConnector() {
 		// Load the configurations specified in the properties file (mode and tasktype)
 		ConfigLoader configLoader = ConfigLoader.getInstance();
@@ -156,7 +154,7 @@ public class SMCConnector {
 		taskType = configLoader.getTaskType();
 		goals = initGoals(SMCChecker.DEFAULT_CONFIG_FILE_PATH);
 		rawData = new JSONObject();
-		features =  new JSONArray();
+		features = new JSONArray();
 		targets = new JSONArray();
 		rawData.put("features", features);
 		rawData.put("targets", targets);
@@ -169,7 +167,7 @@ public class SMCConnector {
 		this.environment = environment;
 	}
 
-	//TODO: graag train of thought hier
+
 	public void startVerification() {
 		switch (mode) {
 			case ACTIVFORM:
@@ -464,11 +462,7 @@ public class SMCConnector {
 		send(adaptationOptions, taskType, Mode.TRAINING);
 	}
 
-	/*
-	*
-	* Dit is natuurlij de functie om een test cycle te doen
-	*
-	*/
+
 	void testing(TaskType taskType) {
 
 		// Je zend de adaptationOptions door naar de machine learner met het soort leren en testen
@@ -479,7 +473,6 @@ public class SMCConnector {
 		int adaptationSpace = Integer.parseInt(response.get("adaptation_space").toString());
 		System.out.print(";" + adaptationSpace);
 
-		// Initialising array for prediction and estimates of the qos/goals
 		ArrayList<Float> predictions = new ArrayList<>();
 		List<AdaptationOption> qosEstimates = new LinkedList<>();
 
@@ -850,62 +843,51 @@ public class SMCConnector {
 	}
 
 
-	//TODO: waarvoor worden deze 2 gebruikt?
+	/**
+	 * This method parses the adaptation options to a JSONObject and sends them to the webserver which runs the machine learner.
+	 * See {@link #send(JSONObject, String, String) send(JSONObject, String, String)} for more information.
+	 */
 	private JSONObject send(List<AdaptationOption> adaptationOptions, TaskType taskType, Mode mode) {
 		return send(parse(adaptationOptions, taskType), taskType, mode);
 	}
 
+	/**
+	 * See {@link #send(JSONObject, String, String) send(JSONObject, String, String)} for more information.
+	 */
 	private JSONObject send(JSONObject dataset, TaskType taskType, Mode mode) {
 		return send(dataset, taskType.val, mode.val);
 	}
 
-	// Hier zend je de json door naar de learner, vaak zend je de features en targets door zoals ze 
-	// gemaakt zijn hierboven in parse
-	// Echter weet ik dat je ook ergens die comparisson doorzend 
-	// Die een andere vorm van json doorzend
+
+	/**
+	 * Sends the provided dataset to the webserver running the machine learner.
+	 * @param dataset The data set which should be sent over to the server.
+	 * @param taskType The task that needs to be performed (e.g. testing).
+	 * @param mode The mode associated with the task (e.g. classification).
+	 * @return The response from the server.
+	 */
 	JSONObject send(JSONObject dataset, String taskType, String mode) {
-		
 		try {
-			
-			// Je maakt een http client aan
 			HttpClient client = HttpClientBuilder.create().build();
 			
-			// Met http post methode zend je iets door naar de andere kant
-			// Hier bereid je dat voor
-			// De andere kant is hier dus port 8000 op de localhost
-			// Je kan parameters meegeven in de url na dat ? dan 
-			// Denk ik dat je begint met met de naam van je eerste
-			// variabele, dan een = en dan tussen "" de waarde die je toewijst
-			// Dan waarschijnlijk zet je een & en begin je hetzelfde opnieuw
+			// Create a post message for the webserver (which runs the machine learner)
+			// The server responds with predictions (in case the task type is testing), or OK/NOK for other tasks
 			HttpPost http = new HttpPost("http://localhost:8000/?task-type=" + taskType + "&mode=" + mode + "&cycle=" + cycles);
 			
 			// The entity of a http post is the payload
 			// Here you give as payload the json dataset to send in the form of a string
 			http.setEntity(new StringEntity(dataset.toString()));
-
-
-			// The header holds some info about the data
-			// So here you say the content-type of the payload = entity
-			// Is a json file
 			http.setHeader("Content-Type", "application/json");
 			
-			// start is the current time
+			// Keep track of how long it takes to perform the given task at the end of the webserver
 			long start = System.currentTimeMillis();
 
-			//You execute the "http" which is the Post thing you just set up through the client you 
-			// defined in the beginning
-			// This returns the response of the machine learner
-			// I think you get a json in the form of a string back
-			// Which turns it back into a json 
 			JSONObject response = new JSONObject(client.execute(http, new BasicResponseHandler()));
 			
-			// Prints the time it took for the machine learner to send an answer back
+			// Print the time it took for the webserver to send an answer back
 			System.out.print(";" + (System.currentTimeMillis() - start));
 
-			// Returns the json returned by the machine learner
 			return response;
-
-		// If something failed, print the problem and return null
 		} catch (Exception e) {
 			e.printStackTrace();
 			return null;

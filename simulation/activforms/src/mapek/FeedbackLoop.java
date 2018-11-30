@@ -15,7 +15,6 @@ import smc.Goal;
 import smc.SMCChecker;
 import smc.SMCConnector;
 import java.time.LocalDateTime;
-import java.time.temporal.ChronoField;
 
 public class FeedbackLoop {
 
@@ -23,11 +22,9 @@ public class FeedbackLoop {
 	Probe probe;
 	Effector effector;
 
+	
 	// Knowledge
-
-	//TODO: distribution gap aanpassen om grotere space te creeeren, is enige mogelijkeid.
 	public static final int DISTRIBUTION_GAP = ConfigLoader.getInstance().getDistributionGap();
-
 	public static final boolean human = ConfigLoader.getInstance().getHuman();
 	
 
@@ -45,8 +42,6 @@ public class FeedbackLoop {
 
 	// Adaption space
 	List<AdaptationOption> adaptationOptions = new LinkedList<>();
-	
-	// TODO: geen idee
 	List<AdaptationOption> verifiedOptions;
 
 	// De connector die met de machine learner connecteerd.
@@ -55,38 +50,23 @@ public class FeedbackLoop {
 
 	List<Goal> goals = SMCConnector.initGoals(SMCChecker.DEFAULT_CONFIG_FILE_PATH);
 
-	/*
-	* Thressholds for when you want to addapt/change the network
-	*/
-
-	//SNR of the links
+	// Thresholds for when you want to adapt/change the network
 	static final int SNR_BELOW_THRESHOLD = 0;
 	static final int SNR_UPPER_THRESHOLD = 5;
-
-	// (QoS) Thresshold to high energy comsumption motes
 	static final int ENERGY_CONSUMPTION_THRESHOLD = 5;
-
-	// (QoS) when packet loss too high
 	static final int PACKET_LOSS_THRESHOLD = 5;
 
-	// Gets triggered when the difference between the last two cycles is greater then this,
-	// but also when it is smaller then minus this
+	// Gets triggered when the difference between the last two cycles is greater than this,
+	// but also when it is smaller than minus this
 	static final int MOTES_TRAFFIC_THRESHOLD = 10;
 
 
+	public FeedbackLoop() {	}
 
-
-	// Gets called from the main.
-	public FeedbackLoop() {
-		//TODO: leg me uit hoe die lamda werkt aub en waar de SNR equitions worden toegevoegd
-	}
-
-	//Sets the probe of the feedbackloop
 	public void setProbe(Probe probe) {
 		this.probe = probe;
 	}
 
-	//Sets the effector of the feedbackloop
 	public void setEffector(Effector effector) {
 		this.effector = effector;
 	}
@@ -94,6 +74,7 @@ public class FeedbackLoop {
 	public void setEquations(List<SNREquation> equations) {
 		snrEquations = equations;
 	}
+
 
 	public void start() {
 		System.out.println("Feedback loop started.");
@@ -115,7 +96,6 @@ public class FeedbackLoop {
 			}
 			
 			// Start the monitor part of the mapek loop
-			// The rest of the parts are each called in the previous parts
 			monitor();
 		}
 	}
@@ -139,7 +119,9 @@ public class FeedbackLoop {
 			newMote = new Mote();
 			newMote.moteId = mote.getMoteid();
 			newMote.energyLevel = mote.getBattery();
-			// TODO: should more attributes of the motes (such as energy level, queue size, ...) be added as well?
+			// FIXME: change this so the mote either sends 0 packets or all of its packets
+			newMote.load = mote.getLoad() * mote.getDataProbability() / 100;
+			newMote.queueSize = mote.getCurrentQSize();
 
 			// The motesLoad is a list with the load of the motes.
 			// I think every element of that list represents the load

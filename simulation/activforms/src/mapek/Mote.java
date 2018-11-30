@@ -6,6 +6,8 @@ import java.util.List;
 public class Mote {
 	int moteId;
 	double energyLevel;
+	int load;
+	int queueSize;
 
 	List<Link> links = new LinkedList<>();
 
@@ -40,10 +42,7 @@ public class Mote {
 		StringBuilder string = new StringBuilder();
 		string.append("\n{");
 		
-		// TODO is the load of 10 chosen here for conservative reasons?
-		// TODO similar question about the queuesize (0)
-		// TODO also energy level (11744)
-		string.append(String.format("%d, 10, 11744, %d, 0,{", moteId, links.size()));
+		string.append(String.format("%d, %d, 11744, %d, %d,{", moteId, load, links.size(), queueSize));
 		for (Link link : links) {
 			string.append(
 					String.format("{%d, %d, %d, %d},", link.source, link.destination, link.power, link.distribution));
