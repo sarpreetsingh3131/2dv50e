@@ -19,7 +19,7 @@ public class SimulationClient implements Probe, Effector {
 	List<String> log = new LinkedList<String>();
 	
 	public SimulationClient(){
-		this.simulator = deltaiot.DeltaIoTSimulator.createSimulatorForDeltaIoTv2();
+		this.simulator = deltaiot.DeltaIoTSimulator.createSimulatorForDeltaIoT();
 	}
 	
 	public SimulationClient(Simulator simulator) {
