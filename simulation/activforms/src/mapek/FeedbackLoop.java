@@ -47,7 +47,7 @@ public class FeedbackLoop {
 	List<AdaptationOption> currentAdaptationOptions = new LinkedList<>();
 	// The overall adaptation options keeps track of all the encountered options so far
 	Set<AdaptationOption> overallAdaptationOptions = new LinkedHashSet<>();
-	
+
 	List<AdaptationOption> verifiedOptions;
 
 	// De connector die met de machine learner connecteerd.
@@ -192,8 +192,6 @@ public class FeedbackLoop {
 		removePacketDuplication(newPowerSettingsConfig);
 
 		// This adds the possible link distributions to the motes who have 2 outgoing links
-		// FIXME: the new power settings configuration is not actually used 
-		//	(the options are only created once, and not adjusted afterwards)
 		composeAdaptationOptions(newPowerSettingsConfig);
 
 		// Pass the adaptionOptions and the environment (noise and load) to the connector
@@ -256,13 +254,16 @@ public class FeedbackLoop {
 
 		// Save the adaptation options in the overall set of adaptation options
 		overallAdaptationOptions.addAll(currentAdaptationOptions);
+
+		// Update the indices of the adaptation options
+		LinkedList<AdaptationOption> options = new LinkedList<>(overallAdaptationOptions);
+		currentAdaptationOptions.forEach(o -> o.overallIndex = options.indexOf(o));
 	}
 
 	private void saveAdaptationOptions(AdaptationOption firstConfiguration, List<Mote> moteOptions, int moteId) {
 		AdaptationOption newAdaptationOption;
 
 		if (currentAdaptationOptions.isEmpty()) {
-
 			// for the new options, add them to the global options
 			for (int j = 0; j < moteOptions.size(); j++) {
 				newAdaptationOption = firstConfiguration.getCopy();
@@ -271,21 +272,17 @@ public class FeedbackLoop {
 				currentAdaptationOptions.add(newAdaptationOption);
 			}
 
-		// if there are already addaption options
 		} else {
-			
 			int size = currentAdaptationOptions.size();
 			
-			//for all adaption options
 			for (int i = 0; i < size; i++) {
-			
-				//for the new moteOptions
 				for (int j = 0; j < moteOptions.size(); j++) {
 					newAdaptationOption = currentAdaptationOptions.get(i).getCopy();
 					newAdaptationOption.system.motes.put(moteId, moteOptions.get(j));
 					currentAdaptationOptions.add(newAdaptationOption);
 				}
 			}
+
 		}
 	}
 

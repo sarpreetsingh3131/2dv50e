@@ -46,35 +46,16 @@ import java.io.InputStream;
 import smc.SMCChecker;
 
 
-// Ik denk dat hij na iedere cycle print hoeveel adaption options er 
-// werden geselecteerd als die die voorspelt zijn om aan de goal te voldoen
-
-
-//TODO: make a signal to signal the end of the cycles so the ML can delete its models
-// or make an initialise or something so he deletes it in the first step
-// Ik denk dat Federico dit al deed
 
 // TODO: make it able to abort the whole proces when you receive an error from the ML
 // It will make debugging much easier.
-//Als deze class wordt gebruikt in de feedbackloop wordt er eerst
-// setAdaptationOptions op opgeroepen
-// Daarna wordt er startVerification op opgeroepen
-// Ik denk dat dat het startsein heeft om alles te doen.
 
 public class SMCConnector {
 
-
 	List<AdaptationOption> adaptationOptions;
-
-
-	// De ruis en packets op een netwerk op een moment
 	Environment environment;
-
-	//Modelchecker denk ik
 	SMCChecker smcChecker = new SMCChecker();
-
 	List<Goal> goals;
-
 	List<AdaptationOption> verifiedOptions;
 
 	final int TRAINING_CYCLE = ConfigLoader.getInstance().getAmountOfLearningCycles();
@@ -229,6 +210,7 @@ public class SMCConnector {
 	 */
 	private void machineLearningAdjustmentInspection(boolean training) {
 		JSONObject adjInspection = new JSONObject();
+		adjInspection.put("adapIndices", new JSONArray());
 		adjInspection.put("packetLoss", new JSONArray());
 		adjInspection.put("energyConsumption", new JSONArray());
 		adjInspection.put("regressionBefore", new JSONArray());
@@ -256,6 +238,7 @@ public class SMCConnector {
 				adaptationOption.verificationResults);
 			adjInspection.getJSONArray("packetLoss").put(adaptationOption.verificationResults.packetLoss);
 			adjInspection.getJSONArray("energyConsumption").put(adaptationOption.verificationResults.energyConsumption);
+			adjInspection.getJSONArray("adapIndices").put(adaptationOption.overallIndex);
 		}
 
 
@@ -314,9 +297,6 @@ public class SMCConnector {
 
 
 
-	//Deze functie wordt opgeroepen in de functie hierboven 
-	// als de mode comparisson is en 
-	// je begint testen en niet trainen
 	void comparison() {
 
 		// zend de adaption naar de machinelearner en ontvang een json terug(met de geselecteerde adaption options?)
@@ -390,86 +370,58 @@ public class SMCConnector {
 		//TODO: goals aanpassen
 		for (AdaptationOption adaptationOption : adaptationOptions) {
 			
-			// Het ziet ernaar uit dat dit alles (class, regr and alles) doorgeeft naar de
-			// checker en deze de effectieve resultaten van de simulator doorgeeft naar de 
-			// verification results van die adaptation options
-			//Of tock niet... het ziet ernaar uit dat die gewoon de voorspelling zijn van activforms
-			// Of toch wel... ik weet het niet
-			// Ik weet wel dat ze het verder gebruiken als echte oplossing om te vergelijken
+			// Verify the results using the quality models
 			smcChecker.checkCAO(adaptationOption.toModelString(), environment.toModelString(),
 					adaptationOption.verificationResults);
 			
-			// als de goal voldaan is (1) voeg toe aan adaption options
-			// Ik weet nog niet wat die adaptionspace net is dus over het 2e deel kan ik niks zeggen
+			// If classification predicts that the goal is met (or if no options are predicted to meet the goal)
 			if (classificationPredictions.get(index) == 1 || classificationAdaptationSpace == 0) {
 				classificationTrainingOptions.add(adaptationOption);
 			}
 
-			// Zelfde voor regression
+			// Same story as above for regression
 			if (regressionPredictions.get(index) < 10.0 || regressionAdaptationSpace == 0) {
 				regressionTrainingOptions.add(adaptationOption);
 			}
 
-			// Het aantal adaption options waarvan de modelchecker zegt
-			// Dat het beter dan 10 zal zijn. Denk ik ...
+			// The formally verified options which meet the goal
 			if (adaptationOption.verificationResults.packetLoss < 10.0) {
 				activformAdapationSpace++;
 			}
 
-
-			// Je voegt de voorspelling/echte waarden van de goal packetloss en engergyconsumption toe toe aan de comparison object van hiervoor
-			// Het ziet ernaar uit dat er zelfs geen ding is voor latency
-			// Alhoewel er 5 QoS metrieken zijn vvan de simulator
 			comparison.getJSONArray("packetLoss").put(adaptationOption.verificationResults.packetLoss);
 			comparison.getJSONArray("energyConsumption").put(adaptationOption.verificationResults.energyConsumption);
 			
-			//Je verhoogt de index om naar de volgende adaption voorspellingen te kijken
 			index++;
 		}
 
 
 		System.out.print(";" + activformAdapationSpace);
 		
-		//  Hier gaan ze weer van alles verzenden naar de learner, zie send voor je dit uitvogeld
+		// Send back the formally verified options which were predicted to meet the goal by the classifier for online learning
 		send(classificationTrainingOptions, TaskType.CLASSIFICATION, Mode.TRAINING);
-
-		//TODO:PAS OP waarom zend dit altijd training? het wordt opgeroepen in de testfase?????
-		//Ik denk dat het is omdat je de oplossingen terugzend om er online van te leren
-		//Maar kan ook zijn van niet omdate je die pars dinges doorzend en dat zijn niet de oplossing denk ik
+		// Same story as above for regression
 		send(regressionTrainingOptions, TaskType.REGRESSION, Mode.TRAINING);
 
-		//Save the outcome
+		// Save the outcome (at server side)
 		send(comparison, TaskType.REGRESSION, Mode.COMPARISON);
 	}
 
-	// Dit is natuurlijk de fucntei om een training cycle te doen
 	void training(TaskType taskType) {
-		// int space = 0;
-
-		//Je bent aan het trainen en maakt nog geen prediction
-		// Dus moet de model checker eerst nog al het werk doen.
+		// Formally verify all the adaptation options, and send them to the learners for training
 		for (AdaptationOption adaptationOption : adaptationOptions) {
 			smcChecker.checkCAO(adaptationOption.toModelString(), environment.toModelString(),
 					adaptationOption.verificationResults);
-			// if (adaptationOption.verificationResults.packetLoss < 10.0) {
-			// space++;
-			// }
 		}
-		// System.out.print(";" + space);
-
-		//Je zend de data en type door om te training
-		// adaptionsoptions is a list, so this gets parsed.
 		send(adaptationOptions, taskType, Mode.TRAINING);
 	}
 
 
 	void testing(TaskType taskType) {
-
-		// Je zend de adaptationOptions door naar de machine learner met het soort leren en testen
-		// en krijgt het antwoord terug in een json
+		// Send the adaptation options to the learner with mode testing, returns the predictions of the learner
 		JSONObject response = send(adaptationOptions, taskType, Mode.TESTING);
 		
-		//Grootte van?? Mischien zend deze enkel de geselecteerde adaptions terug en meet je zo hoeveel er zijn nu
+		// Retrieve the amount of options that were predicted to meet the goal by the learner
 		int adaptationSpace = Integer.parseInt(response.get("adaptation_space").toString());
 		System.out.print(";" + adaptationSpace);
 
@@ -483,8 +435,7 @@ public class SMCConnector {
 		// Hieronder zet je die lijst om naar een java lijst
 		JSONArray arr = response.getJSONArray("predictions");
 		for (int i = 0; i < arr.length(); i++) {
-			if(taskType == TaskType.PLLAMULTICLASS)
-			{
+			if(taskType == TaskType.PLLAMULTICLASS) {
 				mclass[Integer.parseInt(arr.get(i).toString())]++;
 			}
 			predictions.add(Float.parseFloat(arr.get(i).toString()));
@@ -493,92 +444,51 @@ public class SMCConnector {
 		int nbCorrect = 0;
 		// Here I set nbCorrect to the highest ammount of 
 		// goals predicted correct for every option in the adaption space
-		if (taskType == TaskType.PLLAMULTICLASS)
-		{
+		if (taskType == TaskType.PLLAMULTICLASS) {
 			// are there adaptions which fullfill all goals?
 			if(mclass[3] > 0) nbCorrect = 2;
-			// are there adaptions with 1 goals fullfilled?
+			// are there adaptions with 1 goal fullfilled?
 			else if(mclass[2] + mclass[1] > 0) nbCorrect = 1;
 			else nbCorrect = 0;
 		}
 
-		// Zet de incrmentloper op 0 als init
+		
 		int i = 0;
-
-		//Overloop de adaption opptions
 		for (AdaptationOption adaptationOption : adaptationOptions) {
 			
-			// Als de machine learner adaptation options voorspelt die aan de
-			// goals voldoen, doe:
-			// if nbcorrect == 0 , this will also be 0.
 			if (adaptationSpace != 0) {
-
 				boolean isPredictedCorrect = false;
 
-				//TODO: als je hier een andere classtype toevoegd zal dit niet meer werken.
-				//Hou dat in het achterhoofd
-				// Dat in de if geeft True of False terug door die predict.get
-				// En dat .. ? .. :.. zorgt gewoon dat het
-				// voor classificatie 1.0 voorspeld of minder dan 10 voor regressie
-				//if (taskType == TaskType.CLASSIFICATION ? predictions.get(i) == 1.0 : predictions.get(i) < 10.0) {
-				//	
-				//	//Indien voorspelt dat hij aan de goals voldoet zal de modelchecker hem draaien
-				//	smcChecker.checkCAO(adaptationOption.toModelString(), environment.toModelString(),
-				//			adaptationOption.verificationResults);
-
-					// options terug toevoegen om door te zenden naar de learner om te online learnen
-					// Hij learned dus de predicties van de SMC en niet wat er effectief gebeurde
-				//	qosEstimates.add(adaptationOption);
-				//}
-
-				if (taskType == TaskType.CLASSIFICATION)
-				{
+				if (taskType == TaskType.CLASSIFICATION) {
 					if(predictions.get(i) == 1.0) isPredictedCorrect = true;
 				}
-				else if(taskType == TaskType.REGRESSION)
-				{
-					// I will work with another regression tasktype
+				else if(taskType == TaskType.REGRESSION) {
 					if(predictions.get(i) < 10) isPredictedCorrect = true;
 				}
-				else if(taskType == TaskType.PLLAMULTICLASS)
-				{
+				else if(taskType == TaskType.PLLAMULTICLASS) {
 					double pred = predictions.get(i);
 
-					if( nbCorrect == 2)
-					{
+					if( nbCorrect == 2) {
 						if(pred == 3.0) isPredictedCorrect = true;
 					}
-					else if( nbCorrect == 1)
-					{
+					else if( nbCorrect == 1) {
 						if(pred == 2.0 || pred == 1.0) isPredictedCorrect = true;
 					}
 
 				}
 
-				if(isPredictedCorrect)
-				{
-					//Indien voorspelt dat hij aan de goals voldoet zal de modelchecker hem draaien
+				if(isPredictedCorrect) {
 					smcChecker.checkCAO(adaptationOption.toModelString(), environment.toModelString(),
 							adaptationOption.verificationResults);
 
-					// options terug toevoegen om door te zenden naar de learner om te online learnen
-					// Hij learned dus de predicties van de SMC en niet wat er effectief gebeurde
+					// Add this option to the list of options that should be sent back for online learning
 					qosEstimates.add(adaptationOption);
-
-				}
-				// Als het voorspeld werd dat er niet aan de goals voldaan is
-				else {
-
-					// Ik denk dat dit een manier is om er voor te zorgen dat de model checker dit zeker niet selecteerd
+				} else {
+					// The packet loss is manually set to 100 here to make sure this option is never considered.
 					adaptationOption.verificationResults.packetLoss = 100.0;
 				}
-
-
-			// Dit doe je als de adaptionspace lees is.
-			// Dit is dus voor als de machine learner voorspelt dat er geen enkele
-			// Zal voldoen aan de goal(s) 
-			// je laat de model checker dan gewoon alles checken om de beste eruit te halen.
 			} else {
+				// In case no options were predicted to meet the goals, verify all of them
 				smcChecker.checkCAO(adaptationOption.toModelString(), environment.toModelString(),
 						adaptationOption.verificationResults);
 				qosEstimates.add(adaptationOption);
@@ -586,14 +496,11 @@ public class SMCConnector {
 			i++;
 		}
 
-		//Ik denk dat je hier de oplossingen/model checker voorspelling die je waar acht, terug doorzend
-		// naar de machine learner om ervan te leren als online learning.
-		// Daarom Training.
+		// Perform online learning on the samples that were predicted to meet the user goal
+		// Note: if no samples were predicted to meet the goal, all the options are sent back for online learning
 		send(qosEstimates, taskType, Mode.TRAINING);
 	}
 
-	//Deze functie voert gewoon actiforms uit door alles terug te zenden.
-	//
 	void activform() {
 		try 
 		{
@@ -679,7 +586,6 @@ public class SMCConnector {
 						dummyFeatures.put(environment.getSNR(link));
 					}
 				}
-				//System.out.println("before putteing features");
 				features.put(dummyFeatures);
 
 

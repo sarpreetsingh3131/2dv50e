@@ -58,35 +58,6 @@ def training_testing(request):
             # Take the appropriate action depending on the
             # variables of the query
             if mode == 'comparison':
-
-                #this only gets called 
-                # at the end of the comparisson function of java
-                # which gets called at each cycle for 
-                # mode comparisson
-                # This json has 4 keys, each with an array
-                # classification: which holds the class prediction made 
-                # for this cycle, which were send before this
-                # regression: which holds the prediction made 
-                # for this cycle, which were send before this
-                # packetLoss: holds the results returned by 
-                # activforms for the packetloss of this cycle
-                # for every configuration. This is called
-                # after the predictions of the machine learner
-                # have been received.
-                # The simulation of activforms is seen as
-                # fact of what packetloss would have 
-                # been in the next cycle
-                # if you would
-                # have applied that configuration
-                # energyConsumption: same as packetLoss
-
-                # This data is here to analyze after everything
-                # has been run
-                # The save data appends the data to the already existing data
-                # of the previous cycle or creates a new file if its the first cycle
-                # What if you run the program in comparisson 2 times?
-                # This mode.comparisson should better be called 
-                # mode.saveComparisson
                 response = save_data(dataset)
 
             elif mode == 'mladjustment':
@@ -141,7 +112,6 @@ def training_testing(request):
         else:
             return JsonResponse({'message': 'only POST requests are allowed'})
 
-    # Something went seriously wrong.
     except Exception as e:
         traceback.print_tb(e.__traceback__)
         return JsonResponse({'message': 'invalid request'})
@@ -175,7 +145,7 @@ def save_mlAdjustmentData(data):
 
     for i in range(len(data['packetLoss'])):
         overall_file[len(overall_file)-1]['adaptationOptions'].append({
-            'adaptationOption' : i,
+            'adaptationOption' : data["adapIndices"][i],
             'packetLoss' : data['packetLoss'][i],
             'energyConsumption' : data['energyConsumption'][i], 
             'classificationBefore' : data['classificationBefore'][i],

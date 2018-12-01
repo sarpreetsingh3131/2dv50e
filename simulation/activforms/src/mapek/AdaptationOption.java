@@ -6,10 +6,14 @@ public class AdaptationOption {
 	public ManagedSystem system;
 	public Qualities verificationResults = new Qualities();
 
+	// Index used to track the adaptation option (in the overall list of options)
+	public int overallIndex;
+
 	protected AdaptationOption getCopy() {
 		AdaptationOption newOption = new AdaptationOption();
 		newOption.system = system.getCopy();
 		newOption.verificationResults = verificationResults.getCopy();
+		newOption.overallIndex = overallIndex;
 		return newOption;
 	}
 

@@ -3,7 +3,8 @@ import json
 import numpy as np
 
 class AdaptationResult:
-    def __init__(self, ec, pl, clB, reB, clA, reA):
+    def __init__(self, index, ec, pl, clB, reB, clA, reA):
+        self.index = index
         self.ec = ec    # ec = Energy consumption (as evaluated by uppaal)
         self.pl = pl    # pl = packet loss (as evaluated by uppaal)
         self.clB = clB  # clB = classification prediction before online training adjustment
@@ -48,8 +49,8 @@ class AdaptationResults:
     def __len__(self):
         return len(self.results)
 
-    def addResult(self, ec, pl, clB, reB, clA, reA):
-        self.results.append(AdaptationResult(ec, pl, clB, reB, clA, reA))
+    def addResult(self, index, ec, pl, clB, reB, clA, reA):
+        self.results.append(AdaptationResult(index, ec, pl, clB, reB, clA, reA))
 
     def getResults(self):
         return self.results
@@ -142,6 +143,6 @@ def loadData(pathFile):
             # NOTE Amount of learning cycles hardcoded for now
             # TODO maybe move indication of learning cycle to the data itself
             if i > 29:
-                adapResults[ai].addResult(ec, pl, clB, reB, clA, reA)
+                adapResults[ai].addResult(ai, ec, pl, clB, reB, clA, reA)
 
     return adapResults
