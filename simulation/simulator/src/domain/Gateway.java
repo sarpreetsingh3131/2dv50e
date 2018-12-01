@@ -210,7 +210,7 @@ public class Gateway extends Node {
 	}
 
 	@Override
-	void calcualtePacketReceiveBatteryConsumption(int timeSlots) {
+	void calculatePacketReceiveBatteryConsumption(int timeSlots) {
 		// We are not calculating packet receiving battery consumption for
 		// gateways
 	}

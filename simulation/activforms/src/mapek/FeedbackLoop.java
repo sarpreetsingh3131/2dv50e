@@ -303,8 +303,7 @@ public class FeedbackLoop {
 				double diffSNR = getSNR(link.getSource(), link.getDestination(), powerSetting) - newSNR;
 
 				// Calculate the most optimal power setting (higher if packet loss, lower if energy can be reserved)
-				// FIXME missing & (I presume)
-				if (powerSetting < 15 & newSNR < 0 && newSNR != -50) {
+				if (powerSetting < 15 && newSNR < 0 && newSNR != -50) {
 
 					while (powerSetting < 15 && newSNR < 0) {
 						newSNR = getSNR(link.getSource(), link.getDestination(), ++powerSetting) - diffSNR;

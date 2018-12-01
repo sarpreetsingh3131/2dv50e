@@ -12,7 +12,7 @@ public abstract class Node {
 		this.position = position;
 	}
 
-	abstract void calcualtePacketReceiveBatteryConsumption(int timeSlots);
+	abstract void calculatePacketReceiveBatteryConsumption(int timeSlots);
 
 	// Functionality
 	abstract void receivePacket(Packet packet, RunInfo runInfo);

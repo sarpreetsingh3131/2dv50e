@@ -243,16 +243,17 @@ public class Mote extends Node {
 		packetQueue = queue;
 
 		// Calculate receiving battery
-		if (totalDistribution > 100) {
-			for (Link link : links) {
-				link.getTo().calcualtePacketReceiveBatteryConsumption(timeSlots);
-			}
-		} else {
-			if (links.size() > 0) {
-				// FIXME figure out what to do when the mote has more than 1 parent -> both should receive for all timeSlots?
-				links.get(0).getTo().calcualtePacketReceiveBatteryConsumption(timeSlots);
-			}
-		}
+		// TODO: make sure this is the correct behaviour
+		links.forEach(link -> link.getTo().calculatePacketReceiveBatteryConsumption(timeSlots));
+		// if (totalDistribution > 100) {
+		// 	for (Link link : links) {
+		// 		link.getTo().calcualtePacketReceiveBatteryConsumption(timeSlots);
+		// 	}
+		// } else {
+		// 	if (links.size() > 0) {
+		// 		links.get(0).getTo().calcualtePacketReceiveBatteryConsumption(timeSlots);
+		// 	}
+		// }
 	}
 
 	public int getQueueLoss() {
@@ -312,7 +313,7 @@ public class Mote extends Node {
 	}
 
 	@Override
-	void calcualtePacketReceiveBatteryConsumption(int timeSlots) {
+	void calculatePacketReceiveBatteryConsumption(int timeSlots) {
 		assert links.size() >= 1;
 
 		double batteryUsage = timeSlots * DomainConstants.receptionTime
