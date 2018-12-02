@@ -653,39 +653,30 @@ public class SMCConnector {
 	// door te zenden naar de learner
 	JSONObject parse(List<AdaptationOption> adaptationOptions, TaskType taskType) {
 		
-		//Json object dat je dan kan gebruiken om de data in te bundelen
 		JSONObject dataset = new JSONObject();
-
-		//De arrays die het vanzelfsprekende voorstellen
 		JSONArray features = new JSONArray();
 		JSONArray target = new JSONArray();
 
-		// Je voegt de fearues toe aan de datasaet json
 		dataset.put("features", features);
 		dataset.put("target", target);
 
-		// Voor iedere adaption option
 		for (AdaptationOption adaptationOption : adaptationOptions) {
 			
-			// Iedere item krijgt een array
 			JSONArray item = new JSONArray();
-
-			// Hier voeg je de gemeten target toe
 
 			// Je voegt de geobserveerde/ door activforms voorspelde targets toe van de cycle
 			// voor regressie voer je de letterlijke waarde in, voor classification de corresponderende klasse
-			// TODO: pas dit aan naar jou klassen
 			if (taskType == TaskType.CLASSIFICATION) {
 				target.put(adaptationOption.verificationResults.packetLoss < 10.0 ? 1 : 0);
-			} 
-			// makes corresponding classes for multiclass verification
-			// There are 8 possible combinations for the goals
-			// The succes of a goal represent one bit in 
-			// 3 bits (a power of 2).
-			// So all possible combination can be represented in 3 bits.
-			// So a  number from 0-7 = class.
-			else if(taskType == TaskType.PLLAMULTICLASS)
-			{
+			} else if (taskType == TaskType.REGRESSION) {
+				target.put((int) adaptationOption.verificationResults.packetLoss);
+			} else if(taskType == TaskType.PLLAMULTICLASS) {
+				// makes corresponding classes for multiclass verification
+				// There are 8 possible combinations for the goals
+				// The succes of a goal represent one bit in 
+				// 3 bits (a power of 2).
+				// So all possible combination can be represented in 3 bits.
+				// So a  number from 0-7 = class.
 				int APClass = 0;
 
 				//What I do here is dirty
@@ -702,24 +693,20 @@ public class SMCConnector {
 
 				target.put(APClass);
 			}
-			else {
-				target.put((int) adaptationOption.verificationResults.packetLoss);
-			}
-
 			
-			// Vanaf hier voeg je de features toe
-
-			//TODO: vraag wat dit allemaal betekent.
-
-			// Voeg de snr toe van de links (van die adaption???)
+			// Add the SNR values of all the links in the environment
 			for (SNR snr : environment.linksSNR) {
 				item.put((int) snr.SNR);
 			}
 
-			// TODO: veralgemeen voor note met ouders
+			// Add the power settings for all the links
+			// TODO do feature selection again because of this part
+			adaptationOption.system.motes.values().stream()
+				.map(mote -> mote.getLinks())
+				.flatMap(links -> links.stream())
+				.forEach(link -> item.put((int) link.getPower()));
 
-			// Distributiefactor toevoegen 
-			// Hij doet dit enkel voor de motes 7, 10 en 12 omdat die in zijn kleine modelletje enkel degene zijn met 2 parent links
+			// Add the distribution values for the links from motes 7, 10 and 12
 			for (Mote mote : adaptationOption.system.motes.values()) {
 				for (Link link : mote.getLinks()) {
 					if (link.getSource() == 7 || link.getSource() == 10 || link.getSource() == 12) {
@@ -728,19 +715,14 @@ public class SMCConnector {
 				}
 			}
 
-
-
-			//Voeg de load toe
-			//TODO: waarom enkel aan 12 en 10?
-			// waarschijnlijk omdat dit distributie is in plaats van load.
-			// Lekker gehardcode
+			// Add the load for motes 10 and 12
 			for (TrafficProbability traffic : environment.motesLoad) {
 				if (traffic.moteId == 10 || traffic.moteId == 12) {
 					item.put((int) traffic.load);
 				}
 			}
 
-			// Je voegt de features samen toe
+
 			features.put(item);
 		}
 

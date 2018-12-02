@@ -206,8 +206,6 @@ public class SMCChecker {
 	}
 
 
-	//TODO: VERY IMPORTANT FUNCTION
-	// so this should be the model checker
 	public void checkCAO(String adaptationOption, String environment, Qualities verificationResults) {
 
 		// loads and updates the models and their values specified in the SMCConfig.properties

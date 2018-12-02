@@ -333,7 +333,6 @@ public class FeedbackLoop {
 	// when there are 2 outgoing links and they are both 100, set one to 0
 	private void removePacketDuplication(AdaptationOption newConfiguration) {
 		for (Mote mote : newConfiguration.system.motes.values()) {
-			//TODO: hardcoded only 2 paretns, what if 3?
 			if (mote.getLinks().size() == 2) {
 				if (mote.getLink(0).getDistribution() == 100 && mote.getLink(1).getDistribution() == 100) {
 					mote.getLink(0).setDistribution(0);
@@ -352,7 +351,7 @@ public class FeedbackLoop {
 		throw new RuntimeException("Link not found:" + source + "-->" + destination);
 	}
 
-	// int i;
+
 	boolean analysisRequired() {
 		// for simulation we use adaptation after 4 periods
 		// return i++%4 == 0;
@@ -432,10 +431,6 @@ public class FeedbackLoop {
 		if (bestAdaptationOption == null) {
 			// System.out.println("Using faile safety configuration");
 
-			// TODO: hardcoded
-
-			// If none is predicted to fullfill the goal, just take the one with the lowest energy consumption
-			// Bad. This should can be done in a smarter way, but there is no time.
 			for (int i = 0; i < verifiedOptions.size(); i++) {
 				if (Goal.optimizationGoalEnergyCosnumption(bestAdaptationOption, verifiedOptions.get(i))) {
 					bestAdaptationOption = verifiedOptions.get(i);
@@ -450,10 +445,7 @@ public class FeedbackLoop {
 		// Go through all links
 		Link newLink, oldLink;
 		for (Mote mote : bestAdaptationOption.system.motes.values()) {
-
-			// for all links
 			for (int i = 0; i < mote.getLinks().size(); i++) {
-
 
 				// predicted mote, which will be executed
 				newLink = mote.getLinks().get(i);
@@ -461,16 +453,12 @@ public class FeedbackLoop {
 				// get the current link configuration. which will become the old one
 				oldLink = currentConfiguration.system.motes.get(mote.moteId).getLink(i);
 
-				// If the power isnt equal, aka changed
 				if (newLink.getPower() != oldLink.getPower()) {
-
 					// add a step/change to be executed later
 					steps.add(new PlanningStep(Step.CHANGE_POWER, newLink, newLink.getPower()));
 				}
 
-				// if the distribution should change
 				if (newLink.getDistribution() != oldLink.getDistribution()) {
-
 					// add a step/change to be executed later
 					steps.add(new PlanningStep(Step.CHANGE_DIST, newLink, newLink.getDistribution()));
 				}
@@ -480,11 +468,7 @@ public class FeedbackLoop {
 		// if there are steps to be executed, trigger execute to do them
 		if (steps.size() > 0) {
 			execution();
-		} 
-		
-		// if you wont change anything, just print je current time 
-		// to be able to know how long the previous took
-		else {
+		} else {
 			System.out.println(";" + System.currentTimeMillis());
 		}
 	}
@@ -495,62 +479,28 @@ public class FeedbackLoop {
 	// so changes/steps have to be done
 	void execution() {
 
-		// init boolean
-		boolean addMote;
+		Set<Mote> motesEffected = new HashSet<>();
 
-		// init list of motes
-		List<Mote> motesEffected = new LinkedList<Mote>();
-
-		// for all motes in the current (to become old) configuration.
-		// aka for all motes in the system (system doesnt change)
-		for (Mote mote : currentConfiguration.system.motes.values()) {
-
-			// default do not add mote
-			addMote = false;
-
-			// for all planning steps/changes planned by the planner 
-			for (PlanningStep step : steps) {
-
-				// if the mote is the source of a link which will change (its options)
-				// add the mote
-				if (step.link.getSource() == mote.getMoteId()) {
-					addMote = true;
-
-					// if this step is to change to power
-					// find the link object of the mote from the mote to the destinitaion of the link,
-					// and change its power to the planned value
-					if (step.step == Step.CHANGE_POWER) {
-						findLink(mote, (step.link.getDestination())).setPower(step.value);
-					} 
-					
-					// if this step is to change to distribution
-					// find the link object of the mote from the mote to the destinitaion of the link,
-					// and change its distribution to the planned value
-					else if (step.step == Step.CHANGE_DIST) {
-						findLink(mote, (step.link.getDestination())).setDistribution(step.value);
-					}
-				}
+		// Execute the planning steps, and keep track of the motes that will need changing
+		for (PlanningStep step : steps) {
+			Link link = step.link;
+			Mote mote = currentConfiguration.system.motes.get(link.getSource());
+			
+			if (step.step == Step.CHANGE_POWER) {
+				findLink(mote, link.getDestination()).setPower(step.value);
+			} else if (step.step == Step.CHANGE_DIST) {
+				findLink(mote, link.getDestination()).setDistribution(step.value);
 			}
-
-			// if the mote's settings were changed, add it to effected/changed motes
-			if (addMote)
-				motesEffected.add(mote);
+			motesEffected.add(mote);
 		}
 
-		// init linksettings list, this is a deltaIoT class to representing the setting of a link
+		
 		List<LinkSettings> newSettings;
 
-		// System.out.println("Adaptations:");
-
-		// for all motes affected
 		for (Mote mote : motesEffected) {
 
-			// printMote(mote);
-
-			// init the list of settings
 			newSettings = new LinkedList<LinkSettings>();
 
-			// for the (outgoing?) links of the mote
 			for (Link link : mote.getLinks()) {
 
 				// add a new linksettings object containing the source mote id, the dest id, the (new) power of the link,
@@ -560,23 +510,18 @@ public class FeedbackLoop {
 						link.getDistribution(), 0));
 			}
 
-			//TODO: very important command
 			// Here you push the changes for the mote to the actual network via the effector
 			effector.setMoteSettings(mote.getMoteId(), newSettings);
 		}
 
-		// empty the steps list
 		steps.clear();
 
 		// print current time, to be able to tell later how long everything took
 		LocalDateTime now;
 
-		if(!human)
-		{
+		if(!human) {
 			System.out.print(";" + System.currentTimeMillis() + "\n");
-		}
-		else
-		{
+		} else {
 			now = LocalDateTime.now();
 			System.out.print("; " + String.format("%02d:%02d:%02d", 
 				now.getHour(), now.getMinute(), now.getSecond()) + "\n");
