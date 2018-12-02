@@ -41,7 +41,20 @@ def getErrorRatePerSide(configs):
     errBefore, errAfter = tuple([sum(x) for x in zip(*errorRatesPerSides)])
     totalSamplesPerSide = [i.getAmtResultsPerSide() for i in configs]
     totalBefore, totalAfter = tuple([sum(x) for x in zip(*totalSamplesPerSide)])
-    return ((errBefore / totalBefore)*100, (errAfter / totalAfter)*100)
+    # print(f'Error before: {errBefore}, error after: {errAfter}\nTotal before: {totalBefore}, total after: {totalAfter}')
+
+    # In case the total amount of samples on either side are empty, the error percentage becomes either 0% or 100%
+    if totalBefore == 0:
+        errorPercentageBefore = 100 if errBefore > 0 else 0
+    else:
+        errorPercentageBefore = errBefore * 100 / totalBefore
+
+    if totalAfter == 0:
+        errorPercentageAfter = 100 if errAfter > 0 else 0
+    else:
+        errorPercentageAfter = errAfter * 100 / totalAfter
+
+    return errorPercentageBefore, errorPercentageAfter
 
 
 def calculateLogarithmicLoss(configs):
@@ -145,6 +158,9 @@ def printConfusionMatrices(confMatrices, outputPath, filename):
 
 
 def writeConfMatricesToFiles(matrices, filename, outputPath):
+    if len(matrices.items()) == 0:
+        return
+
     csvOutputFile = open(os.path.join(outputPath, filename), mode='w')
     csvOutputWriter = csv.writer(csvOutputFile, delimiter=',')
     keys = list(list(matrices.values())[0].keys())
@@ -195,33 +211,45 @@ def compareResultsClassifiers(inputPath, outputPath):
         # Explore the error rates for either side of the cutoff line
         errRateBefore, errRateAfter = getErrorRatePerSide(configurations)
 
+        # Confusion matrix for all configurations
+        overallConfMatrix = getCumulativeConfMatrices(configurations)
+        confMatrices['all'][f'{classifier}_{loss}_{scaler}'] = (overallConfMatrix)
+        printConfusionMatrix(overallConfMatrix, outputPath, f'ConfusionMatrixAll_{classifier}_{loss}_{scaler}', classifier + ' (all)', loss, scaler)
+        
+        # F1 values of all the configurations
+        F1All = calculateF1Score(overallConfMatrix)
 
         # Explore results in versatile configurations (configurations with less than 80% of results at one side of the line)
         versatileThreshhold = (amtCycles * 0.8) - (amtCycles * 0.2)
         versatileConfigurations = list(filter(lambda x: x.getScatterRate() <= versatileThreshhold, configurations))
 
-        # The error percentage for the versatile configurations
-        errorPercentageVersatile = getErrorRate(versatileConfigurations)
+        if len(versatileConfigurations) != 0:
+            # The error percentage for the versatile configurations
+            errorPercentageVersatile = getErrorRate(versatileConfigurations)
 
-        # The error percentage per side for versatile configurations
-        errRateVBefore, errRateVAfter = getErrorRatePerSide(versatileConfigurations)
+            # The error percentage per side for versatile configurations
+            errRateVBefore, errRateVAfter = getErrorRatePerSide(versatileConfigurations)
 
 
-        # The confusion matrices
-        # TODO merge all confusion matrices into single plot
-        overallConfMatrix, versConfMatrix = getCumulativeConfMatrices(configurations), getCumulativeConfMatrices(versatileConfigurations)
-        confMatrices['all'][f'{classifier}_{loss}_{scaler}'] = (overallConfMatrix)
-        confMatrices['versatile'][f'{classifier}_{loss}_{scaler}'] = (versConfMatrix)
-        printConfusionMatrix(overallConfMatrix, outputPath, f'ConfusionMatrixAll_{classifier}_{loss}_{scaler}', classifier + ' (all)', loss, scaler)
-        printConfusionMatrix(versConfMatrix, outputPath, f'ConfusionMatrixVers_{classifier}_{loss}_{scaler}', classifier + ' (versatile)', loss, scaler)
+            # The confusion matrix for the versatile configurations
+            # TODO merge all confusion matrices into single plot
+            versConfMatrix = getCumulativeConfMatrices(versatileConfigurations)
+            confMatrices['versatile'][f'{classifier}_{loss}_{scaler}'] = (versConfMatrix)
+            printConfusionMatrix(versConfMatrix, outputPath, f'ConfusionMatrixVers_{classifier}_{loss}_{scaler}', classifier + ' (versatile)', loss, scaler)
 
-        # F1 values of the configuration (sub)sets
-        F1All, F1Vers = calculateF1Score(overallConfMatrix), calculateF1Score(versConfMatrix)
+            # F1 values of the versatile configurations
+            F1Vers = calculateF1Score(versConfMatrix)
 
-        row = [classifier, '-' if loss==None else loss, scaler, f'{errorPercentageOverall:.2f}%', f'{errRateBefore:.2f}%', f'{errRateAfter:.2f}%', \
-            f'{errorPercentageVersatile:.2f}%', f'{errRateVBefore:.2f}%', f'{errRateVAfter:.2f}%', f'{F1All:.4f}', f'{F1Vers:.4f}']
-        outputData['values'].append(row[:4] + row[6:])
-        csvOutputWriter.writerow(row)
+            row = [classifier, '-' if loss==None else loss, scaler, f'{errorPercentageOverall:.2f}%', f'{errRateBefore:.2f}%', f'{errRateAfter:.2f}%', \
+                f'{errorPercentageVersatile:.2f}%', f'{errRateVBefore:.2f}%', f'{errRateVAfter:.2f}%', f'{F1All:.4f}', f'{F1Vers:.4f}']
+            outputData['values'].append(row[:4] + row[6:])
+            csvOutputWriter.writerow(row)
+        else:
+            # In case there were no versatile configurations
+            row = [classifier, '-' if loss==None else loss, scaler, f'{errorPercentageOverall:.2f}%', f'{errRateBefore:.2f}%', f'{errRateAfter:.2f}%', \
+                f'-', f'-', f'-', f'{F1All:.4f}', f'-']
+            outputData['values'].append(row[:4] + row[6:])
+            csvOutputWriter.writerow(row)
     
     csvOutputFile.close()
     # printConfusionMatrices(confMatrices['all'], outputPath, 'ConfMatricesAll')

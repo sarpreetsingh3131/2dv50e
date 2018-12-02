@@ -127,9 +127,11 @@ def loadData(pathFile):
     for i in range(len(data[0]['adaptationOptions'])):
         adapResults.append(AdaptationResults(i))
 
+    # Loop over the data for all the cycles
     for i in range(len(data)):
         dataCycleI = data[i]['adaptationOptions']
 
+        adapIndex = 0
         for adaptationOption in range(len(dataCycleI)):
             ai, pl, ec, clB, reB, clA, reA = \
                 dataCycleI[adaptationOption]['adaptationOption'], \
@@ -143,6 +145,7 @@ def loadData(pathFile):
             # NOTE Amount of learning cycles hardcoded for now
             # TODO maybe move indication of learning cycle to the data itself
             if i > 29:
-                adapResults[ai].addResult(ai, ec, pl, clB, reB, clA, reA)
+                adapResults[adapIndex].addResult(ai, ec, pl, clB, reB, clA, reA)
+                adapIndex += 1
 
     return adapResults
