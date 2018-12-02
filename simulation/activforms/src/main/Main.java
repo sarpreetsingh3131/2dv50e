@@ -86,9 +86,10 @@ public class Main {
 
 	//Initialises a new simulator and probe
 	public void initializeSimulator() {
-
+		String simulationNetwork = ConfigLoader.getInstance().getSimulationNetwork();
+		
 		// Start a completely new sim
-		SimulationClient client = new SimulationClient();
+		SimulationClient client = new SimulationClient(simulationNetwork);
 
 		// assign a new probe, effector and simulator to the main object.
 		// Variabelen direct aangesproken

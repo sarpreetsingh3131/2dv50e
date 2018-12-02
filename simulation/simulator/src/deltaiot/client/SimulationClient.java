@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
+import deltaiot.DeltaIoT;
 import deltaiot.DeltaIoTSimulator;
 import deltaiot.services.LinkSettings;
 import deltaiot.services.QoS;
@@ -18,8 +19,17 @@ public class SimulationClient implements Probe, Effector {
 
 	List<String> log = new LinkedList<String>();
 	
-	public SimulationClient(){
-		this.simulator = deltaiot.DeltaIoTSimulator.createSimulatorForDeltaIoT();
+	public SimulationClient(String name) {
+		switch (name.trim()) {
+			case "DeltaIoTv1":
+				this.simulator = deltaiot.DeltaIoTSimulator.createSimulatorForDeltaIoT();
+				break;
+			case "DeltaIoTv2":
+				this.simulator = deltaiot.DeltaIoTSimulator.createSimulatorForDeltaIoTv2();
+				break;
+			default:
+				throw new RuntimeException(String.format("Unsupported simulator: '%s'", name));
+		}
 	}
 	
 	public SimulationClient(Simulator simulator) {

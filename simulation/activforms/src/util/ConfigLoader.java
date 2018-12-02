@@ -59,8 +59,11 @@ public class ConfigLoader {
 		return SMCConnector.TaskType.getTaskType(this.getProperty("taskType").toLowerCase());
 	}
 
-	public boolean getHuman()
-	{
+	public String getSimulationNetwork() {
+		return this.getProperty("simulationNetwork");
+	}
+
+	public boolean getHuman() {
 		return this.getProperty("human").toLowerCase().trim().equals("true");
 	}
 }
