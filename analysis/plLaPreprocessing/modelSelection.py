@@ -15,6 +15,7 @@ from sklearn.ensemble import VotingClassifier
 
 NB_ADAPTION_PER_CYCLE=216
 
+
 def main():
 
     # Too many useless warnings
