@@ -106,9 +106,17 @@ def main():
 
     x = "asdf"
     while( x != 'y' and x != 'n' ):
+        print("Features selected by f_classif: ", no)
         x = input("Do you want to create data with the features selected by f_classif? [y/n]\n")
     if (x == 'y'):
         constructDataWithSelectedFeatures(no)
+
+    x = "asdf"
+    while( x != 'y' and x != 'n' ):
+        print("Features selected by f_classif for 456Cycles20Dist: ", [3, 7, 11, 15, 19, 22, 23, 25, 26, 30, 34, 35, 37, 38, 40, 41, 45, 48, 49, 51, 52, 53, 56, 60, 64])
+        x = input("Do you want to create data with the features selected by f_classif for 456Cycles20Dist? [y/n]\n")
+    if (x == 'y'):
+        constructDataWithSelectedFeatures([3, 7, 11, 15, 19, 22, 23, 25, 26, 30, 34, 35, 37, 38, 40, 41, 45, 48, 49, 51, 52, 53, 56, 60, 64])
     
  
 

@@ -15,7 +15,7 @@ if len(sys.argv) == 2:
     RDATA_FILE = sys.argv[1]
 else:
     #TODO: change this to the name of the raw data file (without trailing .json)
-    RDATA_FILE = "456Cycles20Dist"
+    RDATA_FILE = "48Cycles20Dist_run1"
 
 
 PACKETLOSS_GOAL = 10.0
