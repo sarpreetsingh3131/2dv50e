@@ -239,7 +239,7 @@ public class FeedbackLoop {
 
 				// iterate over all the possible distribution options
 				for (int i = initialValue; i <= Math.ceil(100 / DISTRIBUTION_GAP); i++) {
-					int distributionValue = Math.max(i * DISTRIBUTION_GAP, 100);
+					int distributionValue = Math.min(i * DISTRIBUTION_GAP, 100);
 					mote.getLink(0).setDistribution(distributionValue);
 					mote.getLink(1).setDistribution(100-distributionValue);
 					moteOptions.add(mote.getCopy());
@@ -378,6 +378,7 @@ public class FeedbackLoop {
 		for (int i : motes.keySet()) {
 			diff = currentConfiguration.environment.motesLoad.get(i).load
 					- previousConfiguration.environment.motesLoad.get(i).load;
+			// FIXME: make sure this comparison is right
 			if (diff > MOTES_TRAFFIC_THRESHOLD || diff > -MOTES_TRAFFIC_THRESHOLD) {
 				return true;
 			}
