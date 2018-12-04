@@ -245,7 +245,7 @@ public class SMCChecker {
 						getSimulatedValue(values[1]) : getProbability(values[1]) * 100;
 					break;
 				case "packetLoss":
-					verificationResults.energyConsumption = simType == ModelType.SIMULATION ?
+					verificationResults.packetLoss = simType == ModelType.SIMULATION ?
 						getSimulatedValue(values[1]) : getProbability(values[1]) * 100;
 					break;
 			}
