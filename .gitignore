@@ -5,6 +5,9 @@ __pycache__
 .classpath
 target
 
+# Jetbrains files
+/**/*.idea
+
 # Vscode files
 *.vscode
 *.code-workspace
