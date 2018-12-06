@@ -125,8 +125,7 @@ public class FeedbackLoop {
 			newMote = new Mote();
 			newMote.moteId = mote.getMoteid();
 			newMote.energyLevel = mote.getBattery();
-			// FIXME: change this so the mote either sends 0 packets or all of its packets
-			newMote.load = mote.getLoad() * mote.getDataProbability() / 100;
+			newMote.load = mote.getLoad();
 			newMote.queueSize = mote.getCurrentQSize();
 
 			// motesLoad holds a list of the probabilities that certain motes generate packets (probability in range [0, 100])
@@ -227,7 +226,7 @@ public class FeedbackLoop {
 		// Clear the previous list of adaptation options
 		currentAdaptationOptions.clear();
 		List<Mote> moteOptions = new LinkedList<>();
-		
+
 		initializeMoteDistributions(newConfiguration);
 
 		int initialValue = 0;
@@ -378,10 +377,13 @@ public class FeedbackLoop {
 		for (int i : motes.keySet()) {
 			diff = currentConfiguration.environment.motesLoad.get(i).load
 					- previousConfiguration.environment.motesLoad.get(i).load;
-			// FIXME: make sure this comparison is right
-			if (diff > MOTES_TRAFFIC_THRESHOLD || diff > -MOTES_TRAFFIC_THRESHOLD) {
+			// TODO: make sure this comparison is right
+			if (diff > Math.abs(diff)) {
 				return true;
 			}
+			// if (diff > MOTES_TRAFFIC_THRESHOLD || diff > -MOTES_TRAFFIC_THRESHOLD) {
+			// 	return true;
+			// }
 		}
 
 		// check qualities
@@ -415,8 +417,6 @@ public class FeedbackLoop {
 		// with the shortest distance/vector to (0,0,0)
 		for (int i = 0; i < verifiedOptions.size(); i++) {
 
-			//TODO: important changes have to be done here for more goals
-			
 			// if the option satisfies the hardcoded packetloss goal, and
 			// the energy consumption is the best seen yet, change this to the 
 			// "best"option

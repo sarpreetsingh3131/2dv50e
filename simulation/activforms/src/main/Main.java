@@ -58,7 +58,6 @@ public class Main {
 		}).start();
 	}
 
-	//TODO: what is this data dump exactly?
 	void printResults() {
 		// Get QoS data of previous runs
 		// probe.getNetworkQoS() should not have less number than the number of times

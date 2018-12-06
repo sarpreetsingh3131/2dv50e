@@ -14,7 +14,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
@@ -22,6 +21,7 @@ import org.apache.http.impl.client.BasicResponseHandler;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.json.JSONTokener;
 
 import java.io.FileWriter;
 import java.io.PrintWriter;
@@ -99,7 +99,6 @@ public class SMCConnector {
 
 
 
-	// Het type machine learning 
 	public enum TaskType {
 		CLASSIFICATION("classification"), 
 		REGRESSION("regression"), 
@@ -291,11 +290,96 @@ public class SMCConnector {
 				adjInspection.getJSONArray("regressionAfter"));
 		}
 
+
+		// NOTE: experimental, used for feature selection
+		// FIXME: remove this after feature selection
+		storeAllFeaturesAndTargets();
+
 		// Send the overall results to be saved on the server
 		send(adjInspection, TaskType.NONE, Mode.MLADJUSTMENT);
 	}
 
 
+
+	/**
+	 * FIXME remove this later on.
+	 */
+	private void storeAllFeaturesAndTargets() {
+		// Store the features and the targets in their respective files
+		File feature_selection = new File(
+			Paths.get(System.getProperty("user.dir"), "activforms", "log", "dataset_with_all_features.json").toString());
+
+		if (feature_selection.exists() && cycles == 1) {
+            // At the first cycle, remove the file if it already exists
+            feature_selection.delete();
+            try {
+                feature_selection.createNewFile();
+                JSONObject root = new JSONObject();
+                root.put("features", new JSONArray());
+                root.put("target_classification_packetloss", new JSONArray());
+                root.put("target_regression_packetloss", new JSONArray());
+                root.put("target_classification_latency", new JSONArray());
+                root.put("target_regression_latency", new JSONArray());
+                FileWriter writer = new FileWriter(feature_selection);
+                writer.write(root.toString(2));
+                writer.close();
+            } catch (IOException e) {
+                throw new RuntimeException(
+                    String.format("Could not create the output file at %s", feature_selection.toPath().toString()));
+            }
+        }
+
+
+		try {
+			JSONTokener tokener = new JSONTokener(feature_selection.toURI().toURL().openStream());
+			JSONObject root = new JSONObject(tokener);
+
+			// Get all the features for all the adaptation options, as well as their targets
+			for (AdaptationOption option : adaptationOptions) {
+				JSONArray newFeatures = new JSONArray();
+
+				// 17 links (SNR)
+				for (SNR snr : environment.linksSNR) {
+					newFeatures.put((int) snr.SNR);
+				}
+				
+				// 17 links (Power)
+				option.system.motes.values().stream()
+					.map(mote -> mote.getLinks())
+					.flatMap(links -> links.stream())
+					.forEach(link -> newFeatures.put((int) link.getPower()));
+				
+				// 17 links (Distribution)
+				for (Mote mote : option.system.motes.values()) {
+					for (Link link : mote.getLinks()) {
+						newFeatures.put((int) link.getDistribution());
+					}
+				}
+				
+				// 14 motes (Traffic load)
+				for (TrafficProbability traffic : environment.motesLoad) {
+					newFeatures.put((int) traffic.load);
+				}
+				
+                // => Total of 65 features
+                
+                // FIXME: use goals class to check if the goal for the qualities is met
+				root.getJSONArray("features").put(newFeatures);
+				root.getJSONArray("target_classification_packetloss").put(option.verificationResults.packetLoss < 10 ? 1 : 0);
+				root.getJSONArray("target_regression_packetloss").put((int) option.verificationResults.packetLoss);
+				// FIXME: make sure a goal of at most 5% latency is reasonable
+				root.getJSONArray("target_classification_latency").put(option.verificationResults.latency < 5 ? 1 : 0);
+				root.getJSONArray("target_regression_latency").put((int) option.verificationResults.latency);
+			}
+			FileWriter writer = new FileWriter(feature_selection);
+			writer.write(root.toString(2));
+			writer.close();
+			
+		} catch (IOException e) {
+			throw new RuntimeException(
+				String.format("Could not write to the output file at %s", feature_selection.toPath().toString()));
+		}
+	}
 
 	void comparison() {
 
@@ -552,7 +636,7 @@ public class SMCConnector {
 
 				// get features
 				// iterate over all 15 motes (is hashmap and want to be sure of order)
-				// TODO:HARDCODED
+				// TODO: HARDCODED
 				// TODO: for some reason there is no 1 mote but 2-15
 				dummyFeatures = new JSONArray();
 				//System.out.println("before motes");
@@ -811,20 +895,14 @@ public class SMCConnector {
 			String thressholds[] = prop.getProperty("thressholds").split(",");
 
 			double numThress[] = new double[thressholds.length];
-			for(int i = 0; i < thressholds.length; i++)
-			{
-				
+			for(int i = 0; i < thressholds.length; i++) {
 				numThress[i] = Double.parseDouble(thressholds[i].trim());
-
 			}
 
 			
-			for(int i = 0; i < targets.length; i++)
-			{
-
+			for(int i = 0; i < targets.length; i++) {
 				rgoals.add(new Goal( targets[i].trim(),
-				operators[i].trim(), numThress[i]));
-
+				    operators[i].trim(), numThress[i]));
 			}
 
 			return rgoals;

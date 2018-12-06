@@ -236,9 +236,10 @@ public class SMCChecker {
 
 			// Retrieve the results for the different qualities, dependent on the model type (simulation or probability)
 			switch (quality) {
-				case "latency":
+                case "latency":
+                    // In case of latency, the returned value for simulation is still a percentage
 					verificationResults.latency = simType == ModelType.SIMULATION ?
-						getSimulatedValue(values[1]) : getProbability(values[1]) * 100;
+						getSimulatedValue(values[1]) * 100 : getProbability(values[1]) * 100;
 					break;
 				case "energyConsumption":
 					verificationResults.energyConsumption = simType == ModelType.SIMULATION ?

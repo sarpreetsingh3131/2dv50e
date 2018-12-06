@@ -11,63 +11,45 @@ public class Goal {
 
     private double tresshold;
 
-    public Goal (String target, String operator, Double tresshold) throws IllegalArgumentException
-    {
+    public Goal (String target, String operator, Double tresshold) throws IllegalArgumentException {
         this.target = target;
 
-        if ( !("<".equals(operator) || ">".equals(operator) || "<=".equals(operator) || ">=".equals(operator) || "==".equals(operator) || "!=".equals(operator)))
-        {
+        if ( !("<".equals(operator) || ">".equals(operator) || "<=".equals(operator) || ">=".equals(operator) || "==".equals(operator) || "!=".equals(operator))) {
             throw new IllegalArgumentException("The operator can only be < or > or <= or >= or == or != , not "+operator+".");
         }
         this.operator = operator;
         this.tresshold = tresshold;
     }
 
-    public String getTarget()
-    {
+    public String getTarget() {
         return this.target;
     }
 
-    public String getOperator()
-    {
+    public String getOperator() {
         return this.operator;
     }
 
-    public double getTresshold()
-    {
+    public double getTresshold() {
         return this.tresshold;
     }
 
-    public boolean evaluate(double value) throws IllegalArgumentException
-    {
+    public boolean evaluate(double value) throws IllegalArgumentException {
         String op = getOperator();
         double tress = getTresshold();
 
-        if("<".equals(op))
-        {
+        if("<".equals(op)) {
             return value < tress;
-        }
-        else if(">".equals(op))
-        {
+        } else if(">".equals(op)) {
             return value > tress;
-        }
-        else if("<=".equals(op)){
+        } else if("<=".equals(op)){
             return value <= tress;
-        }
-        else if(">=".equals(op))
-        {
+        } else if(">=".equals(op)) {
             return value >= tress;
-        }
-        else if("==".equals(op))
-        {
+        } else if("==".equals(op)) {
             return value == tress;
-        }
-        else if("!=".equals(op))
-        {
+        } else if("!=".equals(op)) {
             return value != tress;
-        }
-        else
-        {
+        } else {
             throw new IllegalArgumentException("Illegal operator.");
         }
     }

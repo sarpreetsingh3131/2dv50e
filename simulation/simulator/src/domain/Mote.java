@@ -213,7 +213,8 @@ public class Mote extends Node {
 				int rand = (int) Math.round(Math.random() * totalDistribution);
 				int countDistribution = 0;
 				for (Link link : possibleLinks) {
-					countDistribution += link.getDistribution();
+                    countDistribution += link.getDistribution();
+                    // This part assumes that the mote has a maximum of 2 outgoing links
 					if (countDistribution >= rand) {
 						sendPacketOver(link, packet, runInfo);
 						break;
