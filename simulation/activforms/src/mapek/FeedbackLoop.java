@@ -14,10 +14,9 @@ import deltaiot.services.QoS;
 import smc.SMCConnector;
 import util.ConfigLoader;
 import deltaiot.client.Probe;
-import smc.Goal;
-import smc.SMCChecker;
 import smc.SMCConnector.TaskType;
 import java.time.LocalDateTime;
+
 
 public class FeedbackLoop {
 
@@ -54,7 +53,7 @@ public class FeedbackLoop {
 	SMCConnector smcConnector = new SMCConnector();
 
 
-	List<Goal> goals = SMCConnector.initGoals(SMCChecker.DEFAULT_CONFIG_FILE_PATH);
+	Goals goals = Goals.getInstance();
 
 	// Thresholds for when you want to adapt/change the network
 	static final int SNR_BELOW_THRESHOLD = 0;
@@ -418,48 +417,37 @@ public class FeedbackLoop {
 		// with the shortest distance/vector to (0,0,0)
 		for (int i = 0; i < verifiedOptions.size(); i++) {
 
-			// FIXME does not use the operators specified in the properties file
-			if (ConfigLoader.getInstance().getTaskType().equals(TaskType.PLLAMULTICLASS)) {
-				double la = ConfigLoader.getInstance().getLatencyGoal();
-				double pl = ConfigLoader.getInstance().getPacketLossGoal();
+			AdaptationOption option = verifiedOptions.get(i);
+			Goal pl = goals.getPacketLossGoal();
 
-				if(verifiedOptions.get(i).verificationResults.latency <= la &&
-					verifiedOptions.get(i).verificationResults.packetLoss <= pl &&
-					Goal.optimizationGoalEnergyCosnumption(bestAdaptationOption, verifiedOptions.get(i))) {
-					bestAdaptationOption = verifiedOptions.get(i);
+			if (ConfigLoader.getInstance().getTaskType().equals(TaskType.PLLAMULTICLASS)) {
+				Goal la = goals.getLatencyGoal();
+
+				if (la.evaluate(option.verificationResults.latency) 
+						&& pl.evaluate(option.verificationResults.packetLoss)
+						&& goals.optimizeGoalEnergyConsumption(bestAdaptationOption, option)) {
+					bestAdaptationOption = option;
 				}
 
-			} else if (Goal.satisfyGoalPacketLoss(verifiedOptions.get(i))
-					&& Goal.optimizationGoalEnergyCosnumption(bestAdaptationOption, verifiedOptions.get(i))) {
-
-				bestAdaptationOption = verifiedOptions.get(i);
+			} else {
+				if (pl.evaluate(option.verificationResults.packetLoss)
+						&& goals.optimizeGoalEnergyConsumption(bestAdaptationOption, option)) {
+					bestAdaptationOption = option;
+				}
 			}
 
 		}
-
-		// if (!ConfigLoader.getInstance().getTaskType().equals(TaskType.PLLAMULTICLASS) || 
-		// 	bestAdaptationOption == null )
-		// {
-		// 	bestAdaptationOption = backUp;
-		// }
-			
 
 		// Use the failsafe configuration if none of the options fullfill the goals
 		if (bestAdaptationOption == null) {
-			// System.out.println("Using faile safety configuration");
-
 			for (int i = 0; i < verifiedOptions.size(); i++) {
-				if (Goal.optimizationGoalEnergyCosnumption(bestAdaptationOption, verifiedOptions.get(i))) {
+				if (goals.optimizeGoalEnergyConsumption(bestAdaptationOption, verifiedOptions.get(i))) {
 					bestAdaptationOption = verifiedOptions.get(i);
 				}
 			}
 		}
-		// System.out.print(";" + bestAdaptationOption.verificationResults.packetLoss +
-		// ";"
-		// + bestAdaptationOption.verificationResults.energyConsumption);
-		// System.out.println("SelectedOption:" + bestAdaptationOption);
 
-		// Go through all links
+		// Go through all links and construct the steps that have to be made to change to the best adaptation option
 		Link newLink, oldLink;
 		for (Mote mote : bestAdaptationOption.system.motes.values()) {
 			for (int i = 0; i < mote.getLinks().size(); i++) {

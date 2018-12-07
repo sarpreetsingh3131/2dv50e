@@ -6,7 +6,11 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Properties;
+
+import mapek.Goal;
 
 /**
  * Class Used to load the properties listed in the SMCConfig.properties file.
@@ -66,37 +70,19 @@ public class ConfigLoader {
 	public boolean getHuman() {
 		return this.getProperty("human").toLowerCase().trim().equals("true");
 	}
+	
+	public List<Goal> getGoals() {
+		List<Goal> goals = new ArrayList<>();
 
-	public double getLatencyGoal() {
 		String targets[] = this.getProperty("targets").split(",");
 		String thressholds[] = this.getProperty("thressholds").split(",");
-		double r = 0;
-		int i = 0;
-		boolean t = true;
-		while ( t ) {
-			if (targets[i].trim().equals("latency")) {
-				t = false;
-				r = Double.parseDouble(thressholds[i].trim());
-			}
-			i++;
+		String operators[] = this.getProperty("operators").split(",");
+
+		for (int i = 0; i < targets.length; i++) {
+			goals.add(new Goal(
+				targets[i].trim(), operators[i].trim(), Double.parseDouble(thressholds[i].trim())));
 		}
-		return r;
-    }
-    
-	public double getPacketLossGoal() {
-		String targets[] = this.getProperty("targets").split(",");
-		String thressholds[] = this.getProperty("thressholds").split(",");
-		double r = 0;
-		int i = 0;
-		boolean t = true;
-		while ( t ) {
-			if (targets[i].trim().equals("packetLoss")) {
-				t = false;
-				r = Double.parseDouble(thressholds[i].trim());
-			}
-			i++;
-		}
-		return r;
+		return goals;
 	}
 
 }

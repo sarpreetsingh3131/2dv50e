@@ -1,14 +1,3 @@
-/*
- * As federico explained to me, this
- * this is  just a tool to execute a shell command
- * to start the model checker binary.
- *	This has a model, which as far as i can tell, doesnt get used.
- * I do not understand the model, but the only important function call()
- * does not reference it and SMCModel is really not understandible in its current state.
- * TODO: Watch out! the command is a string, so there is
- * probably a chance the command is not platform independent
- *  You should make a linux, mac en windows variant. And an error if its none of them.
- */
 
 package smc;
 
