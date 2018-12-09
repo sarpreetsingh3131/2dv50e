@@ -1,7 +1,5 @@
 package util;
 
-import smc.runmodes.SMCConnector;
-
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -11,13 +9,14 @@ import java.util.List;
 import java.util.Properties;
 
 import mapek.Goal;
+import smc.runmodes.SMCConnector;
 
 /**
  * Class Used to load the properties listed in the SMCConfig.properties file.
  */
 public class ConfigLoader {
 
-	private static String configFileLocation = Paths.get(System.getProperty("user.dir"), "SMCConfig.properties").toString();
+	public static final String configFileLocation = Paths.get(System.getProperty("user.dir"), "SMCConfig.properties").toString();
 	private static ConfigLoader instance = null;
 	private Properties properties;
 
@@ -39,7 +38,7 @@ public class ConfigLoader {
 		}
 	}
 
-	private String getProperty(String key) {
+	public String getProperty(String key) {
 		return properties.getProperty(key);
 	}
 

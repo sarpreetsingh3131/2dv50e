@@ -104,7 +104,7 @@ public class MLAdjustment extends SMCConnector {
 				.collect(Collectors.toList());
 
 			Goal pl = goals.getPacketLossGoal();
-			
+
 			// Determine which adaptation options have to be sent back for the specific learners
 			for (int i = 0; i < adaptationOptions.size(); i++) {
 				if (classificationResults.get(i).equals(1)) {
@@ -134,8 +134,7 @@ public class MLAdjustment extends SMCConnector {
 
 
 		// NOTE: experimental, used for feature selection
-		// FIXME: remove this after feature selection
-		storeAllFeaturesAndTargets(adaptationOptions, environment, cycles);
+		// storeAllFeaturesAndTargets(adaptationOptions, environment, cycles);
 		
 		// Send the overall results to be saved on the server
 		send(adjInspection, TaskType.NONE, Mode.MLADJUSTMENT);
@@ -252,8 +251,7 @@ public class MLAdjustment extends SMCConnector {
 
 
 		// NOTE: experimental, used for feature selection
-		// FIXME: remove this after feature selection
-		storeAllFeaturesAndTargets(adaptationOptions, environment, cycles);
+		// storeAllFeaturesAndTargets(adaptationOptions, environment, cycles);
 
 		// Send the overall results to be saved on the server
 		send(adjInspection, TaskType.NONE, Mode.MLADJUSTMENT);

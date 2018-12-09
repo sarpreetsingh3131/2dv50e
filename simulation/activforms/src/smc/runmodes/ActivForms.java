@@ -18,6 +18,19 @@ import util.ConfigLoader;
 
 public class ActivForms extends SMCConnector {
 
+	// for collecting raw data with the activform mode
+	private JSONObject rawData;
+	private JSONArray features;
+	private JSONArray targets;
+
+	public ActivForms() {
+		rawData = new JSONObject();
+		features = new JSONArray();
+		targets = new JSONArray();
+		rawData.put("features", features);
+		rawData.put("targets", targets);
+	}
+
 	@Override
 	public void startVerification() {
 		System.out.print(";" + adaptationOptions.size());

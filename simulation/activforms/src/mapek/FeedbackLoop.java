@@ -180,9 +180,9 @@ public class FeedbackLoop {
 
 		// Adds the QoS of the previous configuration to the current configuration,
 		// probably to pass on to the learner so he can use this to online learn
-		// TODO: modify this to multiple goals (latency)
 		currentConfiguration.qualities.packetLoss = qos.getPacketLoss();
 		currentConfiguration.qualities.energyConsumption = qos.getEnergyConsumption();
+		currentConfiguration.qualities.latency = qos.getLatency();
 
 		// Call the next step off the mapek
 		analysis();
@@ -397,13 +397,9 @@ public class FeedbackLoop {
 		for (int i : motes.keySet()) {
 			diff = currentConfiguration.environment.motesLoad.get(i).load
 					- previousConfiguration.environment.motesLoad.get(i).load;
-			// TODO: make sure this comparison is right
 			if (diff > Math.abs(diff)) {
 				return true;
 			}
-			// if (diff > MOTES_TRAFFIC_THRESHOLD || diff > -MOTES_TRAFFIC_THRESHOLD) {
-			// 	return true;
-			// }
 		}
 
 		// check qualities
@@ -430,12 +426,8 @@ public class FeedbackLoop {
 		AdaptationOption bestAdaptationOption = null;
 		// AdaptationOption backUp = null;
 
-		// For all options the smc and ml thought they would fullfill the goals
-		//TODO: here he selects the best option, has to be changed to my goals
-		// I have already made it independent from goals
-		// TODO: find how you can find the best one out of the adaption space
-		// Because your goals will be in 3D, maybe find the adaption 
-		// with the shortest distance/vector to (0,0,0)
+		// TODO: What course of action if not all the goals are met?
+		// TODO: Which options when using regression? -> utility function?
 		for (int i = 0; i < verifiedOptions.size(); i++) {
 
 			AdaptationOption option = verifiedOptions.get(i);
@@ -531,7 +523,6 @@ public class FeedbackLoop {
 
 				// add a new linksettings object containing the source mote id, the dest id, the (new) power of the link,
 				//  the (new) distribution of the link and the link spreading as zero to the newsetting list.
-				//TODO: what is the spreadingsfactor and can it be used as a feature?
 				newSettings.add(newLinkSettings(mote.getMoteId(), link.getDestination(), link.getPower(),
 						link.getDistribution(), 0));
 			}

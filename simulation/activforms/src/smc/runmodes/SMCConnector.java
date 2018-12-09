@@ -43,10 +43,7 @@ abstract public class SMCConnector {
 	int cycles = 1;
 	TaskType taskType;
 
-	// for collecting raw data with the activform mode
-	JSONObject rawData;
-	JSONArray features;
-	JSONArray targets;
+
 
 	public enum Mode {
 		MACHINELEARNING("machinelearning"),
@@ -109,14 +106,6 @@ abstract public class SMCConnector {
 		ConfigLoader configLoader = ConfigLoader.getInstance();
 		taskType = configLoader.getTaskType();
 		featureSelection = new FeatureSelection();
-		
-		rawData = new JSONObject();
-		features = new JSONArray();
-		targets = new JSONArray();
-		// TODO: move rawData to ActivForms class
-		rawData.put("features", features);
-		rawData.put("targets", targets);
-
 	}
 
 
@@ -135,7 +124,6 @@ abstract public class SMCConnector {
 
 
 	/**
-	 * TODO: move feature selection to separate class (which checks the used network)
 	 * Prepare the adaptation options (their features and targets) for the machine learner.
 	 * @param adaptationOptions the options which should be prepared.
 	 * @param task the task type (which is necessary to decide the target).

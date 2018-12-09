@@ -159,8 +159,6 @@ int getReceiveQueue(int slots){
     }
     else{
         q=slots;
-        // TODO does this create a discrepancy with the simulator since the 'lifetime' of packets is set to 1,
-        // but packets which could not be sent at the current cycle are still kept in the buffer
         queue[moteId] = queue[moteId]-slots;
     }
                  
