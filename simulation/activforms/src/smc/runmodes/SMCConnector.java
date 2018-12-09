@@ -21,10 +21,7 @@ import mapek.AdaptationOption;
 import mapek.Environment;
 import mapek.Goal;
 import mapek.Goals;
-import mapek.Link;
-import mapek.Mote;
-import mapek.SNR;
-import mapek.TrafficProbability;
+import smc.FeatureSelection;
 import smc.SMCChecker;
 import util.ConfigLoader;
 
@@ -40,6 +37,7 @@ abstract public class SMCConnector {
 	SMCChecker smcChecker = new SMCChecker();
 	Goals goals = Goals.getInstance();
 	List<AdaptationOption> verifiedOptions;
+	FeatureSelection featureSelection;
 
 	final int TRAINING_CYCLE = ConfigLoader.getInstance().getAmountOfLearningCycles();
 	int cycles = 1;
@@ -110,6 +108,8 @@ abstract public class SMCConnector {
 		// Load the configurations specified in the properties file (mode and tasktype)
 		ConfigLoader configLoader = ConfigLoader.getInstance();
 		taskType = configLoader.getTaskType();
+		featureSelection = new FeatureSelection();
+		
 		rawData = new JSONObject();
 		features = new JSONArray();
 		targets = new JSONArray();
@@ -138,10 +138,10 @@ abstract public class SMCConnector {
 	 * TODO: move feature selection to separate class (which checks the used network)
 	 * Prepare the adaptation options (their features and targets) for the machine learner.
 	 * @param adaptationOptions the options which should be prepared.
-	 * @param taskType the task type (which is necessary to decide the target).
+	 * @param task the task type (which is necessary to decide the target).
 	 * @return a JSONObject which contains the data that should be sent to the learner.
 	 */
-	JSONObject parse(List<AdaptationOption> adaptationOptions, TaskType taskType) {
+	JSONObject parse(List<AdaptationOption> adaptationOptions, TaskType task) {
 		
 		JSONObject dataset = new JSONObject();
 		JSONArray features = new JSONArray();
@@ -153,15 +153,13 @@ abstract public class SMCConnector {
 		Goal pl = goals.getPacketLossGoal();
 
 		for (AdaptationOption adaptationOption : adaptationOptions) {
-			JSONArray item = new JSONArray();
-			
 			// Decide the target for the adaptation option (dependent on the task type)
-			if (taskType == TaskType.CLASSIFICATION) {
+			if (task == TaskType.CLASSIFICATION) {
 				target.put(pl.evaluate(adaptationOption.verificationResults.packetLoss) ? 1 : 0);
-			} else if (taskType == TaskType.REGRESSION) {
+			} else if (task == TaskType.REGRESSION) {
 				target.put((int) adaptationOption.verificationResults.packetLoss);
-			} else if(taskType == TaskType.PLLAMULTICLASS) {
-				// makes corresponding classes for multiclass verification
+			} else if(task == TaskType.PLLAMULTICLASS) {
+				// Makes corresponding classes for multiclass verification
 				// 0 - no goals are met
 				// 1 - packet loss goal is met
 				// 2 - latency goal is met
@@ -175,38 +173,8 @@ abstract public class SMCConnector {
 
 				target.put(APClass);
 			}
-			
-
-
-			// TODO: separate feature selection
-			// Add the SNR values of all the links in the environment
-			for (SNR snr : environment.linksSNR) {
-				item.put((int) snr.SNR);
-			}
-
-			// Add the power settings for all the links
-			adaptationOption.system.motes.values().stream()
-				.map(mote -> mote.getLinks())
-				.flatMap(links -> links.stream())
-				.forEach(link -> item.put((int) link.getPower()));
-
-			// Add the distribution values for the links from motes 7, 10 and 12
-			for (Mote mote : adaptationOption.system.motes.values()) {
-				for (Link link : mote.getLinks()) {
-					if (link.getSource() == 7 || link.getSource() == 10 || link.getSource() == 12) {
-						item.put((int) link.getDistribution());
-					}
-				}
-			}
-
-			// Add the load for motes 10 and 12
-			for (TrafficProbability traffic : environment.motesLoad) {
-				if (traffic.moteId == 10 || traffic.moteId == 12) {
-					item.put((int) traffic.load);
-				}
-			}
-
-			features.put(item);
+		
+			features.put(featureSelection.selectFeatures(adaptationOption, environment));
 		}
 
 		// Returns the dataset with the features and targets

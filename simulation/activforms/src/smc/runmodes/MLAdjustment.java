@@ -104,8 +104,8 @@ public class MLAdjustment extends SMCConnector {
 				.collect(Collectors.toList());
 
 			Goal pl = goals.getPacketLossGoal();
+			
 			// Determine which adaptation options have to be sent back for the specific learners
-			// TODO: adopt for latency
 			for (int i = 0; i < adaptationOptions.size(); i++) {
 				if (classificationResults.get(i).equals(1)) {
 					classificationTrainOptions.add(adaptationOptions.get(i));
