@@ -29,17 +29,13 @@ public class FeedbackLoop {
 	public static final int DISTRIBUTION_GAP = ConfigLoader.getInstance().getDistributionGap();
 	public static final boolean human = ConfigLoader.getInstance().getHuman();
 	
-
-	//Dit zullen volledige staten(=configuratie) zijn van het netwerk op een bepaald moment
 	Configuration currentConfiguration;
 	Configuration previousConfiguration;
 
-	// As far as I can tell, this gets filled by the planner each cycle
-	// and probably emptied by the executor after executing the step (changes) the planner planned.
+	// The steps that are filled in by the planner to adjust to the newly chosen best configuration
 	List<PlanningStep> steps = new LinkedList<>();
 	
-	//Stellen de ruis op een bepaalde link voor (op een bepaald tijdstip?)
-	//Zijn ergens manueel ingetypt en komt van gemeten data van een week van het echte netwerk
+	// The equations for interference on the links
 	List<SNREquation> snrEquations = new LinkedList<>();
 
 	// The current adaptation options are the options specific to the current cycle
@@ -49,7 +45,6 @@ public class FeedbackLoop {
 
 	List<AdaptationOption> verifiedOptions;
 
-	// De connector die met de machine learner connecteerd.
 	SMCConnector smcConnector = new SMCConnector();
 
 

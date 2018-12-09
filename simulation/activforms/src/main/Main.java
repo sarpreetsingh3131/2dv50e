@@ -22,14 +22,11 @@ public class Main {
 
 	public void start() {
 
-		// This starts a new thread where the main object is executed on.
 		new Thread(() -> {
-			// This is what effectively gets executed when you start the main
-
 			// Compile the list of SNREquations for all the links in the simulator
 			List<SNREquation> equations = new ArrayList<>();
 
-			// Firstly, assemble all the links in the simulator.
+			// Firstly, assemble all the links in the simulator
 			List<Link> links = simulator.getMotes().stream()
 				.map(Mote::getLinks)
 				.flatMap(List::stream)
@@ -49,10 +46,9 @@ public class Main {
 			feedbackLoop.setEffector(effector);
 			feedbackLoop.setEquations(equations);
 
-			// StartFeedback loop
+			// StartFeedback loop (this runs for the amount of cycles specified in the configuration)
 			feedbackLoop.start();
 
-			// See results
 			printResults();
 
 		}).start();
@@ -69,29 +65,20 @@ public class Main {
 		}
 	}
 
-	//DIT IS DE JAVA MAIN DIE GESTART WORD
 	public static void main(String[] args) {
-
-		// Creeer de main die zal worden uitgevoerd
 		Main ddaptation = new Main();
-
-		// Init de simulator. Dit start de simulator objecten en geeft het
-		// main object een probe en effector door
 		ddaptation.initializeSimulator();
-
-		// Je start de main in een nieuwe thread (zie hierboven)
 		ddaptation.start();
 	}
 
-	//Initialises a new simulator and probe
+	// Initialises a new simulator and probe
 	public void initializeSimulator() {
 		String simulationNetwork = ConfigLoader.getInstance().getSimulationNetwork();
 		
 		// Start a completely new sim
 		SimulationClient client = new SimulationClient(simulationNetwork);
 
-		// assign a new probe, effector and simulator to the main object.
-		// Variabelen direct aangesproken
+		// Assign a new probe, effector and simulator to the main object.
 		probe = client.getProbe();
 		effector = client.getEffector();
 		simulator = client.getSimulator();

@@ -9,18 +9,11 @@ public class Configuration {
 	ManagedSystem system;
 
 	// The environment contains the SNR on a given link and the load.
-	// There is nothing done however with the load variable of the object in the class,
-	// so I presume somewhere it is changed directly and not through a setter.
 	Environment environment;
 
 	// An object holding single qualities.
-	// For now it only contains packetloss and energy consumption
-	// and a singel value for them
-	// However, it should be looked at to add latency and if it is really necessary
-	// why you wouldnt just use the deltaIoT class for it
 	Qualities qualities;
 
-	// The methods speak for themselves
 	public Configuration() {
 		system = new ManagedSystem();
 		environment = new Environment();

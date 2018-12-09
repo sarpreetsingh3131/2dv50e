@@ -1,9 +1,11 @@
 package mapek;
 
+/**
+ * Class used to represent the probability that a mote sends traffic.
+ * The load variable is a value between [0-100] denoting the probability.
+ */
 public class TrafficProbability {
 
-	// An object of this class will be an element in a list of a mote object,
-	// one for every cycle to represent the load on the mote for that cycle.
 	public int moteId;
 	public double load;
 

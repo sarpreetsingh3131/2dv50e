@@ -50,40 +50,6 @@ public class SMCChecker {
 		return models;
 	}
 
-	/*
-	 * FIXME: remove
-	 * Reference: http://www.mkyong.com/java/how-to-execute-shell-command-from-java/
-	 */
-	@SuppressWarnings("unused")
-	private static String executeCommand(String command) {
-
-		StringBuffer output = new StringBuffer();
-
-		Process p;
-		try {
-
-			p = Runtime.getRuntime().exec(command);
-			p.waitFor();
-			BufferedReader reader = new BufferedReader(new InputStreamReader(p.getInputStream()));
-			BufferedReader errorReader = new BufferedReader(new InputStreamReader(p.getErrorStream()));
-
-			String line = "";
-			while ((line = reader.readLine()) != null) {
-				output.append(line + "\n");
-			}
-
-			if (output.length() == 0) {
-				while ((line = errorReader.readLine()) != null) {
-					output.append(line + "\n");
-				}
-			}
-
-		} catch (Exception e) {
-			e.printStackTrace(System.out);
-		}
-
-		return output.toString();
-	}
 
 	public static String getCommand(String modelPath, double alpha, double epsilon) {
 		String cmd = String.format(command, alpha, epsilon, modelPath);
@@ -254,7 +220,7 @@ public class SMCChecker {
 	}
 
 	public void setInitialData(String cao, String env, Qualities verificationResults) {
-		// cao is the adaption option
+		// cao is the current adaption option
 		models = new LinkedList<>();
 		try {
 
