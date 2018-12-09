@@ -22,6 +22,9 @@ def doFeatureSelection():
         for target_pl, target_l in zip(target_packetloss, target_latency):
             totalTargets.append(target_pl + (target_l << 1))
 
+        for i in range(4):
+            print(f'Options in class {i}: {totalTargets.count(i)}')
+
         model = model(random_state=10)
         model.fit(data['features'], totalTargets)
 
@@ -38,6 +41,7 @@ def doFeatureSelection():
         print("Power: " + str([f'{i:.4f}' for i in importances[17:34]]))
         print("Distr: " + str([f'{i:.4f}' for i in importances[34:51]]))
         print("Load:  " + str([f'{i:.4f}' for i in importances[51:65]]))
+        # print("Overall importances: " + str([f'{i:.4f}' for i in importances]))
 
         plt.xlabel('Features')
         plt.ylabel('Importance Score')

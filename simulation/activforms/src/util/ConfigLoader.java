@@ -1,6 +1,6 @@
 package util;
 
-import smc.SMCConnector;
+import smc.runmodes.SMCConnector;
 
 import java.io.FileInputStream;
 import java.io.IOException;

@@ -1,5 +1,6 @@
 package mapek;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -9,13 +10,17 @@ import java.util.Map;
 import java.util.Set;
 
 import deltaiot.client.Effector;
+import deltaiot.client.Probe;
 import deltaiot.services.LinkSettings;
 import deltaiot.services.QoS;
-import smc.SMCConnector;
+import smc.runmodes.ActivForms;
+import smc.runmodes.Comparison;
+import smc.runmodes.MLAdjustment;
+import smc.runmodes.MachineLearning;
+import smc.runmodes.SMCConnector;
+import smc.runmodes.SMCConnector.Mode;
+import smc.runmodes.SMCConnector.TaskType;
 import util.ConfigLoader;
-import deltaiot.client.Probe;
-import smc.SMCConnector.TaskType;
-import java.time.LocalDateTime;
 
 
 public class FeedbackLoop {
@@ -45,7 +50,8 @@ public class FeedbackLoop {
 
 	List<AdaptationOption> verifiedOptions;
 
-	SMCConnector smcConnector = new SMCConnector();
+	// SMCConnector smcConnector = new SMCConnector();
+	SMCConnector smcConnector;
 
 
 	Goals goals = Goals.getInstance();
@@ -61,7 +67,29 @@ public class FeedbackLoop {
 	static final int MOTES_TRAFFIC_THRESHOLD = 10;
 
 
-	public FeedbackLoop() {	}
+	public FeedbackLoop() {
+		// Dependant on the run mode, instantiate a different connector
+		// TODO maybe move this method to the enum itself
+		Mode runmode = ConfigLoader.getInstance().getRunMode();
+		switch (runmode) {
+			// TODO: change TESTING-TRAINING to MACHINE_LEARNING for configuration
+			case TESTING:
+			case TRAINING:
+				smcConnector = new MachineLearning();
+				break;
+			case ACTIVFORM:
+				smcConnector = new ActivForms();
+				break;
+			case COMPARISON:
+				smcConnector = new Comparison();
+				break;
+			case MLADJUSTMENT:
+				smcConnector = new MLAdjustment();
+				break;
+			default:
+				throw new RuntimeException(String.format("Unsupported run mode: %s", runmode.val));
+		}
+	}
 
 	public void setProbe(Probe probe) {
 		this.probe = probe;
@@ -192,7 +220,7 @@ public class FeedbackLoop {
 
 		// let the model checker and/or machine learner start to predict which adaption options will
 		// fullfill the goals definied in the connector
-		smcConnector.startVerification();
+		smcConnector.verify();
 
 		// the connector changed the adaptionOptions of the feedbackloop directly,
 		// to the options it thinks will suffiece the goals
