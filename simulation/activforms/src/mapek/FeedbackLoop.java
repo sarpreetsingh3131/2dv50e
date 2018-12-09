@@ -72,9 +72,7 @@ public class FeedbackLoop {
 		// TODO maybe move this method to the enum itself
 		Mode runmode = ConfigLoader.getInstance().getRunMode();
 		switch (runmode) {
-			// TODO: change TESTING-TRAINING to MACHINE_LEARNING for configuration
-			case TESTING:
-			case TRAINING:
+			case MACHINELEARNING:
 				smcConnector = new MachineLearning();
 				break;
 			case ACTIVFORM:

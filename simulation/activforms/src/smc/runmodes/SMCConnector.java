@@ -43,7 +43,6 @@ abstract public class SMCConnector {
 
 	final int TRAINING_CYCLE = ConfigLoader.getInstance().getAmountOfLearningCycles();
 	int cycles = 1;
-	Mode mode;
 	TaskType taskType;
 
 	// for collecting raw data with the activform mode
@@ -52,15 +51,18 @@ abstract public class SMCConnector {
 	JSONArray targets;
 
 	public enum Mode {
-		TRAINING("training"), 
-		TESTING("testing"), 
+		MACHINELEARNING("machinelearning"),
 		ACTIVFORM("activform"), 
 		COMPARISON("comparison"),
 		// The new mladjustment mode is similar to the comparison mode.
 		// The difference between the two is that mladjustment also checks for
 		// the adjustments made to the learners after online learning every cycle.
 		// This data is then sent to the python server to be saved in an output file.
-		MLADJUSTMENT("mladjustment");
+		MLADJUSTMENT("mladjustment"),
+
+		// NOTE: training and testing should only be used internally
+		TRAINING("training"), 
+		TESTING("testing");
 
 		public String val;
 
@@ -107,7 +109,6 @@ abstract public class SMCConnector {
 	protected SMCConnector() {
 		// Load the configurations specified in the properties file (mode and tasktype)
 		ConfigLoader configLoader = ConfigLoader.getInstance();
-		mode = configLoader.getRunMode();
 		taskType = configLoader.getTaskType();
 		rawData = new JSONObject();
 		features = new JSONArray();
