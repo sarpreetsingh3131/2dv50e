@@ -4,9 +4,7 @@
 
 package smc;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -20,28 +18,18 @@ import mapek.Qualities;
 
 public class SMCChecker {
 
-	String configFilePath;
 
 	public static String command = Paths
 			.get(System.getProperty("user.dir"), "uppaal-verifyta", "verifyta -a %f -E %f -u %s").toString();
 
-
-	// TODO: remove this and make use of the configLoader
-	public static String DEFAULT_CONFIG_FILE_PATH = Paths.get(System.getProperty("user.dir"), "SMCConfig.properties")
-			.toString();
 
 	SMCModelLoader modelLoader;
 
 	// The models send to the binary
 	List<SMCModel> models;
 
-	public SMCChecker(String configPath) {
-		this.configFilePath = configPath;
-		modelLoader = new SMCModelLoader(configPath);
-	}
-
 	public SMCChecker() {
-		this(DEFAULT_CONFIG_FILE_PATH);
+		modelLoader = new SMCModelLoader();
 	}
 
 	ExecutorService cachedPool = Executors.newCachedThreadPool();

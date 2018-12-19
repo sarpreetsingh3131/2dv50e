@@ -1,5 +1,6 @@
 package mapek;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -9,13 +10,17 @@ import java.util.Map;
 import java.util.Set;
 
 import deltaiot.client.Effector;
+import deltaiot.client.Probe;
 import deltaiot.services.LinkSettings;
 import deltaiot.services.QoS;
-import smc.SMCConnector;
+import smc.runmodes.ActivForms;
+import smc.runmodes.Comparison;
+import smc.runmodes.MLAdjustment;
+import smc.runmodes.MachineLearning;
+import smc.runmodes.SMCConnector;
+import smc.runmodes.SMCConnector.Mode;
+import smc.runmodes.SMCConnector.TaskType;
 import util.ConfigLoader;
-import deltaiot.client.Probe;
-import smc.SMCConnector.TaskType;
-import java.time.LocalDateTime;
 
 
 public class FeedbackLoop {
@@ -45,7 +50,8 @@ public class FeedbackLoop {
 
 	List<AdaptationOption> verifiedOptions;
 
-	SMCConnector smcConnector = new SMCConnector();
+	// SMCConnector smcConnector = new SMCConnector();
+	SMCConnector smcConnector;
 
 
 	Goals goals = Goals.getInstance();
@@ -61,7 +67,27 @@ public class FeedbackLoop {
 	static final int MOTES_TRAFFIC_THRESHOLD = 10;
 
 
-	public FeedbackLoop() {	}
+	public FeedbackLoop() {
+		// Dependant on the run mode, instantiate a different connector
+		// TODO maybe move this method to the enum itself
+		Mode runmode = ConfigLoader.getInstance().getRunMode();
+		switch (runmode) {
+			case MACHINELEARNING:
+				smcConnector = new MachineLearning();
+				break;
+			case ACTIVFORM:
+				smcConnector = new ActivForms();
+				break;
+			case COMPARISON:
+				smcConnector = new Comparison();
+				break;
+			case MLADJUSTMENT:
+				smcConnector = new MLAdjustment();
+				break;
+			default:
+				throw new RuntimeException(String.format("Unsupported run mode: %s", runmode.val));
+		}
+	}
 
 	public void setProbe(Probe probe) {
 		this.probe = probe;
@@ -154,9 +180,9 @@ public class FeedbackLoop {
 
 		// Adds the QoS of the previous configuration to the current configuration,
 		// probably to pass on to the learner so he can use this to online learn
-		// TODO: modify this to multiple goals (latency)
 		currentConfiguration.qualities.packetLoss = qos.getPacketLoss();
 		currentConfiguration.qualities.energyConsumption = qos.getEnergyConsumption();
+		currentConfiguration.qualities.latency = qos.getLatency();
 
 		// Call the next step off the mapek
 		analysis();
@@ -192,7 +218,7 @@ public class FeedbackLoop {
 
 		// let the model checker and/or machine learner start to predict which adaption options will
 		// fullfill the goals definied in the connector
-		smcConnector.startVerification();
+		smcConnector.verify();
 
 		// the connector changed the adaptionOptions of the feedbackloop directly,
 		// to the options it thinks will suffiece the goals
@@ -371,13 +397,9 @@ public class FeedbackLoop {
 		for (int i : motes.keySet()) {
 			diff = currentConfiguration.environment.motesLoad.get(i).load
 					- previousConfiguration.environment.motesLoad.get(i).load;
-			// TODO: make sure this comparison is right
 			if (diff > Math.abs(diff)) {
 				return true;
 			}
-			// if (diff > MOTES_TRAFFIC_THRESHOLD || diff > -MOTES_TRAFFIC_THRESHOLD) {
-			// 	return true;
-			// }
 		}
 
 		// check qualities
@@ -404,12 +426,8 @@ public class FeedbackLoop {
 		AdaptationOption bestAdaptationOption = null;
 		// AdaptationOption backUp = null;
 
-		// For all options the smc and ml thought they would fullfill the goals
-		//TODO: here he selects the best option, has to be changed to my goals
-		// I have already made it independent from goals
-		// TODO: find how you can find the best one out of the adaption space
-		// Because your goals will be in 3D, maybe find the adaption 
-		// with the shortest distance/vector to (0,0,0)
+		// TODO: What course of action if not all the goals are met?
+		// TODO: Which options when using regression? -> utility function?
 		for (int i = 0; i < verifiedOptions.size(); i++) {
 
 			AdaptationOption option = verifiedOptions.get(i);
@@ -505,7 +523,6 @@ public class FeedbackLoop {
 
 				// add a new linksettings object containing the source mote id, the dest id, the (new) power of the link,
 				//  the (new) distribution of the link and the link spreading as zero to the newsetting list.
-				//TODO: what is the spreadingsfactor and can it be used as a feature?
 				newSettings.add(newLinkSettings(mote.getMoteId(), link.getDestination(), link.getPower(),
 						link.getDistribution(), 0));
 			}

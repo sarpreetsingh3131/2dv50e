@@ -26,10 +26,7 @@ def training_testing(request):
             # You parse this query in string form
             # You take the value of the variable task-type
             task_type = parse_qs(urlparse(path).query)['task-type'][0]
-
-            # Do the same to get the value of mode
             mode = parse_qs(urlparse(path).query)['mode'][0]
-
             cycle = int(parse_qs(urlparse(path).query)['cycle'][0])
 
             # Clear the models/output at the first adaptation cycle
@@ -40,72 +37,45 @@ def training_testing(request):
                     # The collected data files in question are .txt and .json files
                     dir_path = os.path.join('machine_learner', 'collected_data')
                     deleteFilesWithExt(dir_path, ['.txt', '.json'])
-                elif (mode == 'training') and ((task_type == 'classification') or (task_type == 'regression')):
+                elif (mode == 'training') and \
+                    ((task_type == 'classification') or (task_type == 'regression') or (task_type == 'pllaclassification')):
                     # Remove all the trained models for the specified mode before they are trained for the first time
                     # This is done by searching all the model files and deleting them (in the respective subdirectory per task_type)
                     dir_path = os.path.join('machine_learner', 'trained_models', task_type)
                     deleteFilesWithExt(dir_path, ['.pkl'])
 
-            # you load the received json 
-            # Which is in the body of the post request
-            # and load the string in to a json object
-            # and assign it to dataset
             dataset = json.loads(request.body)
-
-            #Initialise the response variable
             response = {}
 
             # Take the appropriate action depending on the
             # variables of the query
             if mode == 'comparison':
                 response = save_data(dataset)
-
             elif mode == 'mladjustment':
                 response = save_mlAdjustmentData(dataset)
 
-            # The next if statements are selfexplanatory
-
-            #TODO: write the format of the returned json for every kind of response
             elif task_type == 'classification':
-                
                 if mode == 'training':
                     response = classification.training(
                         dataset['features'], dataset['target'], cycle)
-
                 elif mode == 'testing':
                     response = classification.testing(dataset['features'])
-
-
-            elif task_type == 'plLaClassification':
-                
+                    
+            elif task_type == 'pllaclassification':
                 if mode == 'training':
                     response = plLaClassification.training(
                         dataset['features'], dataset['target'], cycle)
-
                 elif mode == 'testing':
                     response = plLaClassification.testing(dataset['features'])
 
-
-
             elif task_type == 'regression':
-
                 if mode == 'training':
                     response = regression.training(
                         dataset['features'], dataset['target'], cycle)
-
                 elif mode == 'testing':
                     response = regression.testing(dataset['features'])
 
-            # You send the appropriate response back to the
-            # process who requested
-            # The json response was initialised empty
-            # and has been changed to what it should be
-            # except for of the mode was comparisson
-            # in which case you send an empty json back
-            # and the activforms does not look at that response
-            # so it is no problem
-            # It actually sends a message back it worked
-            # for comparisson
+
             return JsonResponse(response)
 
         # If anything else then post request, send error message back
@@ -156,7 +126,6 @@ def save_mlAdjustmentData(data):
         
     with open(outputPath, 'w') as f:
         json.dump(overall_file, f, indent=4)
-        f.close()
 
     return {'message': 'successful'}
 
@@ -173,14 +142,8 @@ def save_data(data):
     outputPath = os.path.join('machine_learner', 'collected_data', 'selected_adaptation_options.json')
     
     try:
-    
         file_data = json.load(open(outputPath))
-    
-    # This exeption gets thrown when the file is not there
-    # but maybe also if you have no read rights (maybe even write
-    # or it is open in another program?)
     except Exception:
-    
         file_data = []
 
     # append the new data to the existing data
@@ -191,10 +154,6 @@ def save_data(data):
         'regression': data['regression']
     })
 
-    # with open opens the file en closes it after the block
-    # it is equivalent to f = open(); do stuff; f.close()
-    # This fails if you have not permission or it is open somewhere else
-    # TODO: catch exception
     with open(outputPath, 'w') as f:
         json.dump(file_data, f, indent=4)
 

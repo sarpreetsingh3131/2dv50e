@@ -5,7 +5,7 @@ from sklearn.preprocessing import MinMaxScaler
 from sklearn.linear_model import SGDClassifier
 from machine_learner.utils import repository
 
-DIR_PATH = os.path.join('machine_learner', 'trained_models', 'plLaClassification')
+DIR_PATH = os.path.join('machine_learner', 'trained_models', 'pllaclassification')
 
 #TODO: addapt to a flexible model and multiple goals
 # The goals will have to be added and synchronized between 
@@ -22,7 +22,6 @@ def training(features, target, cycle):
         # n_jobs is the amout of CPUs to use.
         # you should change it to 4 if your pc can handle it
         # SGDClassifier uses OVA.
-        modelName = SGDClassifier.__name__
         if cycle != 1:
             model = repository.get(SGDClassifier.__name__, DIR_PATH)
             scaler = repository.get(MinMaxScaler.__name__, DIR_PATH)

@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
-import deltaiot.DeltaIoT;
 import deltaiot.DeltaIoTSimulator;
 import deltaiot.services.LinkSettings;
 import deltaiot.services.QoS;
