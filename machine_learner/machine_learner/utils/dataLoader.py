@@ -32,6 +32,23 @@ class AdaptationResult:
             return ((0, self.clB != 0), (0, self.reB < 10))
 
 
+
+class AdaptationResultMultiGoal(AdaptationResult):
+    def __init__(self, index, ec, pl, clB, reB, clA, reA, la):
+        super().__init__(index, ec, pl, clB, reB, clA, reA)
+        self.la = la
+
+    def isPredictedRight(self):
+        # TODO: add regression values -> just false for now
+        actualClass = (1 if self.pl < 10 else 0) + (2 if self.la < 5 else 0)
+        return (actualClass == self.clB, False)
+
+    def isPredictedWrongPerSide(self):
+        # FIXME: dummy value for now
+        return ((0,0),(0,0))
+
+
+
 class AdaptationResults:
     def __init__(self, adaptationIndex):
         self.results = []
@@ -49,8 +66,14 @@ class AdaptationResults:
     def __len__(self):
         return len(self.results)
 
-    def addResult(self, index, ec, pl, clB, reB, clA, reA):
-        self.results.append(AdaptationResult(index, ec, pl, clB, reB, clA, reA))
+    def addResult(self, index, ec, pl, clB, reB, clA, reA, la=None):
+        if (la != None):
+            self.results.append(AdaptationResultMultiGoal(index, ec, pl, clB, reB, clA, reA, la))
+        else:
+            self.results.append(AdaptationResult(index, ec, pl, clB, reB, clA, reA))
+
+    def addResultDirectly(self, res):
+        self.results.append(res)
 
     def getResults(self):
         return self.results
@@ -145,7 +168,11 @@ def loadData(pathFile):
             # NOTE Amount of learning cycles hardcoded for now
             # TODO maybe move indication of learning cycle to the data itself
             if i > 29:
-                adapResults[adapIndex].addResult(ai, ec, pl, clB, reB, clA, reA)
+                la = None
+                if 'latency' in dataCycleI[adaptationOption]:
+                    la = dataCycleI[adaptationOption]['latency']
+
+                adapResults[adapIndex].addResult(ai, ec, pl, clB, reB, clA, reA, la)
                 adapIndex += 1
 
     return adapResults

@@ -126,7 +126,6 @@ def save_mlAdjustmentData(data):
         
     with open(outputPath, 'w') as f:
         json.dump(overall_file, f, indent=4)
-        f.close()
 
     return {'message': 'successful'}
 
@@ -143,14 +142,8 @@ def save_data(data):
     outputPath = os.path.join('machine_learner', 'collected_data', 'selected_adaptation_options.json')
     
     try:
-    
         file_data = json.load(open(outputPath))
-    
-    # This exeption gets thrown when the file is not there
-    # but maybe also if you have no read rights (maybe even write
-    # or it is open in another program?)
     except Exception:
-    
         file_data = []
 
     # append the new data to the existing data
@@ -161,10 +154,6 @@ def save_data(data):
         'regression': data['regression']
     })
 
-    # with open opens the file en closes it after the block
-    # it is equivalent to f = open(); do stuff; f.close()
-    # This fails if you have not permission or it is open somewhere else
-    # TODO: catch exception
     with open(outputPath, 'w') as f:
         json.dump(file_data, f, indent=4)
 

@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import json
+import numpy as np
 from sklearn.ensemble import ExtraTreesClassifier, ExtraTreesRegressor
 import os
 
@@ -52,6 +53,23 @@ def doFeatureSelection():
 
         if plt_index == 2:
             plt.legend()
+
+            
+        indices = np.array([i for i in range(len(importances)) if importances[i] != 0])
+
+        # save the selected features in a separate file
+        newFileData = json.load(open(path))
+
+        newFeatures = []
+        for feature_vec in newFileData['features']:
+            newFeatures.append(np.array(feature_vec)[indices].tolist())
+
+        newFileData['features'] = newFeatures
+
+        outputPath = os.path.join('machine_learner','collected_data',f'dataset_selected_features_{target_type}.json')
+        with open(outputPath, 'w') as f:
+            json.dump(newFileData, f, indent=4)
+        
 
     plt.tight_layout()
     plt.show()
