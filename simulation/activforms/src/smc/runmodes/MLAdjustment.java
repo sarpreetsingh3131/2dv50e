@@ -296,6 +296,7 @@ public class MLAdjustment extends SMCConnector {
 		}
 	}
 
+	@SuppressWarnings("unused")
 	private void storeAllFeaturesAndTargets(List<AdaptationOption> adaptationOptions, Environment env, int cycle) {
 		// Store the features and the targets in their respective files
 		File feature_selection = new File(
@@ -312,6 +313,7 @@ public class MLAdjustment extends SMCConnector {
 				root.put("target_regression_packetloss", new JSONArray());
 				root.put("target_classification_latency", new JSONArray());
 				root.put("target_regression_latency", new JSONArray());
+				root.put("target_regression_energyconsumption", new JSONArray());
 				FileWriter writer = new FileWriter(feature_selection);
 				writer.write(root.toString(2));
 				writer.close();
@@ -361,12 +363,15 @@ public class MLAdjustment extends SMCConnector {
 				// Packet loss values
 				root.getJSONArray("target_classification_packetloss").put(
 					goals.getPacketLossGoal().evaluate(option.verificationResults.packetLoss) ? 1 : 0);
-				root.getJSONArray("target_regression_packetloss").put((int) option.verificationResults.packetLoss);
+				root.getJSONArray("target_regression_packetloss").put(option.verificationResults.packetLoss);
 				
 				// Latency values
 				root.getJSONArray("target_classification_latency").put(
 					goals.getLatencyGoal().evaluate(option.verificationResults.latency) ? 1 : 0);
-				root.getJSONArray("target_regression_latency").put((int) option.verificationResults.latency);
+				root.getJSONArray("target_regression_latency").put(option.verificationResults.latency);
+
+				// Energy consumption values
+				root.getJSONArray("target_regression_energyconsumption").put(option.verificationResults.energyConsumption);
 			}
 			FileWriter writer = new FileWriter(feature_selection);
 			writer.write(root.toString(2));

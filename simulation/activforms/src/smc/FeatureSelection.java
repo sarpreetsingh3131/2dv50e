@@ -38,6 +38,7 @@ public class FeatureSelection {
         );
         selectedPower_DeltaIoTv1 = Arrays.asList(
             new Pair<>(3,1),
+            new Pair<>(4,1),
             new Pair<>(7,2),
             new Pair<>(8,1),
             new Pair<>(9,1),
