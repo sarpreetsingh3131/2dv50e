@@ -5,7 +5,7 @@ import json
 import os
 import time
 import matplotlib.pyplot as plt
-from sklearn.linear_model import SGDClassifier, PassiveAggressiveClassifier, Perceptron
+from sklearn.linear_model import SGDClassifier, PassiveAggressiveClassifier, Perceptron, SGDRegressor, PassiveAggressiveRegressor
 from sklearn.naive_bayes import MultinomialNB, GaussianNB, BernoulliNB
 from sklearn.preprocessing import MinMaxScaler, StandardScaler, MaxAbsScaler
 
@@ -15,8 +15,8 @@ ADAP_SIZE = 216
 scalers = [MinMaxScaler, StandardScaler, MaxAbsScaler, None]
 
 penalty_sgd = ['l1', 'l2', 'elasticnet', 'none']
-loss_sgd = ['hinge', 'log', 'modified_huber', 'squared_hinge', 'perceptron', \
-    'squared_loss', 'huber', 'epsilon_insensitive', 'squared_epsilon_insensitive']
+loss_sgd_regr = ['squared_loss', 'huber', 'epsilon_insensitive', 'squared_epsilon_insensitive']
+loss_sgd_class = ['hinge', 'log', 'modified_huber', 'squared_hinge', 'perceptron'] + loss_sgd_regr
 
 loss_pa = ['hinge', 'squared_hinge']
 
@@ -26,13 +26,17 @@ penalty_per = ['l1', 'l2', 'elasticnet', None]
 # Classifiers in format (model, [loss functions], [penalties], [scalers])
 classifiers = [
     (PassiveAggressiveClassifier, loss_pa, [None], scalers),
-    (SGDClassifier, loss_sgd, penalty_sgd, scalers),
+    (SGDClassifier, loss_sgd_class, penalty_sgd, scalers),
     (Perceptron, [None], penalty_per, scalers),
     (GaussianNB, [None], [None], scalers),
     # (BernoulliNB, [None], [None], scalers)
     # (MultinomialNB, [None], [None], [None]),
 ]
 
+regressors = [
+    (SGDRegressor, ['squared_loss', 'huber', 'epsilon_insensitive', 'squared_epsilon_insensitive'], penalty_per[:3], scalers),
+    (PassiveAggressiveRegressor, ['epsilon_insensitive', 'squared_epsilon_insensitive'], [None], scalers)
+]
 
 
 
@@ -45,7 +49,7 @@ targets_la_regr_global = data['target_regression_latency']
 targets_ec_regr_global = data['target_regression_energyconsumption']
 
 
-class ModelEncaps:
+class ModelEncapsClass:
     def __init__(self, model, loss, penalty, separate=False):
         self.separate = separate
         self.loss = loss
@@ -101,8 +105,49 @@ class ModelEncaps:
             self.models[0].partial_fit(features, comb_targets, classes=np.array([0,1,2,3]))
 
 
+class ModelEncapsRegr:
+    def __init__(self, model, loss, penalty):
+        self.loss = loss
+        self.penalty = penalty
+        self.model = model
+        self.models = []
 
-def generateResultingFile(model, scaler, loss, penalty, separate=False):
+        for _ in range(2):
+            if loss == None and penalty == None:
+                m = model()
+            elif loss == None and penalty != None:
+                m = model(penalty=penalty)
+            elif loss != None and penalty == None:
+                m = model(loss=loss)
+            else:
+                m = model(loss=loss, penalty=penalty)
+            
+            self.models.append(m)
+
+    def getName(self):
+        '''
+        Returns a tuple with 3 entries containing the model, loss and penalty names
+        '''
+        return (self.model.__name__ , \
+            self.loss.replace('_', '' ) if self.loss != None else 'None', \
+            self.penalty if self.penalty != None else 'None') 
+
+    def predict(self, features):
+        pred_pl = self.models[0].predict(features)
+        pred_la = self.models[1].predict(features)
+
+        class_pl = [1 if i < 10 else 0 for i in pred_pl]
+        class_la = [1 if i < 5 else 0 for i in pred_la]
+
+        return [class_pl[i] + (2 * class_la[i]) for i in range(len(features))]
+
+    def partial_fit(self, features, targets_pl, targets_la):
+        self.models[0].partial_fit(features, targets_pl)
+        self.models[1].partial_fit(features, targets_la)
+
+
+
+def generateResultingFileClass(model, scaler, loss, penalty, separate=False):
     '''
     Generates an output file in the format of the output file from the MLAdjustment runmode for
     the provided model, scaler, loss and penalty.
@@ -115,7 +160,7 @@ def generateResultingFile(model, scaler, loss, penalty, separate=False):
     data = []
 
     cycles = int(len(targets_pl_class_global) / ADAP_SIZE)
-    model = ModelEncaps(model, loss, penalty, separate)
+    model = ModelEncapsClass(model, loss, penalty, separate)
     model_name, loss_name, pen_name = model.getName()
 
     name = f'{model_name}_{loss_name + "." + pen_name}_{scaler.__name__ if scaler != None else "None"}'
@@ -141,10 +186,8 @@ def generateResultingFile(model, scaler, loss, penalty, separate=False):
         classAfter = []
 
         # Differentiate between training and testing cycles
-        # TODO: can adjust the amount of training cycles later on
         if i < 30:
             if scaler != None:
-                # TODO: is online learning for the scaler actually benefitial?
                 scaler.partial_fit(features)
                 features = scaler.transform(features)
 
@@ -195,7 +238,107 @@ def generateResultingFile(model, scaler, loss, penalty, separate=False):
         json.dump(data, f, indent=4)
 
     end = time.process_time()
-    print(f'{end-start:.2f} seconds:\t\t{name}')
+    print(f'{end-start:.2f} seconds:\t{name}')
+
+
+
+
+
+def generateResultingFileRegr(model, scaler, loss, penalty):
+    '''
+    This function treats the results of the regressor as predicted values from a classifier (class 0 - 3)
+    '''
+    # FIXME: if time left, store actuall regression results and perform regression metrics on these
+    # TODO: merge with method above
+
+    start = time.process_time()
+    data = []
+
+    cycles = int(len(targets_pl_class_global) / ADAP_SIZE)
+    model = ModelEncapsRegr(model, loss, penalty)
+    model_name, loss_name, pen_name = model.getName()
+
+    name = f'{model_name}_{loss_name + "." + pen_name}_{scaler.__name__ if scaler != None else "None"}'
+    outputPath = os.path.join('machine_learner', 'collected_data', 'target', name + '.json')
+    
+    if scaler != None:
+        scaler = scaler()
+
+    # Simulate the classifier over all the cycles
+    for i in range(cycles):
+        # Extract the features and targets for the different goals
+        features = copy.deepcopy(features_global[i*ADAP_SIZE:(i+1)*ADAP_SIZE])
+        targets_pl_regr = targets_pl_regr_global[i*ADAP_SIZE:(i+1)*ADAP_SIZE]
+        targets_la_regr = targets_la_regr_global[i*ADAP_SIZE:(i+1)*ADAP_SIZE]
+        targets_ec_regr = targets_ec_regr_global[i*ADAP_SIZE:(i+1)*ADAP_SIZE]
+        
+        data.append({'adaptationOptions':[]})
+
+        # The predictions by the classifier
+        classBefore = []
+        classAfter = []
+
+        # Differentiate between training and testing cycles
+        if i < 30:
+            if scaler != None:
+                scaler.partial_fit(features)
+                features = scaler.transform(features)
+
+            if i==0: # Cannot make predictions at the first cycle since the classifier hasn't been trained yet
+                classBefore = [-1 for i in range(ADAP_SIZE)]
+            else:
+                classBefore = model.predict(features)
+            
+            model.partial_fit(features, targets_pl_regr, targets_la_regr)
+            classAfter = model.predict(features)
+
+        else:
+            if scaler != None:
+                features = scaler.transform(features)
+            classBefore = model.predict(features)
+
+            # Determine the class(es) of predictions that should be used for online learning
+            if 3 in classBefore:
+                goals = [3]
+            elif 1 in classBefore or 2 in classBefore:
+                goals = [1,2]
+            else:
+                goals = [0]
+            
+            # Collect the samples for online learning
+            indices = [i for i in range(ADAP_SIZE) if classBefore[i] in goals]
+            model.partial_fit(np.array(features)[indices].tolist(), \
+                np.array(targets_pl_regr)[indices].tolist(), \
+                np.array(targets_la_regr)[indices].tolist())
+            
+            classAfter = model.predict(features)
+    
+        for i in range(ADAP_SIZE):
+            # FIXME: adaptationOption is wrong, should be checked over all the features -> necessary?
+            data[-1]['adaptationOptions'].append({
+                'adaptationOption' : i,
+                'packetLoss' : targets_pl_regr[i],
+                'latency': targets_la_regr[i],
+                'energyConsumption' : targets_ec_regr[i], 
+                'classificationBefore' : int(classBefore[i]),
+                'regressionBefore' : -1,
+                'classificationAfter' : int(classAfter[i]),
+                'regressionAfter' : -1
+            })
+        
+
+    with open(outputPath, 'w') as f:
+        json.dump(data, f, indent=4)
+
+    end = time.process_time()
+    print(f'{end-start:.2f} seconds:\t{name}')
+
+
+
+# def modelSelectionClassifier(model, scaler, loss, penalty):
+#     '''
+#     Similar to the functions above, but does this over multiple training and testing sets
+#     '''
 
 
 
@@ -204,7 +347,14 @@ if __name__ == '__main__':
         for scaler in scalers:
             for penalty in penalties:
                 for loss in losses:
-                    # Simulate the classifier in two ways (specified in docstring of generateResultingFile)
-                    generateResultingFile(model, scaler, loss, penalty, True)
-                    generateResultingFile(model, scaler, loss, penalty, False)
+                    # generateResultingFileClass(model, scaler, loss, penalty, True)
+                    # generateResultingFileClass(model, scaler, loss, penalty, False)
+                    pass
+
+
+    for model, losses, penalties, scalers in regressors:
+        for scaler in scalers:
+            for penalty in penalties:
+                for loss in losses:
+                    generateResultingFileRegr(model, scaler, loss, penalty)
 

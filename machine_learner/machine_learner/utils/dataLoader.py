@@ -24,7 +24,7 @@ class AdaptationResult:
         tmp = self.isPredictedRight()
         return (not tmp[0], not tmp[1])
 
-    def isPredictedWrongPerSide(self):
+    def isPredictedWrongPerSidePacketLoss(self):
         if self.pl < 10:
             # Analyse if the prediction was right left to the line
             return ((self.clB != 1, 0), (self.reB >= 10, 0))
@@ -41,12 +41,20 @@ class AdaptationResultMultiGoal(AdaptationResult):
     def isPredictedRight(self):
         # TODO: add regression values -> just false for now
         actualClass = (1 if self.pl < 10 else 0) + (2 if self.la < 5 else 0)
+        # classRegression = (1 if self.rePLB < 10 else ) + (2 * ())
         return (actualClass == self.clB, False)
 
-    def isPredictedWrongPerSide(self):
-        # FIXME: dummy value for now
-        return ((0,0),(0,0))
+    def isPredictedWrongPerSidePacketLoss(self):
+        # Get the binary digit which is the packet loss prediction (lsb)
+        # Convert the predicted class to a binary string, and take the least significant bit (index 0)
+        binary = f'{self.clB:02b}'[::-1][0]
+        # binary = bin(self.clB)[2:][1]
+        return (binary == '0' if self.pl < 10 else binary == '1')
 
+    def isPredictedWrongPerSideLatency(self):
+        # Similar to packet loss, but latency is the second least significant bit
+        binary = f'{self.clB:02b}'[::-1][1]
+        return (binary == '0' if self.la < 5 else binary == '1', False)
 
 
 class AdaptationResults:
@@ -118,7 +126,7 @@ class AdaptationResults:
     # Get the amount of wrong predictions for each side of the cutoff line
     # Returns: ((#err class left to line, #err class right to line),(#err regr left to line, #err regr right to line))
     def getWrongPredictionsPerSide(self):
-        res = [i.isPredictedWrongPerSide() for i in self.results]
+        res = [i.isPredictedWrongPerSidePacketLoss() for i in self.results]
         return ((sum([i[0][0] for i in res]), sum([i[0][1] for i in res])),(sum([i[1][0] for i in res]), sum([i[1][1] for i in res])))
 
     # Gets the confusion matrix for this configuration.

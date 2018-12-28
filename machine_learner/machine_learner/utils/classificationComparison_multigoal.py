@@ -4,6 +4,7 @@ import sys
 import os
 from dataLoader import loadData
 import csv
+from sklearn.metrics import f1_score, log_loss, matthews_corrcoef
 from plotly import __version__, tools
 from plotly.offline import download_plotlyjs, init_notebook_mode, plot, iplot
 import plotly.io as pio
@@ -30,62 +31,59 @@ def loadDataFromFiles(path):
     return data
 
 
+def getActualAndPredictedClasses(configs):
+    trues = []
+    predicted = []
+
+    for config in configs:
+        for cycle in config:
+            actualClass = (1 if cycle.pl < 10 else 0) + 2 * (1 if cycle.la < 5 else 0)
+            trues.append(actualClass)
+            predicted.append(cycle.clB)
+
+    return (trues, predicted)
+
+
 def getErrorRate(configs):
     errorPredictions = [i.getAmtOfWrongPredictions()[0] for i in configs]
     # Use the first configuration to determine the amount of cycles
     amtCycles = len(configs[0])
     return sum(errorPredictions) / (len(errorPredictions) * amtCycles) * 100.0
 
-def getErrorRatePerSide(configs):
-    errorRatesPerSides = [i.getWrongPredictionsPerSide()[0] for i in configs]
-    errBefore, errAfter = tuple([sum(x) for x in zip(*errorRatesPerSides)])
-    totalSamplesPerSide = [i.getAmtResultsPerSide() for i in configs]
-    totalBefore, totalAfter = tuple([sum(x) for x in zip(*totalSamplesPerSide)])
-    # print(f'Error before: {errBefore}, error after: {errAfter}\nTotal before: {totalBefore}, total after: {totalAfter}')
-
-    # In case the total amount of samples on either side are empty, the error percentage becomes either 0% or 100%
-    if totalBefore == 0:
-        errorPercentageBefore = 100 if errBefore > 0 else 0
-    else:
-        errorPercentageBefore = errBefore * 100 / totalBefore
-
-    if totalAfter == 0:
-        errorPercentageAfter = 100 if errAfter > 0 else 0
-    else:
-        errorPercentageAfter = errAfter * 100 / totalAfter
-
-    return errorPercentageBefore, errorPercentageAfter
-
 
 def calculateLogarithmicLoss(configs):
     '''
     Metric used to evaluate machine learning techniques (closer to 0 eqauls better).
-    TODO verify if this is usable for our case (binary classification)
     '''
-    totalSamples = sum([len(i) for i in configs])
-    chancePositiveRes = sum([i.getAmtResultsPerSide()[0] for i in configs]) / totalSamples
-    # print(chancePositiveRes)
-    logValsConf = lambda x: [log(chancePositiveRes) if i.pl < 10 else log(1-chancePositiveRes) for i in x]
-    return (-1 / totalSamples) * sum([sum(logValsConf(config)) for config in configs])
+    return None
 
 
-def getCumulativeConfMatrices(configs):
-    # TODO might tidy this up later (centralise, also used in dataLoader)
-    res = {'TruePositives': 0, 'TrueNegatives': 0, 'FalsePositives': 0, 'FalseNegatives': 0}
+
+def getConfusionMatrix(configs):
+    # The first index indicates the real class, the second index indicates the predicted class
+    confMatrix = [[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]]
+    
     for config in configs:
-        confM = config.getConfusionMatrix(technique='classification')
-        for key in res.keys():
-            res[key] += confM[key]
-    return res
+        for cycle in config:
+            actualClass = (1 if cycle.pl < 10 else 0) + 2 * (1 if cycle.la < 5 else 0)
+            predictedClass = cycle.clB
+            confMatrix[actualClass][predictedClass] += 1
+    
+    return confMatrix
 
 
-def calculateF1Score(confMatrix):
-    precision = confMatrix['TruePositives'] / (confMatrix['TruePositives'] + confMatrix['FalsePositives'])
-    recall = confMatrix['TruePositives'] / (confMatrix['TruePositives'] + confMatrix['FalseNegatives'])
+def calculateF1Scores(configs):
+    actual, predicted = getActualAndPredictedClasses(configs)
+    return f1_score(actual, predicted, average=None)
 
-    return 2 / ((1/precision) + (1/recall))
+def calculateF1Score(configs):
+    actual, predicted = getActualAndPredictedClasses(configs)
+    return f1_score(actual, predicted, average='weighted')
 
 
+def calculateMatthewsCorrCoef(configs):
+    actual, predicted = getActualAndPredictedClasses(configs)
+    return matthews_corrcoef(actual, predicted)
 
 
 def printTable(data, outputPath):
@@ -103,7 +101,7 @@ def printTable(data, outputPath):
     cellsData['fill'] = {'color': colors}
 
     trace = go.Table(header={'values' : data['header'], 'fill': {'color':headerColor}}, cells=cellsData, \
-        columnwidth=[270, 220, 220, 150])
+        columnwidth=[270, 240, 220, 150, 150, 150, 300])
 
     layout = dict(width=1800, height=1000, font=dict(family='"Open Sans", verdana, arial, sans-serif', size=18, color='#444'))
     fig = dict(data=[trace], layout=layout)
@@ -114,14 +112,17 @@ def printTable(data, outputPath):
 
 def printConfusionMatrix(confMatrix, outputPath, filename, technique, loss, scaler):
     # Temporarily used until print of all matrices is fixed
-    amtSamples = sum(confMatrix.values())
+    sumNested = lambda x: sum(map(sumNested, x)) if isinstance(x, list) else x
+    amtSamples = sumNested(confMatrix)
+    rows = {'values' : [[],[],[],[],[]], 'height':40}
+    rows['values'][0] = ['Actually class 0','Actually class 1','Actually class 2','Actually class 3']
+    for i in range(len(confMatrix)):
+        for j in range(len(confMatrix[i])):
+            rows['values'][j+1].append(confMatrix[i][j])
 
-    trace = go.Table(header={'values': [f'Samples = {amtSamples}', 'Predicted good', 'Predicted bad']}, \
-        cells={'values': [['Actually good', 'Actually bad'], \
-            [confMatrix['TruePositives'], confMatrix['FalsePositives']], \
-            [confMatrix['FalseNegatives'], confMatrix['TrueNegatives']]], \
-            'height': 40})
-    layout = dict(width=700, height=400, font=dict(family='"Open Sans", verdana, arial, sans-serif', size=18, color='#444'), \
+    trace = go.Table(header={'values': [f'Samples = {amtSamples}', 'Predicted class 0', 'Predicted class 1', 'Predicted class 2', 'Predicted class 3']}, cells=rows)
+
+    layout = dict(width=700, height=600, font=dict(family='"Open Sans", verdana, arial, sans-serif', size=18, color='#444'), \
         title=f'Confusion matrix {technique}<br>Scaler={scaler}' + (f', Loss={loss}' if loss != None else ''))
     fig = dict(data=[trace], layout=layout)
     pio.write_image(fig, os.path.join(outputPath, filename + '.png'))
@@ -134,13 +135,21 @@ def writeConfMatricesToFiles(matrices, filename, outputPath):
 
     csvOutputFile = open(os.path.join(outputPath, filename), mode='w')
     csvOutputWriter = csv.writer(csvOutputFile, delimiter=',')
-    keys = list(list(matrices.values())[0].keys())
+    keys = []
+    for i in range(4):
+        for j in range(4):
+            keys.append(f'Actual{i} - Predicted{j}')
+
     csvOutputWriter.writerow(['technique', 'loss function', 'scaler'] + keys)
 
     for technique, matrix in sorted(matrices.items()):
         technique, loss, scaler = technique.split('_')
         # Make sure the order of the initial line is kept when storing the data in the csv
-        csvOutputWriter.writerow([technique, '-' if loss=='None' else loss, scaler] + [matrix[key] for key in keys])
+        confValues = []
+        for i in range(4):
+            for j in range(4):
+                confValues.append(matrix[i][j])
+        csvOutputWriter.writerow([technique, '-' if loss=='None' else loss, scaler] + confValues)
 
     csvOutputFile.close()
 
@@ -151,18 +160,20 @@ def writeConfMatricesToFiles(matrices, filename, outputPath):
 
 
 def compareResultsClassifiers(inputPath, outputPath):
-    # data = loadDataFromFiles(inputPath)
     files = sorted(os.listdir(inputPath))
-    # files = sorted(files)
-    # classifs = []
-    # for item in files:
-    #     classifs.append(os.path.splitext(item)[0])
     bestSample = (100, '')
 
-    header = ['Technique', 'Loss function', 'Scaler','Overall error percentage', 'Error rate < 10% packet loss', 'Error rate > 10% packet loss', \
-        'Error rate versatile configurations', 'Error rate < 10% packet loss (versatile configurations)', \
-        'Error rate > 10% packet loss (versatile configurations)', 'F1 score (all)', 'F1 score (versatile)']
-    outputData = {'header' : header[:4] + header[6:], 'values' : []}
+    header = [
+        'Technique',
+        'Loss function',
+        'Scaler',
+        'Overall error percentage',
+        'F1 score (weighted)',
+        'Matthews correlation coefficient',
+        'F1 scores (class 0 - 3)'
+    ]
+    
+    outputData = {'header' : header, 'values' : []}
 
     csvOutputFile = open(os.path.join(outputPath, CSV_GENERAL_NAME), mode='w')
     csvOutputWriter = csv.writer(csvOutputFile, delimiter=',')
@@ -189,65 +200,48 @@ def compareResultsClassifiers(inputPath, outputPath):
         errorPercentageOverall = getErrorRate(configurations)
 
         # Skip the classifiers with an error rate over 50%
-        if errorPercentageOverall > 30:
-            # NOTE: removes the file (make sure it is stored somewhere else as well)
-            os.remove(os.path.join(inputPath,filename))
-            continue
+        # if errorPercentageOverall > 30:
+        #     # NOTE: removes the file (make sure it is stored somewhere else as well)
+        #     os.remove(os.path.join(inputPath,filename))
+        #     continue
             
         if errorPercentageOverall < bestSample[0]:
             bestSample = (errorPercentageOverall, filename)
 
 
-        # TODO: fix everything below to multigoal
-
-        # Explore the error rates for either side of the cutoff line
-        errRateBefore, errRateAfter = getErrorRatePerSide(configurations)
-
         # Confusion matrix for all configurations
-        overallConfMatrix = getCumulativeConfMatrices(configurations)
+        overallConfMatrix = getConfusionMatrix(configurations)
         confMatrices['all'][f'{classifier}_{loss}_{scaler}'] = (overallConfMatrix)
-        printConfusionMatrix(overallConfMatrix, outputPath, f'ConfusionMatrixAll_{classifier}_{loss}_{scaler}', classifier + ' (all)', loss, scaler)
+        printConfusionMatrix(overallConfMatrix, outputPath, f'ConfusionMatrixAll_{classifier}_{loss}_{scaler}', classifier, loss, scaler)
         
+
+        matthewsCorrCoef = calculateMatthewsCorrCoef(configurations)
+
         # F1 values of all the configurations
-        F1All = calculateF1Score(overallConfMatrix)
+        F1All = calculateF1Scores(configurations)
+        F1AllWeighted = calculateF1Score(configurations)
+        F1AllStr = '[' + ','.join([f'{i:.4f}' for i in F1All]) + ']'
 
-        # Explore results in versatile configurations (configurations with less than 80% of results at one side of the line)
-        versatileThreshhold = (amtCycles * 0.8) - (amtCycles * 0.2)
-        versatileConfigurations = list(filter(lambda x: x.getScatterRate() <= versatileThreshhold, configurations))
-
-        if len(versatileConfigurations) != 0:
-            # The error percentage for the versatile configurations
-            errorPercentageVersatile = getErrorRate(versatileConfigurations)
-
-            # The error percentage per side for versatile configurations
-            errRateVBefore, errRateVAfter = getErrorRatePerSide(versatileConfigurations)
-
-
-            # The confusion matrix for the versatile configurations
-            versConfMatrix = getCumulativeConfMatrices(versatileConfigurations)
-            confMatrices['versatile'][f'{classifier}_{loss}_{scaler}'] = (versConfMatrix)
-            printConfusionMatrix(versConfMatrix, outputPath, f'ConfusionMatrixVers_{classifier}_{loss}_{scaler}', classifier + ' (versatile)', loss, scaler)
-
-            # F1 values of the versatile configurations
-            F1Vers = calculateF1Score(versConfMatrix)
-
-            row = [classifier, '-' if loss==None else loss, scaler, f'{errorPercentageOverall:.2f}%', f'{errRateBefore:.2f}%', f'{errRateAfter:.2f}%', \
-                f'{errorPercentageVersatile:.2f}%', f'{errRateVBefore:.2f}%', f'{errRateVAfter:.2f}%', f'{F1All:.4f}', f'{F1Vers:.4f}']
-            outputData['values'].append(row[:4] + row[6:])
-            csvOutputWriter.writerow(row)
-        else:
-            # In case there were no versatile configurations
-            row = [classifier, '-' if loss==None else loss, scaler, f'{errorPercentageOverall:.2f}%', f'{errRateBefore:.2f}%', f'{errRateAfter:.2f}%', \
-                f'-', f'-', f'-', f'{F1All:.4f}', f'-']
-            outputData['values'].append(row[:4] + row[6:])
-            csvOutputWriter.writerow(row)
+        row = [
+            classifier,
+            '-' if loss == None else loss,
+            scaler,
+            f'{errorPercentageOverall:.2f}%',
+            f'{F1AllWeighted:.4f}',
+            f'{matthewsCorrCoef:.4f}',
+            f'{F1AllStr}'
+        ]
+        outputData['values'].append(row)
+        csvOutputWriter.writerow(row)
     
     csvOutputFile.close()
 
     print(f'Best sample ({bestSample[0]:.2f}%): {bestSample[1]}')
+    print(f'Best Matthews correlation coefficient: {max([float(i[5]) for i in outputData["values"]]):.4f}')
+    print(f'Best F1 score (weighted): {max([float(i[4]) for i in outputData["values"]]):.4f}')
+
     printTable(outputData, outputPath)
     writeConfMatricesToFiles(confMatrices['all'], CSV_CONFALL_NAME, outputPath)
-    writeConfMatricesToFiles(confMatrices['versatile'], CSV_CONFVERS_NAME, outputPath)
 
 
 
