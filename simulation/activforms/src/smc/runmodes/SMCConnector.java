@@ -80,6 +80,7 @@ abstract public class SMCConnector {
 		CLASSIFICATION("classification"), 
 		REGRESSION("regression"), 
 		PLLAMULTICLASS("pllaclassification"),
+		PLLAMULTIREGR("pllaregression"),
 		// None is used in case no learning task needs to be performed
 		// by the learners at the server side (e.g. when just saving data).
 		NONE("none");

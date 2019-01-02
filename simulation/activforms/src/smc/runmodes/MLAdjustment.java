@@ -36,6 +36,7 @@ public class MLAdjustment extends SMCConnector {
 				singlePlGoal(training);
 				break;
 			case PLLAMULTICLASS:
+			case PLLAMULTIREGR:
 				doublePlLaGoals(training);
 				break;
 			default:
@@ -141,6 +142,9 @@ public class MLAdjustment extends SMCConnector {
 	}
 
 	private void doublePlLaGoals(boolean training) {
+		if (taskType == TaskType.PLLAMULTIREGR) {
+			throw new UnsupportedOperationException("not implemented as of yet");
+		}
 		// FIXME: dummy values for regression for now (only classification considered atm)
 		// TODO: once regression is also used, unify both methods
 
@@ -300,29 +304,29 @@ public class MLAdjustment extends SMCConnector {
 	private void storeAllFeaturesAndTargets(List<AdaptationOption> adaptationOptions, Environment env, int cycle) {
 		// Store the features and the targets in their respective files
 		File feature_selection = new File(
-			Paths.get(System.getProperty("user.dir"), "activforms", "log", "dataset_with_all_features.json").toString());
+			Paths.get(System.getProperty("user.dir"), "activforms", "log", "dataset_with_all_features" + cycle + ".json").toString());
 
-		if (feature_selection.exists() && cycle == 1) {
+		if (feature_selection.exists()) {
 			// At the first cycle, remove the file if it already exists
 			feature_selection.delete();
-			try {
-				feature_selection.createNewFile();
-				JSONObject root = new JSONObject();
-				root.put("features", new JSONArray());
-				root.put("target_classification_packetloss", new JSONArray());
-				root.put("target_regression_packetloss", new JSONArray());
-				root.put("target_classification_latency", new JSONArray());
-				root.put("target_regression_latency", new JSONArray());
-				root.put("target_regression_energyconsumption", new JSONArray());
-				FileWriter writer = new FileWriter(feature_selection);
-				writer.write(root.toString(2));
-				writer.close();
-			} catch (IOException e) {
-				throw new RuntimeException(
-					String.format("Could not create the output file at %s", feature_selection.toPath().toString()));
-			}
 		}
-
+		
+		try {
+			feature_selection.createNewFile();
+			JSONObject root = new JSONObject();
+			root.put("features", new JSONArray());
+			root.put("target_classification_packetloss", new JSONArray());
+			root.put("target_regression_packetloss", new JSONArray());
+			root.put("target_classification_latency", new JSONArray());
+			root.put("target_regression_latency", new JSONArray());
+			root.put("target_regression_energyconsumption", new JSONArray());
+			FileWriter writer = new FileWriter(feature_selection);
+			writer.write(root.toString(2));
+			writer.close();
+		} catch (IOException e) {
+			throw new RuntimeException(
+				String.format("Could not create the output file at %s", feature_selection.toPath().toString()));
+		}
 
 		try {
 			JSONTokener tokener = new JSONTokener(feature_selection.toURI().toURL().openStream());
@@ -374,7 +378,15 @@ public class MLAdjustment extends SMCConnector {
 				root.getJSONArray("target_regression_energyconsumption").put(option.verificationResults.energyConsumption);
 			}
 			FileWriter writer = new FileWriter(feature_selection);
-			writer.write(root.toString(2));
+			writer.write(root.toString(1));
+			
+			// Write the content line per line due to memory limitation in larger scaled problems
+			// String[] content = root.toString(1).split("\n");
+			// for (int i = 0; i < content.length; i++) {
+			// 	writer.write(content[i] + "\n");
+			// 	writer.flush();
+			// }
+			// writer.write(root.toString(2));
 			writer.close();
 			
 		} catch (IOException e) {

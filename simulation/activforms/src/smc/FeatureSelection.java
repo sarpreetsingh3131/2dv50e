@@ -106,7 +106,30 @@ public class FeatureSelection {
     }
 
     public JSONArray selectFeaturesDeltaIoTv2(AdaptationOption option, Environment env) {
-        throw new UnsupportedOperationException("Feature selection currently unavailable for DeltaIoTv2.");
+        // TODO: adjust to selected features
+        JSONArray features = new JSONArray();
+
+        for (SNR snr: env.linksSNR) {
+            features.put((int) snr.SNR);
+        }
+
+        for (Mote mote: option.system.motes.values()) {
+            for (Link link : mote.getLinks()) {
+                features.put((int) link.getPower());
+            }
+        }
+
+        for (Mote mote: option.system.motes.values()) {
+            for (Link link : mote.getLinks()) {
+                features.put((int) link.getDistribution());
+            }
+        }
+
+        for (TrafficProbability traffic : env.motesLoad) {
+            features.put((int) traffic.load);
+        }
+
+        return features;
     }
 }
     

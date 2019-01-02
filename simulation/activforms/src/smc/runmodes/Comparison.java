@@ -46,6 +46,7 @@ public class Comparison extends SMCConnector {
 				testing1Goal();
 				break;
 			case PLLAMULTICLASS:
+			case PLLAMULTIREGR:
 				testing2Goals();
 				break;
 			default:

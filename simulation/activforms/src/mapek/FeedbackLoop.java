@@ -3,7 +3,6 @@ package mapek;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -46,7 +45,7 @@ public class FeedbackLoop {
 	// The current adaptation options are the options specific to the current cycle
 	List<AdaptationOption> currentAdaptationOptions = new LinkedList<>();
 	// The overall adaptation options keeps track of all the encountered options so far
-	Set<AdaptationOption> overallAdaptationOptions = new LinkedHashSet<>();
+	// Set<AdaptationOption> overallAdaptationOptions = new LinkedHashSet<>();
 
 	List<AdaptationOption> verifiedOptions;
 
@@ -272,11 +271,14 @@ public class FeedbackLoop {
 		}
 
 		// Save the adaptation options in the overall set of adaptation options
-		overallAdaptationOptions.addAll(currentAdaptationOptions);
+		// overallAdaptationOptions.addAll(currentAdaptationOptions);
 
 		// Update the indices of the adaptation options
-		LinkedList<AdaptationOption> options = new LinkedList<>(overallAdaptationOptions);
-		currentAdaptationOptions.forEach(o -> o.overallIndex = options.indexOf(o));
+		// LinkedList<AdaptationOption> options = new LinkedList<>(overallAdaptationOptions);
+		for (int i = 0; i < currentAdaptationOptions.size(); i++) {
+			currentAdaptationOptions.get(i).overallIndex = i;
+		}
+		// currentAdaptationOptions.forEach(o -> o.overallIndex = options.indexOf(o));
 	}
 
 	private void saveAdaptationOptions(AdaptationOption firstConfiguration, List<Mote> moteOptions, int moteId) {
