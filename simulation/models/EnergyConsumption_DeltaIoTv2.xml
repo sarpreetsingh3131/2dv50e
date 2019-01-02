@@ -9,8 +9,8 @@ const int MAX_LINKS = 42;
 typedef int[2, MAX_MOTES] mote_ids;
 typedef int[1, MAX_MOTES] d_id;
 const int routerId = 1;
-int MAX_QUEUE = 60;
-int MAX_SLOTS = 40;
+int MAX_QUEUE = 80;
+int MAX_SLOTS = 60;
 int EMPTY = 0;
 
 int queue[mote_ids];

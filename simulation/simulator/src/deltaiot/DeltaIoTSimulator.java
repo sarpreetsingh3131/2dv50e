@@ -17,6 +17,10 @@ import java.util.concurrent.locks.ReentrantLock;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 
+import domain.Constant;
+import domain.DoubleRange;
+import domain.FileProfile;
+import domain.Gateway;
 import domain.Link;
 import domain.Mote;
 import domain.Node;
@@ -24,10 +28,6 @@ import domain.Packet;
 import domain.Position;
 import domain.SNREquation;
 import simulator.Simulator;
-import domain.Constant;
-import domain.DoubleRange;
-import domain.FileProfile;
-import domain.Gateway;
 
 public class DeltaIoTSimulator {
 
@@ -209,9 +209,9 @@ public class DeltaIoTSimulator {
 		// Motes
 		int load = 10;
 		double battery = 11880.0;
-		int maxQueueSize = 60;
+		int maxQueueSize = 80;
 		int keepAliveTime = 1;
-		int maxQueueSlots = 40;
+		int maxQueueSlots = 60;
 		double posScale = 2;
 
 		List<Integer> leafMotes = List.of(7, 9, 13, 16, 24, 34, 35, 36, 37);
@@ -239,7 +239,8 @@ public class DeltaIoTSimulator {
 		allMotes[4-2].addLinkTo(allMotes[5-2], gateway, power, distribution);
 		allMotes[5-2].addLinkTo(gateway, gateway, power, distribution);
 		allMotes[6-2].addLinkTo(allMotes[5-2], gateway, power, distribution);
-		allMotes[7-2].addLinkTo(allMotes[8-2], gateway, power, packetDuplication ? 100 : 50);
+		allMotes[6-2].addLinkTo(allMotes[12-2], gateway, power, distribution);
+		// allMotes[7-2].addLinkTo(allMotes[8-2], gateway, power, packetDuplication ? 100 : 50);
 		allMotes[7-2].addLinkTo(allMotes[22-2], gateway, power, packetDuplication ? 100 : 50);
 		allMotes[8-2].addLinkTo(allMotes[21-2], gateway, power, distribution);
 		allMotes[9-2].addLinkTo(allMotes[2-2], gateway, power, distribution);
@@ -256,6 +257,7 @@ public class DeltaIoTSimulator {
 		allMotes[18-2].addLinkTo(gateway, gateway, power, distribution);
 		allMotes[19-2].addLinkTo(allMotes[18-2], gateway, power, distribution);
 		allMotes[20-2].addLinkTo(gateway, gateway, power, distribution);
+		// allMotes[20-2].addLinkTo(allMotes[32-2], gateway, power, distribution);
 		allMotes[21-2].addLinkTo(gateway, gateway, power, distribution);
 		allMotes[22-2].addLinkTo(allMotes[21-2], gateway, power, packetDuplication ? 100 : 50);
 		allMotes[22-2].addLinkTo(allMotes[23-2], gateway, power, packetDuplication ? 100 : 50);
@@ -290,50 +292,56 @@ public class DeltaIoTSimulator {
 			allMotes[i-2].setActivationProbability(new Constant<>(0.50));
 		}
 
+
+		allMotes[10-2].setActivationProbability(new FileProfile("deltaiot/scenario_data/PIR1.txt", 1.0));
+		allMotes[23-2].setActivationProbability(new FileProfile("deltaiot/scenario_data/PIR2.txt", 1.0));
+
 		
 		// Interference on all the links
 		allMotes[2-2].getLinkTo(allMotes[3-2]).setSnrEquation(new SNREquation(0.7231,-7.4954));
-		allMotes[3-2].getLinkTo(allMotes[4-2]).setSnrEquation(new SNREquation(0.3906,-5.9390));
+		allMotes[3-2].getLinkTo(allMotes[4-2]).setSnrEquation(new SNREquation(0.2906,-5.9390));
 		allMotes[3-2].getLinkTo(allMotes[6-2]).setSnrEquation(new SNREquation(0.4548,3.0171));
-		allMotes[4-2].getLinkTo(allMotes[5-2]).setSnrEquation(new SNREquation(0.3905,-2.4642));
-		allMotes[5-2].getLinkTo(gateway).setSnrEquation(new SNREquation(0.4294,-5.9005));
+		allMotes[4-2].getLinkTo(allMotes[5-2]).setSnrEquation(new SNREquation(0.3905,-0.4642));
+		allMotes[5-2].getLinkTo(gateway).setSnrEquation(new SNREquation(0.6294,-3.9005));
 		allMotes[6-2].getLinkTo(allMotes[5-2]).setSnrEquation(new SNREquation(0.4571,-1.4886));
-		allMotes[7-2].getLinkTo(allMotes[8-2]).setSnrEquation(new SNREquation(0.4085,4.6870));
+		// allMotes[7-2].getLinkTo(allMotes[8-2]).setSnrEquation(new SNREquation(0.4085,-2.6870));
+		allMotes[6-2].getLinkTo(allMotes[12-2]).setSnrEquation(new SNREquation(0.4085,-2.6870));
 		allMotes[7-2].getLinkTo(allMotes[22-2]).setSnrEquation(new SNREquation(1.0000,-5.0489));
-		allMotes[8-2].getLinkTo(allMotes[21-2]).setSnrEquation(new SNREquation(0.3323,-4.4125));
+		allMotes[8-2].getLinkTo(allMotes[21-2]).setSnrEquation(new SNREquation(0.3323,-0.4125));
 		allMotes[9-2].getLinkTo(allMotes[2-2]).setSnrEquation(new SNREquation(0.4602,5.4036));
 		allMotes[10-2].getLinkTo(allMotes[11-2]).setSnrEquation(new SNREquation(0.6508,-2.5972));
-		allMotes[11-2].getLinkTo(allMotes[12-2]).setSnrEquation(new SNREquation(0.3563,-2.5603));
+		allMotes[11-2].getLinkTo(allMotes[12-2]).setSnrEquation(new SNREquation(0.3563,-0.5603));
 		allMotes[12-2].getLinkTo(gateway).setSnrEquation(new SNREquation(0.6803,-5.2136));
 		allMotes[13-2].getLinkTo(allMotes[14-2]).setSnrEquation(new SNREquation(0.2850,-2.1999));
 		allMotes[14-2].getLinkTo(allMotes[25-2]).setSnrEquation(new SNREquation(0.6745,-2.1041));
 		allMotes[14-2].getLinkTo(allMotes[26-2]).setSnrEquation(new SNREquation(0.4489,-5.9915));
 		allMotes[15-2].getLinkTo(allMotes[10-2]).setSnrEquation(new SNREquation(0.6656,-3.4782));
-		allMotes[16-2].getLinkTo(allMotes[17-2]).setSnrEquation(new SNREquation(0.5635,-7.7281));
-		allMotes[16-2].getLinkTo(allMotes[19-2]).setSnrEquation(new SNREquation(0.4041,6.7458));
-		allMotes[17-2].getLinkTo(allMotes[18-2]).setSnrEquation(new SNREquation(0.3706,3.1184));
+		allMotes[16-2].getLinkTo(allMotes[17-2]).setSnrEquation(new SNREquation(0.5635,-1.7281));
+		allMotes[16-2].getLinkTo(allMotes[19-2]).setSnrEquation(new SNREquation(0.5041,-6.7458));
+		allMotes[17-2].getLinkTo(allMotes[18-2]).setSnrEquation(new SNREquation(0.6706,3.1184));
 		allMotes[18-2].getLinkTo(gateway).setSnrEquation(new SNREquation(0.6432,3.0667));
 		allMotes[19-2].getLinkTo(allMotes[18-2]).setSnrEquation(new SNREquation(0.2954,-5.5948));
-		allMotes[20-2].getLinkTo(gateway).setSnrEquation(new SNREquation(0.5469,-3.5889));
-		allMotes[21-2].getLinkTo(gateway).setSnrEquation(new SNREquation(0.4259,-3.9652));
-		allMotes[22-2].getLinkTo(allMotes[21-2]).setSnrEquation(new SNREquation(0.5604,-6.2108));
+		allMotes[20-2].getLinkTo(gateway).setSnrEquation(new SNREquation(0.5469,-0.5889));
+		// allMotes[20-2].getLinkTo(allMotes[32-2]).setSnrEquation(new SNREquation(0.6085,-2.6870));
+		allMotes[21-2].getLinkTo(gateway).setSnrEquation(new SNREquation(0.4759,-1.9652));
+		allMotes[22-2].getLinkTo(allMotes[21-2]).setSnrEquation(new SNREquation(0.5604,-2.2108));
 		allMotes[22-2].getLinkTo(allMotes[23-2]).setSnrEquation(new SNREquation(0.1332,-4.0037));
-		allMotes[23-2].getLinkTo(allMotes[21-2]).setSnrEquation(new SNREquation(0.2662,-0.9520));
-		allMotes[24-2].getLinkTo(allMotes[21-2]).setSnrEquation(new SNREquation(0.5877,4.4264));
+		allMotes[23-2].getLinkTo(allMotes[21-2]).setSnrEquation(new SNREquation(0.3662,-0.9520));
+		allMotes[24-2].getLinkTo(allMotes[21-2]).setSnrEquation(new SNREquation(0.5877,-4.4264));
 		allMotes[25-2].getLinkTo(allMotes[10-2]).setSnrEquation(new SNREquation(0.5531,6.5996));
 		allMotes[26-2].getLinkTo(allMotes[15-2]).setSnrEquation(new SNREquation(0.1958,-5.6936));
-		allMotes[27-2].getLinkTo(allMotes[28-2]).setSnrEquation(new SNREquation(0.2693,-4.0252));
-		allMotes[28-2].getLinkTo(allMotes[20-2]).setSnrEquation(new SNREquation(0.5760,4.9590));
-		allMotes[29-2].getLinkTo(allMotes[20-2]).setSnrEquation(new SNREquation(0.4258,-7.9851));
-		allMotes[30-2].getLinkTo(allMotes[31-2]).setSnrEquation(new SNREquation(0.5634,-6.5998));
-		allMotes[31-2].getLinkTo(gateway).setSnrEquation(new SNREquation(0.4025,-4.8609));
-		allMotes[32-2].getLinkTo(allMotes[31-2]).setSnrEquation(new SNREquation(0.5601,-7.9440));
+		allMotes[27-2].getLinkTo(allMotes[28-2]).setSnrEquation(new SNREquation(0.2993,2.0252));
+		allMotes[28-2].getLinkTo(allMotes[20-2]).setSnrEquation(new SNREquation(0.6760,4.9590));
+		allMotes[29-2].getLinkTo(allMotes[20-2]).setSnrEquation(new SNREquation(0.4258,-3.9851));
+		allMotes[30-2].getLinkTo(allMotes[31-2]).setSnrEquation(new SNREquation(0.8634,-6.5998));
+		allMotes[31-2].getLinkTo(gateway).setSnrEquation(new SNREquation(0.4025,-2.8609));
+		allMotes[32-2].getLinkTo(allMotes[31-2]).setSnrEquation(new SNREquation(0.8601,-7.9440));
 		allMotes[33-2].getLinkTo(allMotes[29-2]).setSnrEquation(new SNREquation(0.6674,-7.8050));
 		allMotes[34-2].getLinkTo(allMotes[33-2]).setSnrEquation(new SNREquation(0.1744,-4.9619));
-		allMotes[35-2].getLinkTo(allMotes[27-2]).setSnrEquation(new SNREquation(0.4798,4.1792));
-		allMotes[35-2].getLinkTo(allMotes[30-2]).setSnrEquation(new SNREquation(0.7006,-5.2376));
+		allMotes[35-2].getLinkTo(allMotes[27-2]).setSnrEquation(new SNREquation(0.1798,4.1792));
+		allMotes[35-2].getLinkTo(allMotes[30-2]).setSnrEquation(new SNREquation(0.2006,-5.2376));
 		allMotes[36-2].getLinkTo(allMotes[32-2]).setSnrEquation(new SNREquation(0.3771,-6.4021));
-		allMotes[37-2].getLinkTo(allMotes[32-2]).setSnrEquation(new SNREquation(0.2405,-5.0953));
+		allMotes[37-2].getLinkTo(allMotes[32-2]).setSnrEquation(new SNREquation(0.2905,-1.0953));
 
 
 		simul.getRunInfo().setGlobalInterference(new DoubleRange(3.0, 6.0));
