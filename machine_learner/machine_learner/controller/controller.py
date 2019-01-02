@@ -5,6 +5,7 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from urllib.parse import urlparse, parse_qs
 from machine_learner.models import classification, regression, plLaClassification
+from machine_learner.utils.dataWriter import appendDataMultiGoal
 
 
 @csrf_exempt
@@ -52,7 +53,7 @@ def training_testing(request):
             if mode == 'comparison':
                 response = save_data(dataset)
             elif mode == 'mladjustment':
-                response = save_mlAdjustmentData(dataset)
+                response = save_mlAdjustmentData(dataset, cycle)
 
             elif task_type == 'classification':
                 if mode == 'training':
@@ -101,31 +102,55 @@ def deleteFilesWithExt(dir_path, extensions):
 
 
 
-def save_mlAdjustmentData(data):
+def save_mlAdjustmentData(data, cycle):
     '''
         Saves the data retreived from the mladjustment mode in the simulator to a .json file.
     '''
     outputPath = os.path.join('machine_learner', 'collected_data', 'overall_adaptation_options.json')
-    try:
-        overall_file = json.load(open(outputPath))
-    except Exception:
-        overall_file = []
 
-    overall_file.append({'adaptationOptions' : []})
+    # TODO: add boolean parameter in url to indicate training/testing cycles
+    # TODO: change regressionBefore/After to regressionPLBefore/After
+    appendDataMultiGoal(
+        outputPath, 
+        cycle, 
+        cycle <= 30, 
+        data['packetLoss'], 
+        data['energyConsumption'], 
+        [] if not('latency' in data) else data['latency'],
+        data['classificationBefore'],
+        data['classificationAfter'],
+        data['regressionBefore'],
+        data['regressionAfter'],
+        [] if not('regressionLABefore' in data) else data['regressionLABefore'],
+        [] if not('regressionLAAfter' in data) else data['regressionLAAfter']
+    )
+    # try:
+    #     overall_file = json.load(open(outputPath))
+    # except Exception:
+    #     overall_file = []
 
-    for i in range(len(data['packetLoss'])):
-        overall_file[len(overall_file)-1]['adaptationOptions'].append({
-            'adaptationOption' : data["adapIndices"][i],
-            'packetLoss' : data['packetLoss'][i],
-            'energyConsumption' : data['energyConsumption'][i], 
-            'classificationBefore' : data['classificationBefore'][i],
-            'regressionBefore' : data['regressionBefore'][i],
-            'classificationAfter' : data['classificationAfter'][i],
-            'regressionAfter' : data['regressionAfter'][i]
-        })
+
+    # dataNewCycle = {
+    #     'cycle' : cycle, 
+    #     'training' : ('true' if cycle <= 30 else 'false'),
+    #     'adaptationOptions' : {
+    #         'packetLoss' : data['packetLoss'],
+    #         'energyConsumption' : data['energyConsumption'],
+    #         'latency' : [] if not('latency' in data) else data['latency'],
+    #         'classificationBefore' : data['classificationBefore'],
+    #         'classificationAfter' : data['classificationAfter'],
+    #         'regressionPLBefore' : data['regressionBefore'],
+    #         'regressionLABefore' : [] if not('regressionLABefore' in data) else data['regressionLABefore'],
+    #         'regressionPLAfter' : data['regressionAfter'],
+    #         'regressionLAAfter' : [] if not('regressionLAAfter' in data) else data['regressionLAAfter']
+    #     }
+    # }
+
         
-    with open(outputPath, 'w') as f:
-        json.dump(overall_file, f, indent=4)
+    # overall_file.append(dataNewCycle)
+    
+    # with open(outputPath, 'w') as f:
+    #     json.dump(overall_file, f, indent=4)
 
     return {'message': 'successful'}
 

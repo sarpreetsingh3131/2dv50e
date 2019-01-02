@@ -155,32 +155,32 @@ def loadData(pathFile):
         print(f'Could not open file at location \'{pathFile}\'')
         sys.exit(1)
     adapResults = []
-    for i in range(len(data[0]['adaptationOptions'])):
+
+    for i in range(len(data[0]['adaptationOptions']['packetLoss'])):
         adapResults.append(AdaptationResults(i))
 
     # Loop over the data for all the cycles
     for i in range(len(data)):
-        dataCycleI = data[i]['adaptationOptions']
 
-        adapIndex = 0
-        for adaptationOption in range(len(dataCycleI)):
-            ai, pl, ec, clB, reB, clA, reA = \
-                dataCycleI[adaptationOption]['adaptationOption'], \
-                dataCycleI[adaptationOption]['packetLoss'], \
-                dataCycleI[adaptationOption]['energyConsumption'], \
-                dataCycleI[adaptationOption]['classificationBefore'], \
-                dataCycleI[adaptationOption]['regressionBefore'], \
-                dataCycleI[adaptationOption]['classificationAfter'], \
-                dataCycleI[adaptationOption]['regressionAfter']
+        # Don't load the data from the training cycles
+        if data[i]['training'] == 'true':
+            pass
+        else:
+            dataCycleI = data[i]['adaptationOptions']
 
-            # NOTE Amount of learning cycles hardcoded for now
-            # TODO maybe move indication of learning cycle to the data itself
-            if i > 29:
+            for i in range(len(dataCycleI['packetLoss'])):
+                # TODO add regression here for latency if time left
+                pl = dataCycleI['packetLoss'][i] 
+                ec = dataCycleI['energyConsumption'][i]
+                clB = dataCycleI['classificationBefore'][i]
+                clA = dataCycleI['classificationAfter'][i]
+                reB = dataCycleI['regressionPLBefore'][i]
+                reA = dataCycleI['regressionPLAfter'][i]
+
                 la = None
-                if 'latency' in dataCycleI[adaptationOption]:
-                    la = dataCycleI[adaptationOption]['latency']
+                if len(dataCycleI['latency'] != 0):
+                    la = dataCycleI['latency'][i]
 
-                adapResults[adapIndex].addResult(ai, ec, pl, clB, reB, clA, reA, la)
-                adapIndex += 1
+                adapResults[i].addResult(i, ec, pl, clB, reB, clA, reA, la)
 
     return adapResults

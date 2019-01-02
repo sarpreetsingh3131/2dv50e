@@ -10,7 +10,7 @@ from sklearn.naive_bayes import MultinomialNB, GaussianNB, BernoulliNB
 from sklearn.preprocessing import MinMaxScaler, StandardScaler, MaxAbsScaler
 
 
-ADAP_SIZE = 216
+ADAP_SIZE = 729
 
 scalers = [MinMaxScaler, StandardScaler, MaxAbsScaler, None]
 
@@ -147,7 +147,7 @@ class ModelEncapsRegr:
 
 
 
-def generateResultingFileClass(model, scaler, loss, penalty, separate=False):
+def generateResultingFileClass(model, scaler, loss, penalty, separate=False, amtTrainingCycles = 30):
     '''
     Generates an output file in the format of the output file from the MLAdjustment runmode for
     the provided model, scaler, loss and penalty.
@@ -179,14 +179,13 @@ def generateResultingFileClass(model, scaler, loss, penalty, separate=False):
         targets_la_regr = targets_la_regr_global[i*ADAP_SIZE:(i+1)*ADAP_SIZE]
         targets_ec_regr = targets_ec_regr_global[i*ADAP_SIZE:(i+1)*ADAP_SIZE]
         
-        data.append({'adaptationOptions':[]})
 
         # The predictions by the classifier
         classBefore = []
         classAfter = []
 
         # Differentiate between training and testing cycles
-        if i < 30:
+        if i < amtTrainingCycles:
             if scaler != None:
                 scaler.partial_fit(features)
                 features = scaler.transform(features)
@@ -220,19 +219,22 @@ def generateResultingFileClass(model, scaler, loss, penalty, separate=False):
             
             classAfter = model.predict(features)
     
-        for i in range(ADAP_SIZE):
-            # FIXME: adaptationOption is wrong, should be checked over all the features -> necessary?
-            data[-1]['adaptationOptions'].append({
-                'adaptationOption' : i,
-                'packetLoss' : targets_pl_regr[i],
-                'latency': targets_la_regr[i],
-                'energyConsumption' : targets_ec_regr[i], 
-                'classificationBefore' : int(classBefore[i]),
-                'regressionBefore' : -1,
-                'classificationAfter' : int(classAfter[i]),
-                'regressionAfter' : -1
-            })
         
+        data.append({
+            'cycle' : i+1,
+            'training' : 'true' if i < amtTrainingCycles else 'false',
+            'adaptationOptions': {
+                'packetLoss' : targets_pl_regr,
+                'energyConsumption' : targets_ec_regr,
+                'latency' : targets_la_regr,
+                'classificationBefore' : classBefore,
+                'classificationAfter' : classAfter,
+                'regressionPLBefore' : [],
+                'regressionPLAfter' : [],
+                'regressionLABefore' : [],
+                'regressionLAAfter' : []
+            }
+        })
 
     with open(outputPath, 'w') as f:
         json.dump(data, f, indent=4)
@@ -244,7 +246,7 @@ def generateResultingFileClass(model, scaler, loss, penalty, separate=False):
 
 
 
-def generateResultingFileRegr(model, scaler, loss, penalty):
+def generateResultingFileRegr(model, scaler, loss, penalty, amtTrainingCycles = 30):
     '''
     This function treats the results of the regressor as predicted values from a classifier (class 0 - 3)
     '''
@@ -272,14 +274,13 @@ def generateResultingFileRegr(model, scaler, loss, penalty):
         targets_la_regr = targets_la_regr_global[i*ADAP_SIZE:(i+1)*ADAP_SIZE]
         targets_ec_regr = targets_ec_regr_global[i*ADAP_SIZE:(i+1)*ADAP_SIZE]
         
-        data.append({'adaptationOptions':[]})
 
         # The predictions by the classifier
         classBefore = []
         classAfter = []
 
         # Differentiate between training and testing cycles
-        if i < 30:
+        if i < amtTrainingCycles:
             if scaler != None:
                 scaler.partial_fit(features)
                 features = scaler.transform(features)
@@ -313,19 +314,21 @@ def generateResultingFileRegr(model, scaler, loss, penalty):
             
             classAfter = model.predict(features)
     
-        for i in range(ADAP_SIZE):
-            # FIXME: adaptationOption is wrong, should be checked over all the features -> necessary?
-            data[-1]['adaptationOptions'].append({
-                'adaptationOption' : i,
-                'packetLoss' : targets_pl_regr[i],
-                'latency': targets_la_regr[i],
-                'energyConsumption' : targets_ec_regr[i], 
-                'classificationBefore' : int(classBefore[i]),
-                'regressionBefore' : -1,
-                'classificationAfter' : int(classAfter[i]),
-                'regressionAfter' : -1
-            })
-        
+        data.append({
+            'cycle' : i+1,
+            'training' : 'true' if i < amtTrainingCycles else 'false',
+            'adaptationOptions': {
+                'packetLoss' : targets_pl_regr,
+                'energyConsumption' : targets_ec_regr,
+                'latency' : targets_la_regr,
+                'classificationBefore' : classBefore,
+                'classificationAfter' : classAfter,
+                'regressionPLBefore' : [],
+                'regressionPLAfter' : [],
+                'regressionLABefore' : [],
+                'regressionLAAfter' : []
+            }
+        })
 
     with open(outputPath, 'w') as f:
         json.dump(data, f, indent=4)
@@ -335,11 +338,6 @@ def generateResultingFileRegr(model, scaler, loss, penalty):
 
 
 
-# def modelSelectionClassifier(model, scaler, loss, penalty):
-#     '''
-#     Similar to the functions above, but does this over multiple training and testing sets
-#     '''
-
 
 
 if __name__ == '__main__':
@@ -347,9 +345,7 @@ if __name__ == '__main__':
         for scaler in scalers:
             for penalty in penalties:
                 for loss in losses:
-                    # generateResultingFileClass(model, scaler, loss, penalty, True)
-                    # generateResultingFileClass(model, scaler, loss, penalty, False)
-                    pass
+                    generateResultingFileClass(model, scaler, loss, penalty, False)
 
 
     for model, losses, penalties, scalers in regressors:
