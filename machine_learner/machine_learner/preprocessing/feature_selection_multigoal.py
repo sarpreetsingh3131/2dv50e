@@ -24,8 +24,8 @@ def doFeatureSelection(network = 'DeltaIoTv1'):
         for target_pl, target_l in zip(target_packetloss, target_latency):
             totalTargets.append(target_pl + (target_l << 1))
 
-        for i in range(4):
-            print(f'Options in class {i}: {totalTargets.count(i)}')
+        # for i in range(4):
+        #     print(f'Options in class {i}: {totalTargets.count(i)}')
 
         model = model(random_state=10)
         model.fit(data['features'], totalTargets)
@@ -47,6 +47,19 @@ def doFeatureSelection(network = 'DeltaIoTv1'):
             # print("Overall importances: " + str([f'{i:.4f}' for i in importances]))
 
             plt.xticks([1, 17, 34, 51, 65])
+        elif network == 'DeltaIoTv2':
+            plt.bar(range(1, 43), importances[:42], color='r', label='1-42 SNR')
+            plt.bar(range(43, 85), importances[42:84], color='b', label='43-84 Power Settings')
+            plt.bar(range(85, 127), importances[84:126], color='orange', label='85-126 Packets Distribution')
+            plt.bar(range(127, 163), importances[126:162], color='green', label='127-162 Traffic Load')
+
+            print("SNR:   " + str([f'{i:.4f}' for i in importances[:42]]))
+            print("Power: " + str([f'{i:.4f}' for i in importances[42:84]]))
+            print("Distr: " + str([f'{i:.4f}' for i in importances[84:126]]))
+            print("Load:  " + str([f'{i:.4f}' for i in importances[126:162]]))
+            # print("Overall importances: " + str([f'{i:.4f}' for i in importances]))
+
+            plt.xticks([1, 42, 84, 126, 162])
         else:
             print(f'Network \'{network}\' is currently not supported.')
             sys.exit(1)
