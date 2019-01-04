@@ -168,19 +168,19 @@ def loadData(pathFile):
         else:
             dataCycleI = data[i]['adaptationOptions']
 
-            for i in range(len(dataCycleI['packetLoss'])):
+            for j in range(len(dataCycleI['packetLoss'])):
                 # TODO add regression here for latency if time left
-                pl = dataCycleI['packetLoss'][i] 
-                ec = dataCycleI['energyConsumption'][i]
-                clB = dataCycleI['classificationBefore'][i]
-                clA = dataCycleI['classificationAfter'][i]
-                reB = dataCycleI['regressionPLBefore'][i]
-                reA = dataCycleI['regressionPLAfter'][i]
+                pl = dataCycleI['packetLoss'][j] 
+                ec = dataCycleI['energyConsumption'][j]
+                clB = dataCycleI['classificationBefore'][j]
+                clA = dataCycleI['classificationAfter'][j]
+                reB = dataCycleI['regressionPLBefore'][j]
+                reA = dataCycleI['regressionPLAfter'][j]
 
                 la = None
-                if len(dataCycleI['latency'] != 0):
-                    la = dataCycleI['latency'][i]
+                if len(dataCycleI['latency']) != 0:
+                    la = dataCycleI['latency'][j]
 
-                adapResults[i].addResult(i, ec, pl, clB, reB, clA, reA, la)
+                adapResults[j].addResult(j, ec, pl, clB, reB, clA, reA, la)
 
     return adapResults

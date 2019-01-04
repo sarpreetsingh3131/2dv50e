@@ -11,7 +11,7 @@ import plotly.io as pio
 import plotly.graph_objs as go
 from collections import OrderedDict
 from math import log, ceil
-
+from printUtils import printProgressBar
 
 
 CSV_GENERAL_NAME = 'classificationComparison.csv'
@@ -105,8 +105,8 @@ def printTable(data, outputPath):
 
     layout = dict(width=1800, height=1000, font=dict(family='"Open Sans", verdana, arial, sans-serif', size=18, color='#444'))
     fig = dict(data=[trace], layout=layout)
-    plot(fig, filename=os.path.join(outputPath, HTML_OUTPUT_NAME))
     pio.write_image(fig, os.path.join(outputPath, PNG_OUTPUT_NAME))
+    plot(fig, filename=os.path.join(outputPath, HTML_OUTPUT_NAME))
 
 
 
@@ -181,6 +181,8 @@ def compareResultsClassifiers(inputPath, outputPath):
 
     confMatrices = {'all': {}, 'versatile': {}}
 
+    index = 0
+    printProgressBar(index, len(files), prefix='Processing of classifiers:', suffix='Complete', length=30)
     # The key is the used classifier, value is the data associated with the classifier
     for filename in files:
         configurations = loadData(os.path.join(inputPath, filename))
@@ -200,10 +202,12 @@ def compareResultsClassifiers(inputPath, outputPath):
         errorPercentageOverall = getErrorRate(configurations)
 
         # Skip the classifiers with an error rate over 50%
-        # if errorPercentageOverall > 30:
-        #     # NOTE: removes the file (make sure it is stored somewhere else as well)
-        #     os.remove(os.path.join(inputPath,filename))
-        #     continue
+        if errorPercentageOverall > 30:
+            # NOTE: removes the file (make sure it is stored somewhere else as well)
+            os.remove(os.path.join(inputPath,filename))
+            index += 1
+            printProgressBar(index, len(files), prefix='Processing of classifiers:', suffix='Complete', length=30)
+            continue
             
         if errorPercentageOverall < bestSample[0]:
             bestSample = (errorPercentageOverall, filename)
@@ -221,6 +225,7 @@ def compareResultsClassifiers(inputPath, outputPath):
         F1All = calculateF1Scores(configurations)
         F1AllWeighted = calculateF1Score(configurations)
         F1AllStr = '[' + ','.join([f'{i:.4f}' for i in F1All]) + ']'
+        del configurations
 
         row = [
             classifier,
@@ -233,15 +238,20 @@ def compareResultsClassifiers(inputPath, outputPath):
         ]
         outputData['values'].append(row)
         csvOutputWriter.writerow(row)
+
+        index += 1
+        printProgressBar(index, len(files), prefix='Processing of classifiers:', suffix='Complete', length=30)
+
     
     csvOutputFile.close()
 
+    print()
     print(f'Best sample ({bestSample[0]:.2f}%): {bestSample[1]}')
     print(f'Best Matthews correlation coefficient: {max([float(i[5]) for i in outputData["values"]]):.4f}')
     print(f'Best F1 score (weighted): {max([float(i[4]) for i in outputData["values"]]):.4f}')
 
-    printTable(outputData, outputPath)
     writeConfMatricesToFiles(confMatrices['all'], CSV_CONFALL_NAME, outputPath)
+    printTable(outputData, outputPath)
 
 
 

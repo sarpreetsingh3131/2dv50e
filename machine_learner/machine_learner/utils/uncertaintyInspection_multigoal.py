@@ -8,40 +8,15 @@ import os
 import shutil
 from math import ceil
 from dataLoader import loadData
+from printUtils import printProgressBar
 
 PLOT_OUTPUT_DIR = ''
 
 
-def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, length = 100, fill = '█'):
-    """
-    Call in a loop to create terminal progress bar
-    @params:
-        iteration   - Required  : current iteration (Int)
-        total       - Required  : total iterations (Int)
-        prefix      - Optional  : prefix string (Str)
-        suffix      - Optional  : suffix string (Str)
-        decimals    - Optional  : positive number of decimals in percent complete (Int)
-        length      - Optional  : character length of bar (Int)
-        fill        - Optional  : bar fill character (Str)
+def analyseUncertainties(filename = os.path.join('machine_learner', 'collected_data', 'overall_adaptation_options.json')):
+    # pathFile = os.path.join('machine_learner', 'collected_data', 'overall_adaptation_options.json')
 
-    Reference: https://stackoverflow.com/a/34325723
-    """
-    percent = 100 * (iteration / float(total))
-    percentStr = f'{percent:.1f}'
-    filledLength = int(length * iteration // total)
-    bar = fill * filledLength + '-' * (length - filledLength)
-    print('\r%s |%s| %s%% %s' % (prefix, bar, percentStr, suffix), end = '\r')
-    # Print New Line on Complete
-    if iteration == total: 
-        print()
-
-
-
-
-def analyseUncertainties():
-    pathFile = os.path.join('machine_learner', 'collected_data', 'overall_adaptation_options.json')
-
-    adapResults = loadData(pathFile)
+    adapResults = loadData(filename)
 
     
     # Get the minimum and maximum value for energy consumption over all configurations (used in graphs)
@@ -183,7 +158,7 @@ if __name__ == '__main__':
     # NOTE: this program removes all files from the provided/default folder recursively
     #       -> be careful when providing a custom directory
     
-    if len(sys.argv) != 2:
+    if len(sys.argv) < 2:
         print("Output directory not provided as commandline argument, using './GraphOutputs' by default")
         PLOT_OUTPUT_DIR = os.path.join('GraphOutputs')
     else:
@@ -194,4 +169,7 @@ if __name__ == '__main__':
 
     os.mkdir(PLOT_OUTPUT_DIR)
 
-    analyseUncertainties()
+    if len(sys.argv) == 3:
+        analyseUncertainties(sys.argv[2])
+    else:
+        analyseUncertainties()

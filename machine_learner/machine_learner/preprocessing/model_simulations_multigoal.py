@@ -90,7 +90,7 @@ class ModelEncapsClass:
             pred_la = self.models[1].predict(features)
             return [pred_pl[i] + (2*pred_la[i]) for i in range(len(pred_pl))]
         else:
-            return self.models[0].predict(features)
+            return self.models[0].predict(features).tolist()
     
 
     def partial_fit(self, features, targets_pl, targets_la):
@@ -229,15 +229,15 @@ def generateResultingFileClass(model, scaler, loss, penalty, separate=False, amt
                 'latency' : targets_la_regr,
                 'classificationBefore' : classBefore,
                 'classificationAfter' : classAfter,
-                'regressionPLBefore' : [],
-                'regressionPLAfter' : [],
-                'regressionLABefore' : [],
-                'regressionLAAfter' : []
+                'regressionPLBefore' : [-1] * ADAP_SIZE,
+                'regressionPLAfter' : [-1] * ADAP_SIZE,
+                'regressionLABefore' : [-1] * ADAP_SIZE,
+                'regressionLAAfter' : [-1] * ADAP_SIZE
             }
         })
 
     with open(outputPath, 'w') as f:
-        json.dump(data, f, indent=4)
+        json.dump(data, f)
 
     end = time.process_time()
     print(f'{end-start:.2f} seconds:\t{name}')
@@ -323,15 +323,15 @@ def generateResultingFileRegr(model, scaler, loss, penalty, amtTrainingCycles = 
                 'latency' : targets_la_regr,
                 'classificationBefore' : classBefore,
                 'classificationAfter' : classAfter,
-                'regressionPLBefore' : [],
-                'regressionPLAfter' : [],
-                'regressionLABefore' : [],
-                'regressionLAAfter' : []
+                'regressionPLBefore' : [-1] * ADAP_SIZE,
+                'regressionPLAfter' : [-1] * ADAP_SIZE,
+                'regressionLABefore' : [-1] * ADAP_SIZE,
+                'regressionLAAfter' : [-1] * ADAP_SIZE
             }
         })
 
     with open(outputPath, 'w') as f:
-        json.dump(data, f, indent=4)
+        json.dump(data, f)
 
     end = time.process_time()
     print(f'{end-start:.2f} seconds:\t{name}')

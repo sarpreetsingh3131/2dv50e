@@ -6,34 +6,10 @@ import functools
 import sys
 import os
 import shutil
-from dataLoader import *
+from dataLoader import loadData
+from printUtils import printProgressBar
 
 PLOT_OUTPUT_DIR = ''
-
-
-def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, length = 100, fill = '█'):
-    """
-    Call in a loop to create terminal progress bar
-    @params:
-        iteration   - Required  : current iteration (Int)
-        total       - Required  : total iterations (Int)
-        prefix      - Optional  : prefix string (Str)
-        suffix      - Optional  : suffix string (Str)
-        decimals    - Optional  : positive number of decimals in percent complete (Int)
-        length      - Optional  : character length of bar (Int)
-        fill        - Optional  : bar fill character (Str)
-
-    Reference: https://stackoverflow.com/a/34325723
-    """
-    percent = 100 * (iteration / float(total))
-    percentStr = f'{percent:.1f}'
-    filledLength = int(length * iteration // total)
-    bar = fill * filledLength + '-' * (length - filledLength)
-    print('\r%s |%s| %s%% %s' % (prefix, bar, percentStr, suffix), end = '\r')
-    # Print New Line on Complete
-    if iteration == total: 
-        print()
-
 
 
 
@@ -67,19 +43,20 @@ def analyseUncertainties():
     for i in range(5):
         pass
         # plotRegressionPredictions(worstScatterRate[i], minEC, maxEC, f'worstScatter{i+1}')
-        plotLearningEvolution(worstScatterRate[i], minEC, maxEC, f'worstScatter{i+1}')
+        # plotLearningEvolution(worstScatterRate[i], minEC, maxEC, f'worstScatter{i+1}')
         # plotEffectUncertainties(worstScatterRate[i], f'worstScatter{i+1}')
         # plotLearningEffectOneCycle(worstScatterRate[i], minEC, maxEC, f'worstScatter{i+1}')
         # plotLearningEffect2Cycles(worstScatterRate[i], minEC, maxEC, f'worstScatter{i+1}')
-        printProgressBar(i+1, 5, prefix="Progress worst scatter rates:", suffix='Complete', length=30)
+        # printProgressBar(i+1, 5, prefix="Progress worst scatter rates:", suffix='Complete', length=30)
 
 
     # Plots for the 20 adaptation options with the worst predictions
     for i in range(20):
+        pass
         # print(f"Error rate configuration {i+1}: {worstPredictionRate[i].getAmtOfWrongPredictions()}")
-        plotLearningEvolution(worstPredictionRate[i], minEC, maxEC, f'worstPrediction{i+1}')
+        # plotLearningEvolution(worstPredictionRate[i], minEC, maxEC, f'worstPrediction{i+1}')
         # plotEffectUncertainties(worstPredictionRate[i], f'worstPrediction{i+1}')
-        printProgressBar(i+1, 20, prefix="Progress worst prediction graphs:", suffix='Complete', length=30)
+        # printProgressBar(i+1, 20, prefix="Progress worst prediction graphs:", suffix='Complete', length=30)
 
     # Plots for adaptationOptions which have at most 100 samples more on either side of the cutoff line in comparison to the other side
     filteredOptions = list(filter(lambda x: x.getScatterRate() <= 100, adapResults))
@@ -88,9 +65,10 @@ def analyseUncertainties():
         # plotLearningEvolution(filteredOptions[i], minEC, maxEC, f'filtered{i+1}')
     
     # Plots for all adaptation options
-    # for i in range(len(adapResults)):
-    #     plotLearningEvolution(adapResults[i], minEC, maxEC, f'all{i+1}')
-    #     printProgressBar(i+1, len(adapResults), prefix="Progress all graphs:", suffix='Complete', length=30)
+    for i in range(len(adapResults)):
+        plotRegressionPredictions(adapResults[i], minEC, maxEC, f'all{i+1}')
+        plotLearningEvolution(adapResults[i], minEC, maxEC, f'all{i+1}')
+        printProgressBar(i+1, len(adapResults), prefix="Progress all graphs:", suffix='Complete', length=30)
 
 
 

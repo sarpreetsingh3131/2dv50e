@@ -124,33 +124,6 @@ def save_mlAdjustmentData(data, cycle):
         [] if not('regressionLABefore' in data) else data['regressionLABefore'],
         [] if not('regressionLAAfter' in data) else data['regressionLAAfter']
     )
-    # try:
-    #     overall_file = json.load(open(outputPath))
-    # except Exception:
-    #     overall_file = []
-
-
-    # dataNewCycle = {
-    #     'cycle' : cycle, 
-    #     'training' : ('true' if cycle <= 30 else 'false'),
-    #     'adaptationOptions' : {
-    #         'packetLoss' : data['packetLoss'],
-    #         'energyConsumption' : data['energyConsumption'],
-    #         'latency' : [] if not('latency' in data) else data['latency'],
-    #         'classificationBefore' : data['classificationBefore'],
-    #         'classificationAfter' : data['classificationAfter'],
-    #         'regressionPLBefore' : data['regressionBefore'],
-    #         'regressionLABefore' : [] if not('regressionLABefore' in data) else data['regressionLABefore'],
-    #         'regressionPLAfter' : data['regressionAfter'],
-    #         'regressionLAAfter' : [] if not('regressionLAAfter' in data) else data['regressionLAAfter']
-    #     }
-    # }
-
-        
-    # overall_file.append(dataNewCycle)
-    
-    # with open(outputPath, 'w') as f:
-    #     json.dump(overall_file, f, indent=4)
 
     return {'message': 'successful'}
 
