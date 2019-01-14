@@ -1,5 +1,6 @@
 package mapek;
-import java.lang.IllegalArgumentException;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Set;
 
 
@@ -9,7 +10,7 @@ public class Goal {
 	private String target;
 	private String operator;
 	private double tresshold;
-	private static Set<String> ALLOWED_OPERATORS = Set.of("<", ">", "<=", ">=", "==", "!=");
+	private static Set<String> ALLOWED_OPERATORS = new HashSet<>(Arrays.asList("<", ">", "<=", ">=", "==", "!="));
 
 	public Goal (String target, String operator, Double tresshold) throws IllegalArgumentException {
 		if (ALLOWED_OPERATORS.stream().noneMatch(op -> op.equals(operator))) {

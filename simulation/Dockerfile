@@ -5,4 +5,4 @@ RUN mkdir -p /opt/simulation
 WORKDIR /opt/simulation
 ADD . /opt/simulation
 RUN mvn install
-CMD mvn clean package; java -jar ./activforms/target/activforms-0.0.1-SNAPSHOT-spring-boot.jar &> ./activforms/log/log.txt
+CMD mvn clean package; java -jar ./activforms/target/activforms-0.0.1-SNAPSHOT-spring-boot.jar

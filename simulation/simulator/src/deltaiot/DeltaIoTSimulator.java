@@ -7,6 +7,7 @@ import java.io.PrintStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -214,7 +215,8 @@ public class DeltaIoTSimulator {
 		int maxQueueSlots = 60;
 		double posScale = 2;
 
-		List<Integer> leafMotes = List.of(7, 9, 13, 16, 24, 34, 35, 36, 37);
+		List<Integer> leafMotes = Arrays.asList(7, 9, 13, 16, 24, 34, 35, 36, 37);
+		// List<Integer> leafMotes = List.of(7, 9, 13, 16, 24, 34, 35, 36, 37);
 		List<Mote> motes = new ArrayList<>();
 		for (int i = 2; i < 38; i++) {
 			motes.add(new Mote(i, battery, load, maxQueueSize, keepAliveTime, new Position(i*posScale, i*posScale), leafMotes.contains(i)));
