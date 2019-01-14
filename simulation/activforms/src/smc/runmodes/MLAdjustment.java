@@ -173,12 +173,19 @@ public class MLAdjustment extends SMCConnector {
 			predictionLearners2Goals(adaptationOptions, adjInspection.getJSONArray("classificationBefore"),
 				adjInspection.getJSONArray("regressionBefore"));
 		}
-
+		Long[] verifTimes = new Long[adaptationOptions.size()]; 
+		int index = 0;
 
 		// Check all the adaptation options with activFORMS
 		for (AdaptationOption adaptationOption : adaptationOptions) {
+			Long startTime = System.currentTimeMillis();
+
 			smcChecker.checkCAO(adaptationOption.toModelString(), environment.toModelString(),
 				adaptationOption.verificationResults);
+				
+			verifTimes[index] = System.currentTimeMillis() - startTime;
+			index++;
+			
 			adjInspection.getJSONArray("packetLoss").put(adaptationOption.verificationResults.packetLoss);
 			adjInspection.getJSONArray("energyConsumption").put(adaptationOption.verificationResults.energyConsumption);
 			adjInspection.getJSONArray("latency").put(adaptationOption.verificationResults.latency);
@@ -255,7 +262,7 @@ public class MLAdjustment extends SMCConnector {
 
 
 		// NOTE: experimental, used for feature selection
-		// storeAllFeaturesAndTargets(adaptationOptions, environment, cycles);
+		storeAllFeaturesAndTargets(adaptationOptions, environment, cycles, verifTimes);
 
 		// Send the overall results to be saved on the server
 		send(adjInspection, TaskType.NONE, Mode.MLADJUSTMENT);
@@ -301,7 +308,7 @@ public class MLAdjustment extends SMCConnector {
 	}
 
 	@SuppressWarnings("unused")
-	private void storeAllFeaturesAndTargets(List<AdaptationOption> adaptationOptions, Environment env, int cycle) {
+	private void storeAllFeaturesAndTargets(List<AdaptationOption> adaptationOptions, Environment env, int cycle, Long[] verifTimes) {
 		// Store the features and the targets in their respective files
 		File feature_selection = new File(
 			Paths.get(System.getProperty("user.dir"), "activforms", "log", "dataset_with_all_features" + cycle + ".json").toString());
@@ -314,6 +321,7 @@ public class MLAdjustment extends SMCConnector {
 		try {
 			feature_selection.createNewFile();
 			JSONObject root = new JSONObject();
+			root.put("verification_times", new JSONArray());
 			root.put("features", new JSONArray());
 			root.put("target_classification_packetloss", new JSONArray());
 			root.put("target_regression_packetloss", new JSONArray());
@@ -377,6 +385,11 @@ public class MLAdjustment extends SMCConnector {
 				// Energy consumption values
 				root.getJSONArray("target_regression_energyconsumption").put(option.verificationResults.energyConsumption);
 			}
+
+			for (Long verifTime : verifTimes) {
+				root.getJSONArray("verification_times").put(verifTime);
+			}
+
 			FileWriter writer = new FileWriter(feature_selection);
 			writer.write(root.toString(1));
 			

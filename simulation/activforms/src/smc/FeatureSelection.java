@@ -1,6 +1,7 @@
 package smc;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -20,10 +21,10 @@ public class FeatureSelection {
 
     // The features which should be sent to the learners
     // Pairs represent links, single integers represent motes
-    private Map<String, List<Pair<Integer,Integer>>> selectedSNR;
-    private Map<String, List<Pair<Integer,Integer>>> selectedPower;
-    private Map<String, List<Pair<Integer,Integer>>> selectedDist;
-    private Map<String, List<Integer>> selectedLoad;
+    private Map<String, List<Pair<Integer,Integer>>> selectedSNR = new HashMap<>();
+    private Map<String, List<Pair<Integer,Integer>>> selectedPower = new HashMap<>();
+    private Map<String, List<Pair<Integer,Integer>>> selectedDist = new HashMap<>();
+    private Map<String, List<Integer>> selectedLoad = new HashMap<>();
     
     public FeatureSelection() {
         network = ConfigLoader.getInstance().getSimulationNetwork();
