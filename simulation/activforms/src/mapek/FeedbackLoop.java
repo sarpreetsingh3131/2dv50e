@@ -256,7 +256,7 @@ public class FeedbackLoop {
 				moteOptions.clear();
 
 				// iterate over all the possible distribution options
-				for (int i = initialValue; i <= Math.ceil(100 / DISTRIBUTION_GAP); i++) {
+				for (int i = initialValue; i <= Math.ceil(100 / (double) DISTRIBUTION_GAP); i++) {
 					int distributionValue = Math.min(i * DISTRIBUTION_GAP, 100);
 					mote.getLink(0).setDistribution(distributionValue);
 					mote.getLink(1).setDistribution(100-distributionValue);
