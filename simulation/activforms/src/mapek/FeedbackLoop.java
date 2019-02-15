@@ -12,9 +12,6 @@ import deltaiot.client.Effector;
 import deltaiot.client.Probe;
 import deltaiot.services.LinkSettings;
 import deltaiot.services.QoS;
-import smc.runmodes.ActivForms;
-import smc.runmodes.Comparison;
-import smc.runmodes.MachineLearning;
 import smc.runmodes.SMCConnector;
 import smc.runmodes.SMCConnector.Mode;
 import smc.runmodes.SMCConnector.TaskType;
@@ -66,22 +63,8 @@ public class FeedbackLoop {
 
 
 	public FeedbackLoop() {
-		// Dependant on the run mode, instantiate a different connector
-		// TODO maybe move this method to the enum itself
 		Mode runmode = ConfigLoader.getInstance().getRunMode();
-		switch (runmode) {
-			case MACHINELEARNING:
-				smcConnector = new MachineLearning();
-				break;
-			case ACTIVFORM:
-				smcConnector = new ActivForms();
-				break;
-			case COMPARISON:
-				smcConnector = new Comparison();
-				break;
-			default:
-				throw new RuntimeException(String.format("Unsupported run mode: %s", runmode.val));
-		}
+		smcConnector = runmode.getConnector();
 	}
 
 	public void setProbe(Probe probe) {
@@ -105,12 +88,9 @@ public class FeedbackLoop {
 		// Run the mape-k loop and simulator for the specified amount of cycles
 		for (int i = 1; i <= ConfigLoader.getInstance().getAmountOfCycles(); i++) {
 		
-			if(!human)
-			{
+			if (!human) {
 				System.out.print(i + ";" + System.currentTimeMillis());
-			}
-			else
-			{
+			} else {
 				now = LocalDateTime.now();
 				System.out.print(i + "; " + String.format("%02d:%02d:%02d", 
 					now.getHour(), now.getMinute(), now.getSecond()) + " ");

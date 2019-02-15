@@ -68,6 +68,19 @@ abstract public class SMCConnector {
 			}
 			throw new RuntimeException(String.format("Run mode %s is not supported.", value));
 		}
+
+		public SMCConnector getConnector() {
+			switch (this) {
+				case MACHINELEARNING:
+					return new MachineLearning();
+				case ACTIVFORM:
+					return new ActivForms();
+				case COMPARISON:
+					return new Comparison();
+				default:
+					throw new UnsupportedOperationException(String.format("No connector is linked with run mode: %s", this.val));
+			}
+		}
 	}
 
 
