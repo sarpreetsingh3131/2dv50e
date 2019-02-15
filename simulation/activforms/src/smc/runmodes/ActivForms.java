@@ -3,121 +3,139 @@ package smc.runmodes;
 
 import java.io.File;
 import java.io.FileWriter;
-import java.nio.file.Path;
+import java.io.IOException;
 import java.nio.file.Paths;
+import java.util.List;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.json.JSONTokener;
 
 import mapek.AdaptationOption;
+import mapek.Environment;
 import mapek.Link;
 import mapek.Mote;
+import mapek.SNR;
 import mapek.TrafficProbability;
-import util.ConfigLoader;
 
 
 public class ActivForms extends SMCConnector {
 
-	// for collecting raw data with the activform mode
-	private JSONObject rawData;
-	private JSONArray features;
-	private JSONArray targets;
-
-	public ActivForms() {
-		rawData = new JSONObject();
-		features = new JSONArray();
-		targets = new JSONArray();
-		rawData.put("features", features);
-		rawData.put("targets", targets);
-	}
+	public ActivForms() {}
 
 	@Override
 	public void startVerification() {
 		System.out.print(";" + adaptationOptions.size());
-		String datPath = Paths.get(System.getProperty("user.dir"), "activforms", "log", "rawData.txt").toString();
-		File dat = new File(datPath);
 
-		try {
-			if (cycles == 1 && dat.isFile()) {
-				dat.delete();
-				dat.createNewFile();
-			}
-			FileWriter writer = new FileWriter(dat, true);
-			writer.write(environment.toString());
-			
-			JSONArray dummyFeatures;
-			JSONObject qos;
+		Long[] verifTimes = new Long[adaptationOptions.size()]; 
+		int index = 0;
 
-			for (AdaptationOption adaptationOption : adaptationOptions) {
-				smcChecker.checkCAO(adaptationOption.toModelString(), environment.toModelString(),
-						adaptationOption.verificationResults);
-	
-				writer.write(adaptationOption.toString());
-	
-				// Get the features
-				dummyFeatures = new JSONArray();
+		// Check all the adaptation options with activFORMS (and keep track of the verification time of each option)
+		for (AdaptationOption adaptationOption : adaptationOptions) {
+			Long startTime = System.currentTimeMillis();
 
-				// The order should be fine since the hashmap is a LinkedHashMap (follows insertion order)
-				for (Mote mote : adaptationOption.system.motes.values()) {
-					
-					for (TrafficProbability t : environment.motesLoad) {
-						if(t.moteId == mote.getMoteId()) {
-							dummyFeatures.put(t.load);
-						}
-					}
-	
-					for (Link link : mote.getLinks()) {
-						dummyFeatures.put(link.getPower());
-						dummyFeatures.put(link.getDistribution());
-						dummyFeatures.put(environment.getSNR(link));
-					}
-				}
-				features.put(dummyFeatures);
-	
-	
-				// get qos
-				// This has to be processed for every mode, thats why I add objects.
-				qos = new JSONObject();
-				qos.put("packetLoss", adaptationOption.verificationResults.packetLoss);
-				qos.put("latency", adaptationOption.verificationResults.latency);
-				qos.put("energyConsumption", adaptationOption.verificationResults.energyConsumption);
-				targets.put(qos);
-			}
-			writer.close();
-			
-		} catch(Exception e) {
-			throw new RuntimeException("Failed to write to the raw data file (activform).");
+			smcChecker.checkCAO(adaptationOption.toModelString(), environment.toModelString(),
+				adaptationOption.verificationResults);
+				
+			verifTimes[index] = System.currentTimeMillis() - startTime;
+			index++;
+		}
+
+
+		storeAllFeaturesAndTargets(adaptationOptions, environment, cycles, verifTimes);
+
+	}
+
+
+	private void storeAllFeaturesAndTargets(List<AdaptationOption> adaptationOptions, Environment env, int cycle, Long[] verifTimes) {
+		// Store the features and the targets in their respective files
+		File feature_selection = new File(
+			Paths.get(System.getProperty("user.dir"), "activforms", "log", "dataset_with_all_features" + cycle + ".json").toString());
+
+		if (feature_selection.exists()) {
+			// At the first cycle, remove the file if it already exists
+			feature_selection.delete();
 		}
 		
-		// write at the end of all the cycles
-		if (this.cycles == ConfigLoader.getInstance().getAmountOfCycles()) {
-			Path p = Paths.get(Paths.get(System.getProperty("user.dir")).toString(), "activforms", "log");
-			
-			// find none existing file
-			int i = 1;
-			File f = null;
-			int cyc = ConfigLoader.getInstance().getAmountOfCycles();
-			int dist = ConfigLoader.getInstance().getDistributionGap();
+		try {
+			feature_selection.createNewFile();
+			JSONObject root = new JSONObject();
+			root.put("verification_times", new JSONArray());
+			root.put("features", new JSONArray());
+			root.put("target_classification_packetloss", new JSONArray());
+			root.put("target_regression_packetloss", new JSONArray());
+			root.put("target_classification_latency", new JSONArray());
+			root.put("target_regression_latency", new JSONArray());
+			root.put("target_regression_energyconsumption", new JSONArray());
+			FileWriter writer = new FileWriter(feature_selection);
+			writer.write(root.toString(2));
+			writer.close();
+		} catch (IOException e) {
+			throw new RuntimeException(
+				String.format("Could not create the output file at %s", feature_selection.toPath().toString()));
+		}
 
-			while (true) {
-				f = new File(Paths.get(p.toString(), 
-					String.format("%iCycles%iDist_run%i.json", cyc, dist, i)).toString());
+		try {
+			JSONTokener tokener = new JSONTokener(feature_selection.toURI().toURL().openStream());
+			JSONObject root = new JSONObject(tokener);
 
-				if(!f.exists()) {
-					break;
-				} else {
-					i++;
+			// Get all the features for all the adaptation options, as well as their targets
+			for (AdaptationOption option : adaptationOptions) {
+				JSONArray newFeatures = new JSONArray();
+
+				// 17 links (SNR)
+				for (SNR snr : env.linksSNR) {
+					newFeatures.put((int) snr.SNR);
 				}
+				
+				// 17 links (Power)
+				option.system.motes.values().stream()
+					.map(mote -> mote.getLinks())
+					.flatMap(links -> links.stream())
+					.forEach(link -> newFeatures.put((int) link.getPower()));
+				
+				// 17 links (Distribution)
+				for (Mote mote : option.system.motes.values()) {
+					for (Link link : mote.getLinks()) {
+						newFeatures.put((int) link.getDistribution());
+					}
+				}
+				
+				// 14 motes (Traffic load)
+				for (TrafficProbability traffic : env.motesLoad) {
+					newFeatures.put((int) traffic.load);
+				}
+				
+				// => Total of 65 features
+				
+				// Features
+				root.getJSONArray("features").put(newFeatures);
+				
+				// Packet loss values
+				root.getJSONArray("target_classification_packetloss").put(
+					goals.getPacketLossGoal().evaluate(option.verificationResults.packetLoss) ? 1 : 0);
+				root.getJSONArray("target_regression_packetloss").put(option.verificationResults.packetLoss);
+				
+				// Latency values
+				root.getJSONArray("target_classification_latency").put(
+					goals.getLatencyGoal().evaluate(option.verificationResults.latency) ? 1 : 0);
+				root.getJSONArray("target_regression_latency").put(option.verificationResults.latency);
+
+				// Energy consumption values
+				root.getJSONArray("target_regression_energyconsumption").put(option.verificationResults.energyConsumption);
 			}
 
-			try {
-				FileWriter jsonWriter = new FileWriter(f);
-				jsonWriter.write(rawData.toString());
-				jsonWriter.flush();
-				jsonWriter.close();
-			} catch (Exception e) {
-				System.out.println("Problem writing to file.\n");
+			for (Long verifTime : verifTimes) {
+				root.getJSONArray("verification_times").put(verifTime);
 			}
+
+			FileWriter writer = new FileWriter(feature_selection);
+			writer.write(root.toString(1));
+			writer.close();
+			
+		} catch (IOException e) {
+			throw new RuntimeException(
+				String.format("Could not write to the output file at %s", feature_selection.toPath().toString()));
 		}
 	}
 
