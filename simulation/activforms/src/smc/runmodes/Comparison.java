@@ -1,9 +1,9 @@
-
 package smc.runmodes;
 
 import java.util.ArrayList;
-import java.util.LinkedList;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -12,149 +12,276 @@ import mapek.AdaptationOption;
 import mapek.Goal;
 
 
-// TODO: unify comparison and mladjustment
-public class Comparison extends SMCConnector {
 
+public class Comparison extends SMCConnector {
+	
+	public Comparison() {}
+	
 	@Override
 	public void startVerification() {
-		if (cycles <= TRAINING_CYCLE) {
-			training();
-		} else {
-			testing();
-		}
-	}
-		
-	private void training() {
+		boolean training = cycles <= TRAINING_CYCLE;
 		switch (taskType) {
 			case CLASSIFICATION:
 			case REGRESSION:
-				training1Goal();
-				break;
-			case PLLAMULTICLASS:
-				training2Goals();
-				break;
-			default:
-				throw new RuntimeException(
-					String.format("Unsupported task type for MLAdjustment: %s", taskType.val));
-		}
-	}
-	
-	private void testing() {
-		switch (taskType) {
-			case CLASSIFICATION:
-			case REGRESSION:
-				testing1Goal();
+				singlePlGoal(training);
 				break;
 			case PLLAMULTICLASS:
 			case PLLAMULTIREGR:
-				testing2Goals();
+				doublePlLaGoals(training);
 				break;
 			default:
 				throw new RuntimeException(
-					String.format("Unsupported task type for MLAdjustment: %s", taskType.val));
+					String.format("Unsupported task type for Comparison: %s", taskType.val));
 		}
 	}
-	
-	private void training1Goal() {
-		int space = 0;
-		Goal pl = goals.getPacketLossGoal();
-	
+
+
+	private void singlePlGoal(boolean training) {
+		JSONObject adjInspection = new JSONObject();
+		adjInspection.put("adapIndices", new JSONArray());
+		adjInspection.put("packetLoss", new JSONArray());
+		adjInspection.put("energyConsumption", new JSONArray());
+		adjInspection.put("latency", new JSONArray());
+		adjInspection.put("regressionBefore", new JSONArray());
+		adjInspection.put("classificationBefore", new JSONArray());
+		adjInspection.put("regressionAfter", new JSONArray());
+		adjInspection.put("classificationAfter", new JSONArray());
+
+		if (cycles == 1) {
+			// At the first cycle, no regression or classification output can be retrieved yet
+			// -> use -1 as dummy prediction values
+			IntStream.range(0, adaptationOptions.size()).forEach(i -> {
+				adjInspection.getJSONArray("regressionBefore").put(-1);
+				adjInspection.getJSONArray("classificationBefore").put(-1);
+			});
+		} else {
+			// If not at the first cycle, retrieve the results predicted before online learning
+			predictionLearners1Goal(adaptationOptions, adjInspection.getJSONArray("classificationBefore"),
+				adjInspection.getJSONArray("regressionBefore"));
+		}
+
+
+		// Check all the adaptation options with activFORMS
 		for (AdaptationOption adaptationOption : adaptationOptions) {
 			smcChecker.checkCAO(adaptationOption.toModelString(), environment.toModelString(),
 				adaptationOption.verificationResults);
-			if (pl.evaluate(adaptationOption.verificationResults.packetLoss)) {
-				space++;
-			}
+			adjInspection.getJSONArray("packetLoss").put(adaptationOption.verificationResults.packetLoss);
+			adjInspection.getJSONArray("energyConsumption").put(adaptationOption.verificationResults.energyConsumption);
+			adjInspection.getJSONArray("latency").put(adaptationOption.verificationResults.latency);
+			adjInspection.getJSONArray("adapIndices").put(adaptationOption.overallIndex);
 		}
-		
-		System.out.print(";" + space);
-		send(adaptationOptions, TaskType.CLASSIFICATION, Mode.TRAINING);
-		send(adaptationOptions, TaskType.REGRESSION, Mode.TRAINING);
+
+
+		if (training) {
+			// If we are training, send the entire adaptation space to the learners and check what they have learned
+			send(adaptationOptions, TaskType.CLASSIFICATION, Mode.TRAINING);
+			send(adaptationOptions, TaskType.REGRESSION, Mode.TRAINING);
+
+			predictionLearners1Goal(adaptationOptions, adjInspection.getJSONArray("classificationAfter"),
+				adjInspection.getJSONArray("regressionAfter"));
+		} else {
+			// If we are testing, send the adjustments to the learning models and check their predictions again
+			List<AdaptationOption> classificationTrainOptions = new ArrayList<>();
+			List<AdaptationOption> regressionTrainOptions = new ArrayList<>();
+
+			// Parse the classification and regression results from the JSON responses.
+			final List<Integer> classificationResults = adjInspection.getJSONArray("classificationBefore")
+				.toList().stream()
+				.map(o -> Integer.parseInt(o.toString()))
+				.collect(Collectors.toList());
+			final List<Float> regressionResults = adjInspection.getJSONArray("regressionBefore")
+				.toList().stream()
+				.map(o -> Float.parseFloat(o.toString()))
+				.collect(Collectors.toList());
+
+			Goal pl = goals.getPacketLossGoal();
+
+			// Determine which adaptation options have to be sent back for the specific learners
+			for (int i = 0; i < adaptationOptions.size(); i++) {
+				if (classificationResults.get(i).equals(1)) {
+					classificationTrainOptions.add(adaptationOptions.get(i));
+				}
+				if (pl.evaluate(regressionResults.get(i))) {
+					regressionTrainOptions.add(adaptationOptions.get(i));
+				}
+			}
+
+			// In case the adaptation space of a prediction is 0, send all adaptations back for online learning
+			if (classificationResults.stream().noneMatch(o -> o == 1)) {
+				classificationTrainOptions = adaptationOptions;
+			}
+			if (regressionResults.stream().noneMatch(o -> pl.evaluate(o))) {
+				regressionTrainOptions = adaptationOptions;
+			}
+
+			// Send the adaptation options specific to the learners back for online learning
+			send(classificationTrainOptions, TaskType.CLASSIFICATION, Mode.TRAINING);
+			send(regressionTrainOptions, TaskType.REGRESSION, Mode.TRAINING);
+
+			// Test the predictions of the learners again after online learning to track their adjustments
+			predictionLearners1Goal(adaptationOptions, adjInspection.getJSONArray("classificationAfter"),
+				adjInspection.getJSONArray("regressionAfter"));
+		}
+
+
+		// Send the overall results to be saved on the server
+		send(adjInspection, TaskType.NONE, Mode.COMPARISON);
 	}
 
-	private void training2Goals() {
-		throw new RuntimeException("Training for multiple goals in comparison is unsupported at this moment.");		
+	private void doublePlLaGoals(boolean training) {
+		if (taskType == TaskType.PLLAMULTIREGR) {
+			throw new UnsupportedOperationException("not implemented as of yet");
+		}
+		// FIXME: dummy values for regression for now (only classification considered atm)
+		// TODO: once regression is also used, unify both methods
+
+		JSONObject adjInspection = new JSONObject();
+		adjInspection.put("adapIndices", new JSONArray());
+		adjInspection.put("packetLoss", new JSONArray());
+		adjInspection.put("energyConsumption", new JSONArray());
+		adjInspection.put("latency", new JSONArray());
+		adjInspection.put("regressionBefore", new JSONArray());
+		adjInspection.put("classificationBefore", new JSONArray());
+		adjInspection.put("regressionAfter", new JSONArray());
+		adjInspection.put("classificationAfter", new JSONArray());
+
+		if (cycles == 1) {
+			// At the first cycle, no regression or classification output can be retrieved yet
+			// -> use -1 as dummy prediction values
+			IntStream.range(0, adaptationOptions.size()).forEach(i -> {
+				// JSONArray regrValues = new JSONArray();
+				// regrValues.put(-1);
+				// regrValues.put(-1);
+				adjInspection.getJSONArray("regressionBefore").put(-1);
+				adjInspection.getJSONArray("classificationBefore").put(-1);
+			});
+		} else {
+			// If not at the first cycle, retrieve the results predicted before online learning
+			predictionLearners2Goals(adaptationOptions, adjInspection.getJSONArray("classificationBefore"),
+				adjInspection.getJSONArray("regressionBefore"));
+		}
+
+		// Check all the adaptation options with activFORMS
+		for (AdaptationOption adaptationOption : adaptationOptions) {
+			smcChecker.checkCAO(adaptationOption.toModelString(), environment.toModelString(),
+				adaptationOption.verificationResults);
+				
+			adjInspection.getJSONArray("packetLoss").put(adaptationOption.verificationResults.packetLoss);
+			adjInspection.getJSONArray("energyConsumption").put(adaptationOption.verificationResults.energyConsumption);
+			adjInspection.getJSONArray("latency").put(adaptationOption.verificationResults.latency);
+			adjInspection.getJSONArray("adapIndices").put(adaptationOption.overallIndex);
+		}
+
+
+		if (training) {
+			// If we are training, send the entire adaptation space to the learners and check what they have learned
+			send(adaptationOptions, TaskType.PLLAMULTICLASS, Mode.TRAINING);
+			// send(adaptationOptions, TaskType.REGRESSION, Mode.TRAINING);
+
+			predictionLearners2Goals(adaptationOptions, adjInspection.getJSONArray("classificationAfter"),
+				adjInspection.getJSONArray("regressionAfter"));
+		} else {
+			// If we  are testing, send the adjustments to the learning models and check their predictions again
+			List<AdaptationOption> classificationTrainOptions = new ArrayList<>();
+			// List<AdaptationOption> regressionTrainOptions = new ArrayList<>();
+
+			// Parse the classification and regression results from the JSON responses.
+			final List<Integer> classificationResults = adjInspection.getJSONArray("classificationBefore")
+				.toList().stream()
+				.map(o -> Integer.parseInt(o.toString()))
+				.collect(Collectors.toList());
+			// final List<Float> regressionResults = adjInspection.getJSONArray("regressionBefore")
+			// 	.toList().stream()
+			// 	.map(o -> Float.parseFloat(o.toString()))
+			// 	.collect(Collectors.toList());
+
+			// Goal pl = goals.getPacketLossGoal();
+			// Goal la = goals.getLatencyGoal();
+
+			// Determine which adaptation options have to be sent back for the specific learners
+			// Count the amount of predictions for each classification class
+			int predictionsInClass[] = new int[4];
+			for (Integer pred : classificationResults) {
+				predictionsInClass[pred] += 1;
+			}
+
+			int satisfiedGoals = 0;
+			if (predictionsInClass[3] > 0) {
+				satisfiedGoals = 2;
+			} else if (predictionsInClass[1] + predictionsInClass[2] > 0) {
+				satisfiedGoals = 1;
+			}
+
+			for (int i = 0; i < adaptationOptions.size(); i++) {
+				int classResult = classificationResults.get(i);
+				if (satisfiedGoals == 2 && classResult == 3) {
+					classificationTrainOptions.add(adaptationOptions.get(i));
+				} else if (satisfiedGoals == 1 && (classResult == 2 || classResult == 1)) {
+					classificationTrainOptions.add(adaptationOptions.get(i));
+				} else if (satisfiedGoals == 0) {
+					classificationTrainOptions.add(adaptationOptions.get(i));
+				}
+			}
+
+			// In case the adaptation space of a prediction is 0, send all adaptations back for online learning
+			if (satisfiedGoals == 0) {
+				classificationTrainOptions = adaptationOptions;
+			}
+			// if (regressionResults.stream().noneMatch(o -> pl.evaluate(o))) {
+			// 	regressionTrainOptions = adaptationOptions;
+			// }
+
+			// Send the adaptation options specific to the learners back for online learning
+			send(classificationTrainOptions, TaskType.PLLAMULTICLASS, Mode.TRAINING);
+			// send(regressionTrainOptions, TaskType.REGRESSION, Mode.TRAINING);
+
+			// Test the predictions of the learners again after online learning to track their adjustments
+			predictionLearners2Goals(adaptationOptions, adjInspection.getJSONArray("classificationAfter"),
+				adjInspection.getJSONArray("regressionAfter"));
+		}
+
+
+		// Send the overall results to be saved on the server
+		send(adjInspection, TaskType.NONE, Mode.COMPARISON);
 	}
 
 
-	private void testing1Goal() {
-		// Send all the adaptation options to the learners for testing
+
+	/**
+	 * Helper function which adds the predictions of both learning models to their respective JSON arrays.
+	 * The predictions are made over the whole adaptation space.
+	 * @param classArray The JSON array which will hold the classification predictions.
+	 * @param regrArray The JSON array which will hold the regression predictions.
+	 */
+	private void predictionLearners1Goal(List<AdaptationOption> adaptationOptions, JSONArray classArray, JSONArray regrArray) {
 		JSONObject classificationResponse = send(adaptationOptions, TaskType.CLASSIFICATION, Mode.TESTING);
 		JSONObject regressionResponse = send(adaptationOptions, TaskType.REGRESSION, Mode.TESTING);
-		
-		// Get the size of the predicted adaptation space (for classification and regression)
-		int classificationAdaptationSpace = Integer.parseInt(classificationResponse.get("adaptation_space").toString());
-		int regressionAdaptationSpace = Integer.parseInt(regressionResponse.get("adaptation_space").toString());
-		
-		System.out.print(";" + classificationAdaptationSpace + ";" + regressionAdaptationSpace);
 
-		ArrayList<Integer> classificationPredictions = new ArrayList<>();
-		ArrayList<Float> regressionPredictions = new ArrayList<>();
-		
-		// The options which should be used for online learning
-		List<AdaptationOption> classificationTrainingOptions = new LinkedList<>();
-		List<AdaptationOption> regressionTrainingOptions = new LinkedList<>();
-
-		// Parse the responses for classification and regression
-		JSONArray arr = classificationResponse.getJSONArray("predictions");
-		for (int i = 0; i < arr.length(); i++) {
-			classificationPredictions.add(Integer.parseInt(arr.get(i).toString()));
+		for (Object item : classificationResponse.getJSONArray("predictions")) {
+			classArray.put(Integer.parseInt(item.toString()));
 		}
-		arr = regressionResponse.getJSONArray("predictions");
-		for (int i = 0; i < arr.length(); i++) {
-			regressionPredictions.add(Float.parseFloat(arr.get(i).toString()));
+		for (Object item : regressionResponse.getJSONArray("predictions")) {
+			regrArray.put(Float.parseFloat(item.toString()));
 		}
+	}
+	
+	/**
+	 * Helper function which adds the predictions of both learning models to their respective JSON arrays.
+	 * The predictions are made over the whole adaptation space.
+	 * @param classArray The JSON array which will hold the classification predictions.
+	 * @param regrArray The JSON array which will hold the regression predictions.
+	 */
+	private void predictionLearners2Goals(List<AdaptationOption> adaptationOptions, JSONArray classArray, JSONArray regrArray) {
+		JSONObject classificationResponse = send(adaptationOptions, TaskType.PLLAMULTICLASS, Mode.TESTING);
+		// JSONObject regressionResponse = send(adaptationOptions, TaskType.REGRESSION, Mode.TESTING);
 
-		int activformAdapationSpace = 0;
-		int index = 0;
-
-		JSONObject comparison = new JSONObject();
-		comparison.put("packetLoss", new JSONArray());
-		comparison.put("energyConsumption", new JSONArray());
-		comparison.put("classification", classificationResponse.getJSONArray("predictions"));
-		comparison.put("regression", regressionResponse.getJSONArray("predictions"));
-
-
-		for (AdaptationOption adaptationOption : adaptationOptions) {
-			// Verify the results using the quality models
-			smcChecker.checkCAO(adaptationOption.toModelString(), environment.toModelString(),
-				adaptationOption.verificationResults);
-			
-			// If classification predicts that the goal is met (or if no options are predicted to meet the goal)
-			if (classificationPredictions.get(index) == 1 || classificationAdaptationSpace == 0) {
-				classificationTrainingOptions.add(adaptationOption);
-			}
-
-			// Same story as above for regression
-			if (goals.getPacketLossGoal().evaluate(regressionPredictions.get(index)) || regressionAdaptationSpace == 0) {
-				regressionTrainingOptions.add(adaptationOption);
-			}
-
-			// The formally verified options which meet the goal
-			if (goals.getPacketLossGoal().evaluate(adaptationOption.verificationResults.packetLoss)) {
-				activformAdapationSpace++;
-			}
-
-			comparison.getJSONArray("packetLoss").put(adaptationOption.verificationResults.packetLoss);
-			comparison.getJSONArray("energyConsumption").put(adaptationOption.verificationResults.energyConsumption);
-			
-			index++;
+		for (Object item : classificationResponse.getJSONArray("predictions")) {
+			classArray.put(Integer.parseInt(item.toString()));
 		}
-
-
-		System.out.print(";" + activformAdapationSpace);
-		
-		// Send back the formally verified options which were predicted to meet the goal by the classifier for online learning
-		send(classificationTrainingOptions, TaskType.CLASSIFICATION, Mode.TRAINING);
-		// Same story as above for regression
-		send(regressionTrainingOptions, TaskType.REGRESSION, Mode.TRAINING);
-
-		// Save the outcome (at server side)
-		send(comparison, TaskType.REGRESSION, Mode.COMPARISON);
+		// TODO: dummy values for now
+		for (int i = 0; i < classificationResponse.getJSONArray("predictions").length(); i++) {
+			regrArray.put(-1);
+		}
 	}
 
-
-	private void testing2Goals() {
-		throw new RuntimeException("Testing for multiple goals in comparison is unsupported at this moment.");		
-	}
 }

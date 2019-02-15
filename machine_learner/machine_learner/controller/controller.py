@@ -32,7 +32,7 @@ def training_testing(request):
 
             # Clear the models/output at the first adaptation cycle (if requested)
             if cycle == 1 and parse_qs(urlparse(path).query)['delete-models'][0] == 'true':
-                if (mode == 'comparison') or (mode == 'mladjustment'):
+                if mode == 'comparison':
                     # Remove all the collected data files before saving the first time
                     # The collected data files in question are .txt and .json files
                     dir_path = os.path.join('machine_learner', 'collected_data')
@@ -50,9 +50,7 @@ def training_testing(request):
             # Take the appropriate action depending on the
             # variables of the query
             if mode == 'comparison':
-                response = save_data(dataset)
-            elif mode == 'mladjustment':
-                response = save_mlAdjustmentData(dataset, cycle)
+                response = save_data(dataset, cycle)
 
             elif task_type == 'classification':
                 if mode == 'training':
@@ -101,9 +99,11 @@ def deleteFilesWithExt(dir_path, extensions):
 
 
 
-def save_mlAdjustmentData(data, cycle):
+
+
+def save_data(data, cycle):
     '''
-        Saves the data retreived from the mladjustment mode in the simulator to a .json file.
+        Saves the data retreived from the comparison mode in the simulator to a .json file.
     '''
     outputPath = os.path.join('machine_learner', 'collected_data', 'overall_adaptation_options.json')
 
@@ -123,35 +123,5 @@ def save_mlAdjustmentData(data, cycle):
         [] if not('regressionLABefore' in data) else data['regressionLABefore'],
         [] if not('regressionLAAfter' in data) else data['regressionLAAfter']
     )
-
-    return {'message': 'successful'}
-
-
-def save_data(data):
-    """ Appends or creates comparrison data
-
-    This function appends the data of the next cycle of comparisson
-    to the already existing data or creates a new file with the data
-    if the file has not been created yet (or deleted)
-    """
-
-    # loads the existing data if any
-    outputPath = os.path.join('machine_learner', 'collected_data', 'selected_adaptation_options.json')
-    
-    try:
-        file_data = json.load(open(outputPath))
-    except Exception:
-        file_data = []
-
-    # append the new data to the existing data
-    file_data.append({
-        'packetLoss': data['packetLoss'],
-        'energyConsumption': data['energyConsumption'],
-        'classification': data['classification'],
-        'regression': data['regression']
-    })
-
-    with open(outputPath, 'w') as f:
-        json.dump(file_data, f, indent=4)
 
     return {'message': 'successful'}

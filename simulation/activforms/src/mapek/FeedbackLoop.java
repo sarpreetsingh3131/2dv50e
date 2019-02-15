@@ -14,7 +14,6 @@ import deltaiot.services.LinkSettings;
 import deltaiot.services.QoS;
 import smc.runmodes.ActivForms;
 import smc.runmodes.Comparison;
-import smc.runmodes.MLAdjustment;
 import smc.runmodes.MachineLearning;
 import smc.runmodes.SMCConnector;
 import smc.runmodes.SMCConnector.Mode;
@@ -79,9 +78,6 @@ public class FeedbackLoop {
 				break;
 			case COMPARISON:
 				smcConnector = new Comparison();
-				break;
-			case MLADJUSTMENT:
-				smcConnector = new MLAdjustment();
 				break;
 			default:
 				throw new RuntimeException(String.format("Unsupported run mode: %s", runmode.val));

@@ -49,11 +49,6 @@ abstract public class SMCConnector {
 		MACHINELEARNING("machinelearning"),
 		ACTIVFORM("activform"), 
 		COMPARISON("comparison"),
-		// The new mladjustment mode is similar to the comparison mode.
-		// The difference between the two is that mladjustment also checks for
-		// the adjustments made to the learners after online learning every cycle.
-		// This data is then sent to the python server to be saved in an output file.
-		MLADJUSTMENT("mladjustment"),
 
 		// NOTE: training and testing should only be used internally
 		TRAINING("training"), 
