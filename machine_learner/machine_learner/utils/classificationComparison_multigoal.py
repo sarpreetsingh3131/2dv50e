@@ -51,13 +51,6 @@ def getErrorRate(configs):
     return sum(errorPredictions) / (len(errorPredictions) * amtCycles) * 100.0
 
 
-def calculateLogarithmicLoss(configs):
-    '''
-    Metric used to evaluate machine learning techniques (closer to 0 eqauls better).
-    '''
-    return None
-
-
 
 def getConfusionMatrix(configs):
     # The first index indicates the real class, the second index indicates the predicted class
@@ -101,7 +94,7 @@ def printTable(data, outputPath):
     cellsData['fill'] = {'color': colors}
 
     trace = go.Table(header={'values' : data['header'], 'fill': {'color':headerColor}}, cells=cellsData, \
-        columnwidth=[270, 240, 220, 150, 150, 150, 300])
+        columnwidth=[270, 240, 240, 240, 150, 150, 150, 300])
 
     layout = dict(width=1800, height=1000, font=dict(family='"Open Sans", verdana, arial, sans-serif', size=18, color='#444'))
     fig = dict(data=[trace], layout=layout)
@@ -166,6 +159,7 @@ def compareResultsClassifiers(inputPath, outputPath):
     header = [
         'Technique',
         'Loss function',
+        'Penalty',
         'Scaler',
         'Overall error percentage',
         'F1 score (weighted)',
@@ -187,16 +181,7 @@ def compareResultsClassifiers(inputPath, outputPath):
     for filename in files:
         configurations = loadData(os.path.join(inputPath, filename))
         key = os.path.splitext(filename)[0]
-        key = key.split('_')
-
-        if len(key) == 2:
-            # The loss function is not applicable in this case
-            loss = None
-            classifier, scaler = key
-        else:
-            classifier, loss, scaler = key
-
-        amtCycles = len(configurations[0])
+        classifier, loss, penalty, scaler = key.split('_')
 
         # The overall percentage of errors in the predicted values
         errorPercentageOverall = getErrorRate(configurations)
@@ -204,10 +189,11 @@ def compareResultsClassifiers(inputPath, outputPath):
         # Skip the classifiers with an error rate over 50%
         if errorPercentageOverall > 30:
             # NOTE: removes the file (make sure it is stored somewhere else as well)
-            os.remove(os.path.join(inputPath,filename))
-            index += 1
-            printProgressBar(index, len(files), prefix='Processing of classifiers:', suffix='Complete', length=30)
-            continue
+            pass
+            # os.remove(os.path.join(inputPath,filename))
+            # index += 1
+            # printProgressBar(index, len(files), prefix='Processing of classifiers:', suffix='Complete', length=30)
+            # continue
             
         if errorPercentageOverall < bestSample[0]:
             bestSample = (errorPercentageOverall, filename)
@@ -229,7 +215,8 @@ def compareResultsClassifiers(inputPath, outputPath):
 
         row = [
             classifier,
-            '-' if loss == None else loss,
+            loss,
+            penalty,
             scaler,
             f'{errorPercentageOverall:.2f}%',
             f'{F1AllWeighted:.4f}',
@@ -247,8 +234,8 @@ def compareResultsClassifiers(inputPath, outputPath):
 
     print()
     print(f'Best sample ({bestSample[0]:.2f}%): {bestSample[1]}')
-    print(f'Best Matthews correlation coefficient: {max([float(i[5]) for i in outputData["values"]]):.4f}')
-    print(f'Best F1 score (weighted): {max([float(i[4]) for i in outputData["values"]]):.4f}')
+    print(f'Best Matthews correlation coefficient: {max([float(i[6]) for i in outputData["values"]]):.4f}')
+    print(f'Best F1 score (weighted): {max([float(i[5]) for i in outputData["values"]]):.4f}')
 
     writeConfMatricesToFiles(confMatrices['all'], CSV_CONFALL_NAME, outputPath)
     printTable(outputData, outputPath)

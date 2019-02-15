@@ -26,12 +26,12 @@ def analyseUncertainties():
     minEC, maxEC = min(ecResults), max(ecResults)
 
     # sort the items of interest in ascending order
-    sortFunction = lambda x, y: -1 if x.getScatterRate() < y.getScatterRate() else (0 if x.getScatterRate() == y.getScatterRate() else 1)
-    worstScatterRate = sorted([result for result in adapResults], key=functools.cmp_to_key(sortFunction), reverse=False)
+    # sortFunction = lambda x, y: -1 if x.getScatterRate() < y.getScatterRate() else (0 if x.getScatterRate() == y.getScatterRate() else 1)
+    # worstScatterRate = sorted([result for result in adapResults], key=functools.cmp_to_key(sortFunction), reverse=False)
 
 
     # sortFunction = lambda x, y: -1 if x.getAmtOfWrongPredictions() < y.getAmtOfWrongPredictions() else (0 if x.getAmtOfWrongPredictions() == y.getAmtOfWrongPredictions() else 1)
-    worstPredictionRate = sorted([result for result in adapResults], key=lambda res: res.getAmtOfWrongPredictions()[0], reverse=True)
+    # worstPredictionRate = sorted([result for result in adapResults], key=lambda res: res.getAmtOfWrongPredictions()[0], reverse=True)
     print()
 
 
@@ -79,7 +79,7 @@ def plotLearningEffectOneCycle(item, minEC, maxEC, graphName):
     dataRegression = [ao.reB for ao in item]
     minPL, maxPL = getMinMax(dataPacketLoss, dataRegression)
 
-    fig = initialiseFigure('Effect of online learning adjustments', fontsize=20)
+    initialiseFigure('Effect of online learning adjustments', fontsize=20)
     
     step = int((len(item)-1) / 6)
     for i in range(step, len(item), step):
@@ -105,7 +105,7 @@ def plotLearningEffect2Cycles(item, minEC, maxEC, graphName):
     dataRegression = [ao.reB for ao in item[0:60]]
     minPL, maxPL = getMinMax(dataPacketLoss, dataRegression)
 
-    fig = initialiseFigure('Effect of online learning adjustments over 2 cycles', fontsize=20)
+    initialiseFigure('Effect of online learning adjustments over 2 cycles', fontsize=20)
     
     # chosen arbitrarily
     # TODO use heuristic to find interesting points
@@ -162,7 +162,7 @@ def plotEffectUncertainties(item, graphName):
     dataEnergyConsumption = [ao.ec for ao in item[0:60]]
     minEC, maxEC = min(dataEnergyConsumption), max(dataEnergyConsumption)
 
-    fig = initialiseFigure('Effect of uncertainties on adaptation option')
+    initialiseFigure('Effect of uncertainties on adaptation option')
 
     # Plot 10 data points per graph
     for i in range(6):
@@ -197,7 +197,7 @@ def plotRegressionPredictions(item, minEC, maxEC, graphName):
     dataRegression = [ao.reB for ao in item]
     minPL, maxPL = getMinMax(dataPacketLoss, dataRegression)
 
-    fig = initialiseFigure('Regression predictions vs actual values (single configuration)')
+    initialiseFigure('Regression predictions vs actual values (single configuration)')
 
     #plot the result which is spread out the most over energy consumption
     plt.subplot(2, 2, 1)
@@ -258,7 +258,7 @@ def plotLearningEvolution(item, minEC, maxEC, graphName):
     minPL, maxPL = getMinMax(dataPacketLoss, dataRegression)
 
 
-    fig = initialiseFigure('Effect of online learning adjustments (1 configuration, regression)')
+    initialiseFigure('Effect of online learning adjustments (1 configuration, regression)')
 
     step = int(len(item) / 3)
     for i in range(6):
@@ -378,18 +378,15 @@ def initialiseFigure(title, fontsize=18, res=(1920, 1080), dpi=96):
 
 
 if __name__ == '__main__':
-    # NOTE: this program removes all files from the provided/default folder recursively
-    #       -> be careful when providing a custom directory
-    
     if len(sys.argv) != 2:
         print("Output directory not provided as commandline argument, using './GraphOutputs' by default")
         PLOT_OUTPUT_DIR = os.path.join('GraphOutputs')
     else:
         PLOT_OUTPUT_DIR = sys.argv[1]
 
-    if os.path.isdir(PLOT_OUTPUT_DIR):
-        shutil.rmtree(PLOT_OUTPUT_DIR)
+    # if os.path.isdir(PLOT_OUTPUT_DIR):
+    #     shutil.rmtree(PLOT_OUTPUT_DIR)
 
-    os.mkdir(PLOT_OUTPUT_DIR)
+    # os.mkdir(PLOT_OUTPUT_DIR)
 
     analyseUncertainties()
