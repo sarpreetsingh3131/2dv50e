@@ -30,9 +30,8 @@ def training_testing(request):
             mode = parse_qs(urlparse(path).query)['mode'][0]
             cycle = int(parse_qs(urlparse(path).query)['cycle'][0])
 
-            # Clear the models/output at the first adaptation cycle
-            # TODO make this optional for potentially larger scaled problems later on
-            if cycle == 1:
+            # Clear the models/output at the first adaptation cycle (if requested)
+            if cycle == 1 and parse_qs(urlparse(path).query)['delete-models'][0] == 'true':
                 if (mode == 'comparison') or (mode == 'mladjustment'):
                     # Remove all the collected data files before saving the first time
                     # The collected data files in question are .txt and .json files

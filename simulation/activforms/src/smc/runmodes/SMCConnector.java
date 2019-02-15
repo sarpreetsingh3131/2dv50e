@@ -201,7 +201,11 @@ abstract public class SMCConnector {
 			
 			// Create a post message for the webserver (which runs the machine learner)
 			// The server responds with predictions (in case the task type is testing), or OK/NOK for other tasks
-			HttpPost http = new HttpPost("http://localhost:8000/?task-type=" + taskType + "&mode=" + mode + "&cycle=" + cycles);
+			HttpPost http = new HttpPost("http://localhost:8000/?" + 
+				"task-type=" + taskType + 
+				"&mode=" + mode + 
+				"&cycle=" + cycles + 
+				(cycles == 1 ? "&delete-models=" + ConfigLoader.getInstance().shouldDeletePreviousModels() : ""));
 			
 			// The entity of a http post is the payload
 			// Here you give as payload the json dataset to send in the form of a string

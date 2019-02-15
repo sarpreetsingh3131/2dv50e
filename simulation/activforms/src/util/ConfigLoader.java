@@ -69,6 +69,10 @@ public class ConfigLoader {
 	public boolean getHuman() {
 		return this.getProperty("human").toLowerCase().trim().equals("true");
 	}
+
+	public boolean shouldDeletePreviousModels() {
+		return this.getProperty("deletePreviousModels").toLowerCase().trim().equals("true");
+	}
 	
 	public List<Goal> getGoals() {
 		List<Goal> goals = new ArrayList<>();
