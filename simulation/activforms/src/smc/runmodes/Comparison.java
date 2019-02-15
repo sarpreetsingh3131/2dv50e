@@ -42,22 +42,22 @@ public class Comparison extends SMCConnector {
 		adjInspection.put("packetLoss", new JSONArray());
 		adjInspection.put("energyConsumption", new JSONArray());
 		adjInspection.put("latency", new JSONArray());
-		adjInspection.put("regressionBefore", new JSONArray());
+		adjInspection.put("regressionPLBefore", new JSONArray());
 		adjInspection.put("classificationBefore", new JSONArray());
-		adjInspection.put("regressionAfter", new JSONArray());
+		adjInspection.put("regressionPLAfter", new JSONArray());
 		adjInspection.put("classificationAfter", new JSONArray());
 
 		if (cycles == 1) {
 			// At the first cycle, no regression or classification output can be retrieved yet
 			// -> use -1 as dummy prediction values
 			IntStream.range(0, adaptationOptions.size()).forEach(i -> {
-				adjInspection.getJSONArray("regressionBefore").put(-1);
+				adjInspection.getJSONArray("regressionPLBefore").put(-1);
 				adjInspection.getJSONArray("classificationBefore").put(-1);
 			});
 		} else {
 			// If not at the first cycle, retrieve the results predicted before online learning
 			predictionLearners1Goal(adaptationOptions, adjInspection.getJSONArray("classificationBefore"),
-				adjInspection.getJSONArray("regressionBefore"));
+				adjInspection.getJSONArray("regressionPLBefore"));
 		}
 
 
@@ -78,7 +78,7 @@ public class Comparison extends SMCConnector {
 			send(adaptationOptions, TaskType.REGRESSION, Mode.TRAINING);
 
 			predictionLearners1Goal(adaptationOptions, adjInspection.getJSONArray("classificationAfter"),
-				adjInspection.getJSONArray("regressionAfter"));
+				adjInspection.getJSONArray("regressionPLAfter"));
 		} else {
 			// If we are testing, send the adjustments to the learning models and check their predictions again
 			List<AdaptationOption> classificationTrainOptions = new ArrayList<>();
@@ -89,7 +89,7 @@ public class Comparison extends SMCConnector {
 				.toList().stream()
 				.map(o -> Integer.parseInt(o.toString()))
 				.collect(Collectors.toList());
-			final List<Float> regressionResults = adjInspection.getJSONArray("regressionBefore")
+			final List<Float> regressionResults = adjInspection.getJSONArray("regressionPLBefore")
 				.toList().stream()
 				.map(o -> Float.parseFloat(o.toString()))
 				.collect(Collectors.toList());
@@ -120,7 +120,7 @@ public class Comparison extends SMCConnector {
 
 			// Test the predictions of the learners again after online learning to track their adjustments
 			predictionLearners1Goal(adaptationOptions, adjInspection.getJSONArray("classificationAfter"),
-				adjInspection.getJSONArray("regressionAfter"));
+				adjInspection.getJSONArray("regressionPLAfter"));
 		}
 
 
@@ -140,9 +140,9 @@ public class Comparison extends SMCConnector {
 		adjInspection.put("packetLoss", new JSONArray());
 		adjInspection.put("energyConsumption", new JSONArray());
 		adjInspection.put("latency", new JSONArray());
-		adjInspection.put("regressionBefore", new JSONArray());
+		adjInspection.put("regressionPLBefore", new JSONArray());
 		adjInspection.put("classificationBefore", new JSONArray());
-		adjInspection.put("regressionAfter", new JSONArray());
+		adjInspection.put("regressionPLAfter", new JSONArray());
 		adjInspection.put("classificationAfter", new JSONArray());
 
 		if (cycles == 1) {
@@ -152,13 +152,13 @@ public class Comparison extends SMCConnector {
 				// JSONArray regrValues = new JSONArray();
 				// regrValues.put(-1);
 				// regrValues.put(-1);
-				adjInspection.getJSONArray("regressionBefore").put(-1);
+				adjInspection.getJSONArray("regressionPLBefore").put(-1);
 				adjInspection.getJSONArray("classificationBefore").put(-1);
 			});
 		} else {
 			// If not at the first cycle, retrieve the results predicted before online learning
 			predictionLearners2Goals(adaptationOptions, adjInspection.getJSONArray("classificationBefore"),
-				adjInspection.getJSONArray("regressionBefore"));
+				adjInspection.getJSONArray("regressionPLBefore"));
 		}
 
 		// Check all the adaptation options with activFORMS
@@ -179,7 +179,7 @@ public class Comparison extends SMCConnector {
 			// send(adaptationOptions, TaskType.REGRESSION, Mode.TRAINING);
 
 			predictionLearners2Goals(adaptationOptions, adjInspection.getJSONArray("classificationAfter"),
-				adjInspection.getJSONArray("regressionAfter"));
+				adjInspection.getJSONArray("regressionPLAfter"));
 		} else {
 			// If we  are testing, send the adjustments to the learning models and check their predictions again
 			List<AdaptationOption> classificationTrainOptions = new ArrayList<>();
@@ -190,7 +190,7 @@ public class Comparison extends SMCConnector {
 				.toList().stream()
 				.map(o -> Integer.parseInt(o.toString()))
 				.collect(Collectors.toList());
-			// final List<Float> regressionResults = adjInspection.getJSONArray("regressionBefore")
+			// final List<Float> regressionResults = adjInspection.getJSONArray("regressionPLBefore")
 			// 	.toList().stream()
 			// 	.map(o -> Float.parseFloat(o.toString()))
 			// 	.collect(Collectors.toList());
@@ -237,7 +237,7 @@ public class Comparison extends SMCConnector {
 
 			// Test the predictions of the learners again after online learning to track their adjustments
 			predictionLearners2Goals(adaptationOptions, adjInspection.getJSONArray("classificationAfter"),
-				adjInspection.getJSONArray("regressionAfter"));
+				adjInspection.getJSONArray("regressionPLAfter"));
 		}
 
 

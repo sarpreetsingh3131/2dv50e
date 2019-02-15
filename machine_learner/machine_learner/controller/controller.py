@@ -108,7 +108,6 @@ def save_data(data, cycle):
     outputPath = os.path.join('machine_learner', 'collected_data', 'overall_adaptation_options.json')
 
     # TODO: add boolean parameter in url to indicate training/testing cycles
-    # TODO: change regressionBefore/After to regressionPLBefore/After
     appendDataMultiGoal(
         outputPath, 
         cycle, 
@@ -118,8 +117,8 @@ def save_data(data, cycle):
         [] if not('latency' in data) else data['latency'],
         data['classificationBefore'],
         data['classificationAfter'],
-        data['regressionBefore'],
-        data['regressionAfter'],
+        data['regressionPLBefore'],
+        data['regressionPLAfter'],
         [] if not('regressionLABefore' in data) else data['regressionLABefore'],
         [] if not('regressionLAAfter' in data) else data['regressionLAAfter']
     )
