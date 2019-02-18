@@ -34,12 +34,18 @@ public class ConfigLoader {
 			InputStream inputStream = new FileInputStream(configFileLocation);
 			properties.load(inputStream);
 		} catch (IOException e) {
-			throw new RuntimeException("Could not load the properties file correctly.");
+			throw new RuntimeException(String.format("Could not load the properties file correctly at location %f.", configFileLocation.toString()));
 		}
 	}
 
 	public String getProperty(String key) {
-		return properties.getProperty(key);
+		String property = properties.getProperty(key);
+		if (property != null) {
+			return property.trim();
+		} else {
+			throw new RuntimeException(
+				String.format("Property '%f' not found in the properties file. Make sure this property is provided.", key));
+		}
 	}
 
 	public int getAmountOfLearningCycles() {
@@ -52,6 +58,14 @@ public class ConfigLoader {
 
 	public int getDistributionGap() {
 		return Integer.parseInt(this.getProperty("distributionGap"));
+	}
+
+	public double getExplorationPercentage() {
+		return Double.parseDouble(this.getProperty("explorationPercentage"));
+	}
+
+	public int getTimeCap() {
+		return Integer.parseInt(this.getProperty("cappedVerificationTime"));
 	}
 
 	public SMCConnector.Mode getRunMode() {
@@ -67,11 +81,11 @@ public class ConfigLoader {
 	}
 
 	public boolean getHuman() {
-		return this.getProperty("human").toLowerCase().trim().equals("true");
+		return this.getProperty("human").toLowerCase().equals("true");
 	}
 
 	public boolean shouldDeletePreviousModels() {
-		return this.getProperty("deletePreviousModels").toLowerCase().trim().equals("true");
+		return this.getProperty("deletePreviousModels").toLowerCase().equals("true");
 	}
 	
 	public List<Goal> getGoals() {
