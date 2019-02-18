@@ -51,7 +51,6 @@ public class MachineLearning extends SMCConnector {
 			verifiedOptions.add(actualIndex);
 		}
 
-		
 		send(verifiedOptions.stream().map(i -> adaptationOptions.get(i)).collect(Collectors.toList()), taskType, Mode.TRAINING);
 	}
 
@@ -242,7 +241,6 @@ public class MachineLearning extends SMCConnector {
 
 
 		// Perform online learning on the samples that were predicted to meet the user goal
-		// Note: if no samples were predicted to meet the goal, all the verified options are sent back for online learning
 		send(qosEstimates, taskType, Mode.TRAINING);
 	}
 

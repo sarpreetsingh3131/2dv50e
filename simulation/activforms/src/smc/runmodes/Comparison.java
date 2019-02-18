@@ -1,6 +1,7 @@
 package smc.runmodes;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -10,13 +11,15 @@ import org.json.JSONObject;
 
 import mapek.AdaptationOption;
 import mapek.Goal;
+import mapek.Goals;
+import util.ConfigLoader;
 
 
 
 public class Comparison extends SMCConnector {
-	
-	public Comparison() {}
-	
+
+	private int lastLearningIndex = 0;
+
 	@Override
 	public void startVerification() {
 		boolean training = cycles <= TRAINING_CYCLE;
@@ -128,6 +131,21 @@ public class Comparison extends SMCConnector {
 		send(adjInspection, TaskType.NONE, Mode.COMPARISON);
 	}
 
+	private void addPredictionsBeforeLearning(JSONArray cl, JSONArray rePL, JSONArray reLA) {
+		if (cycles == 1) {
+			// At the first cycle, no regression or classification output can be retrieved yet
+			// -> use -1 as dummy prediction values
+			IntStream.range(0, adaptationOptions.size()).forEach(i -> {
+				cl.put(-1);
+				rePL.put(-1);
+				reLA.put(-1);
+			});
+		} else {
+			// If not at the first cycle, retrieve the results predicted before online learning
+			predictionLearners2Goals(adaptationOptions, cl, rePL, reLA);
+		}
+	}
+
 	private void doublePlLaGoals(boolean training) {
 		JSONObject adjInspection = new JSONObject();
 		adjInspection.put("adapIndices", new JSONArray());
@@ -141,134 +159,85 @@ public class Comparison extends SMCConnector {
 		adjInspection.put("regressionLAAfter", new JSONArray());
 		adjInspection.put("classificationAfter", new JSONArray());
 
-		if (cycles == 1) {
-			// At the first cycle, no regression or classification output can be retrieved yet
-			// -> use -1 as dummy prediction values
-			IntStream.range(0, adaptationOptions.size()).forEach(i -> {
-				adjInspection.getJSONArray("regressionPLBefore").put(-1);
-				adjInspection.getJSONArray("regressionLABefore").put(-1);
-				adjInspection.getJSONArray("classificationBefore").put(-1);
-			});
-		} else {
-			// If not at the first cycle, retrieve the results predicted before online learning
-			predictionLearners2Goals(adaptationOptions, 
-				adjInspection.getJSONArray("classificationBefore"),
-				adjInspection.getJSONArray("regressionPLBefore"), 
-				adjInspection.getJSONArray("regressionLABefore"));
-		}
+		addPredictionsBeforeLearning(adjInspection.getJSONArray("classificationBefore"), 
+			adjInspection.getJSONArray("regressionPLBefore"),
+			adjInspection.getJSONArray("regressionLABefore"));
 
 
+		List<Long> verifTimes = new ArrayList<>();
 		// Check all the adaptation options with activFORMS
 		for (AdaptationOption adaptationOption : adaptationOptions) {
+			Long startTime = System.currentTimeMillis();
 			smcChecker.checkCAO(adaptationOption.toModelString(), environment.toModelString(),
 				adaptationOption.verificationResults);
-				
+			verifTimes.add(System.currentTimeMillis() - startTime);
+
 			adjInspection.getJSONArray("packetLoss").put(adaptationOption.verificationResults.packetLoss);
 			adjInspection.getJSONArray("energyConsumption").put(adaptationOption.verificationResults.energyConsumption);
 			adjInspection.getJSONArray("latency").put(adaptationOption.verificationResults.latency);
 			adjInspection.getJSONArray("adapIndices").put(adaptationOption.overallIndex);
 		}
 
+		int timeCap = ConfigLoader.getInstance().getTimeCap();
 
-		// TODO exploration + time constraints
 		if (training) {
+			int amtOptions = adaptationOptions.size();
+			long totalTime = 0;
+			List<Integer> verifiedOptions = new ArrayList<>();
+			
+			for (int i = 0; i < amtOptions; i++) {
+				int actualIndex = (i + lastLearningIndex) % amtOptions;
+	
+				if (totalTime / 1000 > timeCap) {
+					lastLearningIndex = actualIndex;
+					break;
+				}
+	
+				totalTime += verifTimes.get(actualIndex);
+				verifiedOptions.add(actualIndex);
+			}
+			List<AdaptationOption> options = verifiedOptions.stream().map(i -> adaptationOptions.get(i)).collect(Collectors.toList());
+
 			// If we are training, send the entire adaptation space to the learners and check what they have learned
-			send(adaptationOptions, TaskType.PLLAMULTICLASS, Mode.TRAINING);
-			send(adaptationOptions, TaskType.PLLAMULTIREGR, Mode.TRAINING);
+			send(options, TaskType.PLLAMULTICLASS, Mode.TRAINING);
+			send(options, TaskType.PLLAMULTIREGR, Mode.TRAINING);
 
 			predictionLearners2Goals(adaptationOptions, adjInspection.getJSONArray("classificationAfter"),
 				adjInspection.getJSONArray("regressionPLAfter"), adjInspection.getJSONArray("regressionLAAfter"));
-		} else {
-			// If we  are testing, send the adjustments to the learning models and check their predictions again
-			List<AdaptationOption> classificationTrainOptions = new ArrayList<>();
-			List<AdaptationOption> regressionTrainOptions = new ArrayList<>();
 
+		} else {
+			// If we are testing, send the adjustments to the learning models and check their predictions again
 			// Parse the classification and regression results from the JSON responses.
 			final List<Integer> classificationResults = adjInspection.getJSONArray("classificationBefore")
-				.toList().stream()
-				.map(o -> Integer.parseInt(o.toString()))
+				.toList().stream().map(o -> Integer.parseInt(o.toString()))
 				.collect(Collectors.toList());
 			final List<Float> regressionResultsPL = adjInspection.getJSONArray("regressionPLBefore")
-				.toList().stream()
-				.map(o -> Float.parseFloat(o.toString()))
+				.toList().stream().map(o -> Float.parseFloat(o.toString()))
 				.collect(Collectors.toList());
 			final List<Float> regressionResultsLA = adjInspection.getJSONArray("regressionLABefore")
-				.toList().stream()
-				.map(o -> Float.parseFloat(o.toString()))
+				.toList().stream().map(o -> Float.parseFloat(o.toString()))
 				.collect(Collectors.toList());
 
-
-			// Determine which adaptation options have to be sent back for the specific learners
-			// Count the amount of predictions for each classification class
-			int predictionsInClass[] = new int[4];
-			for (Integer pred : classificationResults) {
-				predictionsInClass[pred] += 1;
-			}
-
-			int satisfiedGoals = 0;
-			if (predictionsInClass[3] > 0) {
-				satisfiedGoals = 2;
-			} else if (predictionsInClass[1] + predictionsInClass[2] > 0) {
-				satisfiedGoals = 1;
-			}
-
-			for (int i = 0; i < adaptationOptions.size(); i++) {
-				int classResult = classificationResults.get(i);
-				if (satisfiedGoals == 2 && classResult == 3) {
-					classificationTrainOptions.add(adaptationOptions.get(i));
-				} else if (satisfiedGoals == 1 && (classResult == 2 || classResult == 1)) {
-					classificationTrainOptions.add(adaptationOptions.get(i));
-				} else if (satisfiedGoals == 0) {
-					classificationTrainOptions.add(adaptationOptions.get(i));
-				}
-			}
-
-			// In case the adaptation space of a prediction is 0, send all adaptations back for online learning
-			if (satisfiedGoals == 0) {
-				classificationTrainOptions = adaptationOptions;
-			}
-
-			// Similar way of working for regression
-
-			Goal pl = goals.getPacketLossGoal();
-			Goal la = goals.getLatencyGoal();
-
-			List<Integer> regressionClasses = new ArrayList<>();
-
-			predictionsInClass = new int[4];
+			Goal pl = Goals.getInstance().getPacketLossGoal();
+			Goal la = Goals.getInstance().getLatencyGoal();
+			
+			// Convert the regression predictions to the classes used in classification
+			List<Integer> regressionResults = new ArrayList<>();
 			for (int i = 0; i < regressionResultsPL.size(); i++) {
-				int predictedClass = 
+				regressionResults.add(
 					(pl.evaluate(regressionResultsPL.get(i)) ? 1 : 0) +
-					(la.evaluate(regressionResultsLA.get(i)) ? 2 : 0);
-				regressionClasses.add(predictedClass);
-				predictionsInClass[predictedClass] += 1;
+					(la.evaluate(regressionResultsLA.get(i)) ? 2 : 0)
+				);
 			}
 
-
-			satisfiedGoals = 0;
-			if (predictionsInClass[3] > 0) {
-				satisfiedGoals = 2;
-			} else if (predictionsInClass[1] + predictionsInClass[2] > 0) {
-				satisfiedGoals = 1;
-			}
-
-			for (int i = 0; i < adaptationOptions.size(); i++) {
-				int classResult = regressionClasses.get(i);
-				if (satisfiedGoals == 2 && classResult == 3) {
-					regressionTrainOptions.add(adaptationOptions.get(i));
-				} else if (satisfiedGoals == 1 && (classResult == 2 || classResult == 1)) {
-					regressionTrainOptions.add(adaptationOptions.get(i));
-				} else if (satisfiedGoals == 0) {
-					regressionTrainOptions.add(adaptationOptions.get(i));
-				}
-			}
-			if (satisfiedGoals == 0) {
-				regressionTrainOptions = adaptationOptions;
-			}
+			List<Integer> classificationIndices = getOnlineLearningIndices(classificationResults, verifTimes);
+			List<Integer> regressionIndices = getOnlineLearningIndices(regressionResults, verifTimes);
 
 			// Send the adaptation options specific to the learners back for online learning
-			send(classificationTrainOptions, TaskType.PLLAMULTICLASS, Mode.TRAINING);
-			send(regressionTrainOptions, TaskType.PLLAMULTIREGR, Mode.TRAINING);
+			send(classificationIndices.stream().map(i -> adaptationOptions.get(i)).collect(Collectors.toList()), 
+				TaskType.PLLAMULTICLASS, Mode.TRAINING);
+			send(regressionIndices.stream().map(i -> adaptationOptions.get(i)).collect(Collectors.toList()), 
+				TaskType.PLLAMULTIREGR, Mode.TRAINING);
 
 			// Test the predictions of the learners again after online learning to track their adjustments
 			predictionLearners2Goals(adaptationOptions, adjInspection.getJSONArray("classificationAfter"),
@@ -278,6 +247,81 @@ public class Comparison extends SMCConnector {
 
 		// Send the overall results to be saved on the server
 		send(adjInspection, TaskType.NONE, Mode.COMPARISON);
+	}
+
+	private List<Integer> getOnlineLearningIndices(List<Integer> predictedClasses, List<Long> verificationTimes) {
+
+		int predictionsInClass[] = new int[4];
+		for (Integer pred : predictedClasses) {
+			predictionsInClass[pred] += 1;
+		}
+
+		// The indices for the options of the best class predicted
+		List<Integer> indicesMain = new ArrayList<>();
+		// The indices for the options which are considered for exploration
+		List<Integer> indicesSub = new ArrayList<>();
+		// The remaining indices which should not be considered
+		List<Integer> remainingIndices = new ArrayList<>();
+
+		if (predictionsInClass[3] > 0) {
+			// There is at least one option which satisfies both goals
+			for (int i = 0; i < predictedClasses.size(); i++) {
+				int prediction = predictedClasses.get(i);
+				if (prediction == 3) {
+					indicesMain.add(i);
+				} else if (prediction == 2 || prediction == 1) {
+					indicesSub.add(i);
+				} else {
+					remainingIndices.add(i);
+				}
+			}
+		} else if (predictionsInClass[2] + predictionsInClass[1] > 0) {
+			// There is at least one option which satisfies one of the goals
+			for (int i = 0; i < predictedClasses.size(); i++) {
+				int prediction = predictedClasses.get(i);
+				if (prediction == 0) {
+					indicesSub.add(i);
+				} else {
+					indicesMain.add(i);
+				}
+			}
+		} else {
+			for (int i = 0; i < predictedClasses.size(); i++) {
+				indicesMain.add(i);
+			}
+		}
+
+		double explorationPercentage = ConfigLoader.getInstance().getExplorationPercentage();
+
+		// Shuffle the main indices first (to ensure all options are reached after some time in case not all can be verified each cycle)
+		Collections.shuffle(indicesMain);
+		// Similar reasoning for the exploration indices
+		Collections.shuffle(indicesSub);
+		
+		// Only select a percentage of the predictions of the other classes
+		int subIndex = (int) Math.floor(indicesSub.size() * explorationPercentage);
+		remainingIndices.addAll(indicesSub.subList(subIndex, indicesSub.size()));
+		indicesSub = indicesSub.subList(0, subIndex);
+		
+		List<Integer> overallIndices = new ArrayList<>();
+		overallIndices.addAll(indicesMain);
+		overallIndices.addAll(indicesSub);
+
+		
+		int timeCap = ConfigLoader.getInstance().getTimeCap();
+		int lastIndex = overallIndices.size();
+		int totalTime = 0;
+
+		for (int i = 0; i < overallIndices.size(); i++) {
+			if (totalTime / 1000 > timeCap) {
+				lastIndex = i;
+				break;
+			}
+
+			totalTime += verificationTimes.get(i);
+		}
+
+		return overallIndices.subList(0, lastIndex);
 	}
 
 

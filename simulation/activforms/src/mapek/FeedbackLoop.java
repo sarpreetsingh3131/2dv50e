@@ -405,13 +405,12 @@ public class FeedbackLoop {
 		// AdaptationOption backUp = null;
 
 		// TODO: What course of action if not all the goals are met?
-		// TODO: Which options when using regression? -> utility function?
 		for (int i = 0; i < verifiedOptions.size(); i++) {
 
 			AdaptationOption option = verifiedOptions.get(i);
 			Goal pl = goals.getPacketLossGoal();
-
-			if (ConfigLoader.getInstance().getTaskType().equals(TaskType.PLLAMULTICLASS)) {
+			TaskType type = ConfigLoader.getInstance().getTaskType();
+			if (type.equals(TaskType.PLLAMULTICLASS) || type.equals(TaskType.PLLAMULTIREGR)) {
 				Goal la = goals.getLatencyGoal();
 
 				if (la.evaluate(option.verificationResults.latency) 
