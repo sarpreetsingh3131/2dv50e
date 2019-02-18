@@ -5,7 +5,7 @@ import machine_learner.utils.dataWriter as dataWriter
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from urllib.parse import urlparse, parse_qs
-from machine_learner.models import classification, regression, plLaClassification
+from machine_learner.models import classification, regression, plLaClassification, plLaRegression
 
 
 @csrf_exempt
@@ -65,6 +65,13 @@ def training_testing(request):
                         dataset['features'], dataset['target'], cycle)
                 elif mode == 'testing':
                     response = plLaClassification.testing(dataset['features'])
+
+            elif task_type == 'pllaregression':
+                if mode == 'training':
+                    response = plLaRegression.training(
+                        dataset['features'], dataset['target_pl'], dataset['target_la'], cycle)
+                elif mode == 'testing':
+                    response = plLaRegression.testing(dataset['features'])
 
             elif task_type == 'regression':
                 if mode == 'training':

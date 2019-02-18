@@ -140,6 +140,12 @@ abstract public class SMCConnector {
 	 */
 	JSONObject parse(List<AdaptationOption> adaptationOptions, TaskType task) {
 		
+		if (task == TaskType.PLLAMULTIREGR) {
+			// Special case for multiclass regression (targets for packet loss and latency)
+			return parsePLLARegr(adaptationOptions);
+		}
+
+
 		JSONObject dataset = new JSONObject();
 		JSONArray features = new JSONArray();
 		JSONArray target = new JSONArray();
@@ -154,7 +160,7 @@ abstract public class SMCConnector {
 			if (task == TaskType.CLASSIFICATION) {
 				target.put(pl.evaluate(adaptationOption.verificationResults.packetLoss) ? 1 : 0);
 			} else if (task == TaskType.REGRESSION) {
-				target.put((int) adaptationOption.verificationResults.packetLoss);
+				target.put(adaptationOption.verificationResults.packetLoss);
 			} else if(task == TaskType.PLLAMULTICLASS) {
 				// Makes corresponding classes for multiclass verification
 				// 0 - no goals are met
@@ -178,6 +184,25 @@ abstract public class SMCConnector {
 		return dataset;
 	}
 
+
+	JSONObject parsePLLARegr(List<AdaptationOption> options) {
+		JSONObject dataset = new JSONObject();
+		JSONArray features = new JSONArray();
+		JSONArray target_pl = new JSONArray();
+		JSONArray target_la = new JSONArray();
+
+		dataset.put("features", features);
+		dataset.put("target_pl", target_pl);
+		dataset.put("target_la", target_la);
+		
+		for (AdaptationOption adaptationOption : options) {
+			target_pl.put(adaptationOption.verificationResults.packetLoss);
+			target_la.put(adaptationOption.verificationResults.latency);
+			features.put(featureSelection.selectFeatures(adaptationOption, environment));
+		}
+
+		return dataset;
+	}
 
 	/**
 	 * This method parses the adaptation options to a JSONObject and sends them to the webserver which runs the machine learner.

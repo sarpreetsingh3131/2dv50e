@@ -7,7 +7,7 @@ from machine_learner.utils import repository
 
 DIR_PATH = os.path.join('machine_learner', 'trained_models', 'pllaregression')
 
-def training(features, target, cycle):
+def training(features, target_pl, target_la, cycle):
 
     if cycle != 1:
         model_pl = repository.get(SGDRegressor.__name__ + '_pl', DIR_PATH)
@@ -25,8 +25,8 @@ def training(features, target, cycle):
     features_pl = scaler_pl.transform(features)
     features_la = scaler_la.transform(features)
 
-    model_pl.partial_fit(features_pl, target)
-    model_la.partial_fit(features_la, target)
+    model_pl.partial_fit(features_pl, target_pl)
+    model_la.partial_fit(features_la, target_la)
 
     repository.create(model_pl, SGDRegressor.__name__ + '_pl', DIR_PATH)
     repository.create(model_la, SGDRegressor.__name__ + '_la', DIR_PATH)
@@ -57,7 +57,7 @@ def testing(features):
         bothGoals = 0
         oneGoal = 0
 
-        for prediction_pl, prediction_la in [predictions_pl, predictions_la]:
+        for prediction_pl, prediction_la in zip(predictions_pl, predictions_la):
 
             response['predictions_pl'].append(float(prediction_pl))
             response['predictions_la'].append(float(prediction_la))

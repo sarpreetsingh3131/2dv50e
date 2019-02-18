@@ -115,8 +115,8 @@ public class MachineLearning extends SMCConnector {
 				break;
 
 			case PLLAMULTIREGR:
-				JSONArray pred_pl = response.getJSONArray("preditions_pl");
-				JSONArray pred_la = response.getJSONArray("preditions_la");
+				JSONArray pred_pl = response.getJSONArray("predictions_pl");
+				JSONArray pred_la = response.getJSONArray("predictions_la");
 
 				Goal pl = Goals.getInstance().getPacketLossGoal();
 				Goal la = Goals.getInstance().getLatencyGoal();
