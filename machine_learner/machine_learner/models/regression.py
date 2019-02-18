@@ -14,9 +14,6 @@ DIR_PATH = os.path.join('machine_learner', 'trained_models', 'regression')
 
 
 
-# Als adapt to multiple goals, by different models
-# or maybe there is some other type of multiple goal model you can find
-# you would have to auto model select for every model
 def training(features, target, cycle):
     try:
         if cycle != 1:

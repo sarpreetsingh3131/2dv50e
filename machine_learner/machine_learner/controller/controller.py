@@ -1,11 +1,11 @@
 import json
 import os
 import traceback
+import machine_learner.utils.dataWriter as dataWriter
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from urllib.parse import urlparse, parse_qs
 from machine_learner.models import classification, regression, plLaClassification
-from machine_learner.utils.dataWriter import appendDataMultiGoal
 
 
 @csrf_exempt
@@ -108,10 +108,10 @@ def save_data(data, cycle):
     outputPath = os.path.join('machine_learner', 'collected_data', 'overall_adaptation_options.json')
 
     # TODO: add boolean parameter in url to indicate training/testing cycles
-    appendDataMultiGoal(
+    dataWriter.appendDataMultiGoal(
         outputPath, 
         cycle, 
-        cycle <= 30, 
+        cycle <= 30,
         data['packetLoss'], 
         data['energyConsumption'], 
         [] if not('latency' in data) else data['latency'],

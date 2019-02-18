@@ -129,37 +129,34 @@ public class Comparison extends SMCConnector {
 	}
 
 	private void doublePlLaGoals(boolean training) {
-		if (taskType == TaskType.PLLAMULTIREGR) {
-			throw new UnsupportedOperationException("not implemented as of yet");
-		}
-		// FIXME: dummy values for regression for now (only classification considered atm)
-		// TODO: once regression is also used, unify both methods
-
 		JSONObject adjInspection = new JSONObject();
 		adjInspection.put("adapIndices", new JSONArray());
 		adjInspection.put("packetLoss", new JSONArray());
 		adjInspection.put("energyConsumption", new JSONArray());
 		adjInspection.put("latency", new JSONArray());
 		adjInspection.put("regressionPLBefore", new JSONArray());
+		adjInspection.put("regressionLABefore", new JSONArray());
 		adjInspection.put("classificationBefore", new JSONArray());
 		adjInspection.put("regressionPLAfter", new JSONArray());
+		adjInspection.put("regressionLAAfter", new JSONArray());
 		adjInspection.put("classificationAfter", new JSONArray());
 
 		if (cycles == 1) {
 			// At the first cycle, no regression or classification output can be retrieved yet
 			// -> use -1 as dummy prediction values
 			IntStream.range(0, adaptationOptions.size()).forEach(i -> {
-				// JSONArray regrValues = new JSONArray();
-				// regrValues.put(-1);
-				// regrValues.put(-1);
 				adjInspection.getJSONArray("regressionPLBefore").put(-1);
+				adjInspection.getJSONArray("regressionLABefore").put(-1);
 				adjInspection.getJSONArray("classificationBefore").put(-1);
 			});
 		} else {
 			// If not at the first cycle, retrieve the results predicted before online learning
-			predictionLearners2Goals(adaptationOptions, adjInspection.getJSONArray("classificationBefore"),
-				adjInspection.getJSONArray("regressionPLBefore"));
+			predictionLearners2Goals(adaptationOptions, 
+				adjInspection.getJSONArray("classificationBefore"),
+				adjInspection.getJSONArray("regressionPLBefore"), 
+				adjInspection.getJSONArray("regressionLABefore"));
 		}
+
 
 		// Check all the adaptation options with activFORMS
 		for (AdaptationOption adaptationOption : adaptationOptions) {
@@ -173,30 +170,33 @@ public class Comparison extends SMCConnector {
 		}
 
 
+		// TODO exploration + time constraints
 		if (training) {
 			// If we are training, send the entire adaptation space to the learners and check what they have learned
 			send(adaptationOptions, TaskType.PLLAMULTICLASS, Mode.TRAINING);
-			// send(adaptationOptions, TaskType.REGRESSION, Mode.TRAINING);
+			send(adaptationOptions, TaskType.PLLAMULTIREGR, Mode.TRAINING);
 
 			predictionLearners2Goals(adaptationOptions, adjInspection.getJSONArray("classificationAfter"),
-				adjInspection.getJSONArray("regressionPLAfter"));
+				adjInspection.getJSONArray("regressionPLAfter"), adjInspection.getJSONArray("regressionLAAfter"));
 		} else {
 			// If we  are testing, send the adjustments to the learning models and check their predictions again
 			List<AdaptationOption> classificationTrainOptions = new ArrayList<>();
-			// List<AdaptationOption> regressionTrainOptions = new ArrayList<>();
+			List<AdaptationOption> regressionTrainOptions = new ArrayList<>();
 
 			// Parse the classification and regression results from the JSON responses.
 			final List<Integer> classificationResults = adjInspection.getJSONArray("classificationBefore")
 				.toList().stream()
 				.map(o -> Integer.parseInt(o.toString()))
 				.collect(Collectors.toList());
-			// final List<Float> regressionResults = adjInspection.getJSONArray("regressionPLBefore")
-			// 	.toList().stream()
-			// 	.map(o -> Float.parseFloat(o.toString()))
-			// 	.collect(Collectors.toList());
+			final List<Float> regressionResultsPL = adjInspection.getJSONArray("regressionPLBefore")
+				.toList().stream()
+				.map(o -> Float.parseFloat(o.toString()))
+				.collect(Collectors.toList());
+			final List<Float> regressionResultsLA = adjInspection.getJSONArray("regressionLABefore")
+				.toList().stream()
+				.map(o -> Float.parseFloat(o.toString()))
+				.collect(Collectors.toList());
 
-			// Goal pl = goals.getPacketLossGoal();
-			// Goal la = goals.getLatencyGoal();
 
 			// Determine which adaptation options have to be sent back for the specific learners
 			// Count the amount of predictions for each classification class
@@ -227,17 +227,52 @@ public class Comparison extends SMCConnector {
 			if (satisfiedGoals == 0) {
 				classificationTrainOptions = adaptationOptions;
 			}
-			// if (regressionResults.stream().noneMatch(o -> pl.evaluate(o))) {
-			// 	regressionTrainOptions = adaptationOptions;
-			// }
+
+			// Similar way of working for regression
+
+			Goal pl = goals.getPacketLossGoal();
+			Goal la = goals.getLatencyGoal();
+
+			List<Integer> regressionClasses = new ArrayList<>();
+
+			predictionsInClass = new int[4];
+			for (int i = 0; i < regressionResultsPL.size(); i++) {
+				int predictedClass = 
+					(pl.evaluate(regressionResultsPL.get(i)) ? 1 : 0) +
+					(la.evaluate(regressionResultsLA.get(i)) ? 2 : 0);
+				regressionClasses.add(predictedClass);
+				predictionsInClass[predictedClass] += 1;
+			}
+
+
+			satisfiedGoals = 0;
+			if (predictionsInClass[3] > 0) {
+				satisfiedGoals = 2;
+			} else if (predictionsInClass[1] + predictionsInClass[2] > 0) {
+				satisfiedGoals = 1;
+			}
+
+			for (int i = 0; i < adaptationOptions.size(); i++) {
+				int classResult = regressionClasses.get(i);
+				if (satisfiedGoals == 2 && classResult == 3) {
+					regressionTrainOptions.add(adaptationOptions.get(i));
+				} else if (satisfiedGoals == 1 && (classResult == 2 || classResult == 1)) {
+					regressionTrainOptions.add(adaptationOptions.get(i));
+				} else if (satisfiedGoals == 0) {
+					regressionTrainOptions.add(adaptationOptions.get(i));
+				}
+			}
+			if (satisfiedGoals == 0) {
+				regressionTrainOptions = adaptationOptions;
+			}
 
 			// Send the adaptation options specific to the learners back for online learning
 			send(classificationTrainOptions, TaskType.PLLAMULTICLASS, Mode.TRAINING);
-			// send(regressionTrainOptions, TaskType.REGRESSION, Mode.TRAINING);
+			send(regressionTrainOptions, TaskType.PLLAMULTIREGR, Mode.TRAINING);
 
 			// Test the predictions of the learners again after online learning to track their adjustments
 			predictionLearners2Goals(adaptationOptions, adjInspection.getJSONArray("classificationAfter"),
-				adjInspection.getJSONArray("regressionPLAfter"));
+				adjInspection.getJSONArray("regressionPLAfter"), adjInspection.getJSONArray("regressionLAAfter"));
 		}
 
 
@@ -269,18 +304,25 @@ public class Comparison extends SMCConnector {
 	 * Helper function which adds the predictions of both learning models to their respective JSON arrays.
 	 * The predictions are made over the whole adaptation space.
 	 * @param classArray The JSON array which will hold the classification predictions.
-	 * @param regrArray The JSON array which will hold the regression predictions.
+	 * @param regrArrayPL The JSON array which will hold the regression predictions for packet loss.
+	 * @param regrArrayLA The JSON array which will hold the regression predictions for latency.
 	 */
-	private void predictionLearners2Goals(List<AdaptationOption> adaptationOptions, JSONArray classArray, JSONArray regrArray) {
+	private void predictionLearners2Goals(List<AdaptationOption> adaptationOptions, JSONArray classArray, 
+			JSONArray regrArrayPL, JSONArray regrArrayLA) {
+		
 		JSONObject classificationResponse = send(adaptationOptions, TaskType.PLLAMULTICLASS, Mode.TESTING);
-		// JSONObject regressionResponse = send(adaptationOptions, TaskType.REGRESSION, Mode.TESTING);
+		JSONObject regressionResponse = send(adaptationOptions, TaskType.PLLAMULTIREGR, Mode.TESTING);
 
 		for (Object item : classificationResponse.getJSONArray("predictions")) {
 			classArray.put(Integer.parseInt(item.toString()));
 		}
-		// TODO: dummy values for now
-		for (int i = 0; i < classificationResponse.getJSONArray("predictions").length(); i++) {
-			regrArray.put(-1);
+
+		JSONArray pred_pl = regressionResponse.getJSONArray("predictions_pl");
+		JSONArray pred_la = regressionResponse.getJSONArray("predictions_la");
+
+		for (int i = 0; i < pred_pl.length(); i++) {
+			regrArrayPL.put(Float.parseFloat(pred_pl.get(i).toString()));
+			regrArrayLA.put(Float.parseFloat(pred_la.get(i).toString()));
 		}
 	}
 
