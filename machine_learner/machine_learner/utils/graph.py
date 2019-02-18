@@ -1,16 +1,11 @@
-"""This file is just for plotting the data I think
-
-You should review it to see how it adapts
-to multigoal and scaling
-and maybe add the function from the python
-machine learning book to visualise
-the classification.
-"""
-
 import numpy as np
+import csv
+import os
 import json
+import sys
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
+import matplotlib as mlp
 
 
 def overview_of_selected_adaptation_options():
@@ -143,15 +138,15 @@ def time_measurement():
 def selected_adaptation_options():
     data = json.load(
         open('machine_learner/collected_data/selected_adaptation_options.json'))
-    for i in range(len(data)):
+    for i in range(295,len(data)):
         plt_index = 1
-        plt.figure()
+        fig = plt.figure()
+        fig.suptitle('Selected configurations in a single cycle', fontsize=16)
         for model_name, target_type in zip(
-            ['Classification', 'Regression'],
-            [data[i]['classification'],
-             data[i]['regression']]
+            ['Classification'],
+            [data[i]['classification']]
         ):
-            plt.subplot(1, 2, plt_index)
+            plt.subplot(1, 1, plt_index)
             for pl, ec, target in zip(data[i]['packetLoss'], data[i]['energyConsumption'], target_type):
                 plt.scatter(pl, ec, color='orange')
                 if model_name == 'Classification' and target == 1:
@@ -164,7 +159,7 @@ def selected_adaptation_options():
             plt.ylabel('Energy Consumption (coulomb)')
             if plt_index == 1:
                 plt.legend(
-                    bbox_to_anchor=(0.3, 1.02, 1.6, .102),
+                    bbox_to_anchor=(0, 1.02, 1, .102),
                     loc=3,
                     ncol=3,
                     mode='expand',
@@ -172,11 +167,329 @@ def selected_adaptation_options():
                     handles=[
                         mpatches.Patch(color='orange', label='ActivFORMS'),
                         mpatches.Patch(color='blue', label='Classification'),
-                        mpatches.Patch(color='green', label='Regression')
+                        # mpatches.Patch(color='green', label='Regression')
                     ]
                 )
             plt_index += 1
         plt.show()
+
+        
+        
+
+def selected_adaptation_options_multigoal(highlightBest=True):
+    mlp.rcParams['font.size'] = 14
+    data = json.load(open(sys.argv[1]))
+    
+    # interrestingCyclesV1Class = [203,204,226,237,282,287,288]
+    # interrestingCyclesV1Regr = [211,225,226,231,232,233,277,283,284,286]
+    # interrestingCyclesV2Class = [211,214,219,225,236,247,260,268,273,275,297]
+    # interrestingCyclesV2Regr = [224,228,231,236,239,246,249,268,280,282]
+    # cycles = [210]
+    for i in range(len(data)-5,len(data)):
+        for _, target_type in zip(
+            ['Classification'],
+            [data[i]['adaptationOptions']['classificationBefore']]
+        ):
+            bestPointQualities = {'latency': -1, 'packetLoss' : -1, 'energyConsumption': max(data[i]['adaptationOptions']['energyConsumption']), 'predictedRight': False}
+            for pl, ec, la, target in zip(data[i]['adaptationOptions']['packetLoss'], data[i]['adaptationOptions']['energyConsumption'], data[i]['adaptationOptions']['latency'], target_type):
+                if pl < 10 and la < 5 and ec < bestPointQualities['energyConsumption']:
+                    bestPointQualities['latency'] = la
+                    bestPointQualities['packetLoss'] = pl
+                    bestPointQualities['energyConsumption'] = ec
+                    bestPointQualities['predictedRight'] = (target == (1 if pl < 10 else 0) + (2 if la < 5 else 0))
+
+
+            verifiedConfigurations = data[i]['adaptationOptions']['verifiedConfigurations']
+
+            def drawFigure(quality1, quality2, xlabel, ylabel, figName, firstLine, secondLine=None):
+                plt.figure(figsize=(12,10))
+                index = 0
+                for d1, d2, target in zip(data[i]['adaptationOptions'][quality1], data[i]['adaptationOptions'][quality2], target_type):
+                    if target == 3:
+                        plt.scatter(d1, d2, color='blue', s=15)
+                    elif verifiedConfigurations[index] == 1:
+                        plt.scatter(d1, d2, color='xkcd:darkish green', s=45, marker='*')
+                    else:
+                        plt.scatter(d1, d2, color='orange', s=10)
+                    # if index == 741:
+                    #     plt.scatter(d1,d2,color='black',s=150, marker='*', zorder=100)
+                    # else:
+                    #     plt.scatter(d1,d2,color='orange', s=10)
+                    index += 1
+            
+
+                if highlightBest:
+                    plt.scatter(
+                        bestPointQualities[quality1], 
+                        bestPointQualities[quality2], 
+                        color=('green' if bestPointQualities['predictedRight'] else 'red'), 
+                        marker='*', s=150
+                    )
+                plt.plot(firstLine['bound1'],firstLine['bound2'], color='red')
+                if secondLine != None:
+                    plt.plot(secondLine['bound1'],secondLine['bound2'], color='red')
+                plt.xlabel(xlabel)
+                plt.ylabel(ylabel)
+
+                legendHandles = [
+                    (mpatches.Patch(color='Red', label='Best configuration (selected)') if bestPointQualities['predictedRight'] \
+                        else mpatches.Patch(color='Red', label='Best configuration (missed)')),
+                    mpatches.Patch(color='blue', label='Relevant options'),
+                    mpatches.Patch(color='orange', label='Irrelevant options'),
+                    mpatches.Patch(color='xkcd:darkish green', label='Explored options')
+                ]
+
+                plt.legend(
+                    bbox_to_anchor=(0, 1.02, 1, 1),
+                    loc=3,
+                    ncol=4 if highlightBest else 3,
+                    mode='expand',
+                    borderaxespad=0.,
+                    handles=legendHandles[(0 if highlightBest else 1):4]
+                )
+
+                plt.savefig(os.path.join(sys.argv[2], f'{figName}.pdf'), bbox_inches='tight')
+                plt.close()
+
+
+            drawFigure(
+                'packetLoss', 
+                'latency', 
+                'Packet loss (%)', 
+                'Latency (%)', 
+                f'Cycle_{i}_PLLA', 
+                {'bound1': [min(data[i]['adaptationOptions']['packetLoss']), max(data[i]['adaptationOptions']['packetLoss'])], 'bound2': [5,5]},
+                secondLine={'bound1': [10,10], 'bound2': [(min(data[i]['adaptationOptions']['latency'])), (max(data[i]['adaptationOptions']['latency']))]}
+            )
+            drawFigure(
+                'packetLoss', 
+                'energyConsumption', 
+                'Packet loss (%)', 
+                'Energy consumption (Coulomb)', 
+                f'Cycle_{i}_PLEC',
+                {'bound1': [10,10], 'bound2': [(min(data[i]['adaptationOptions']['energyConsumption'])), (max(data[i]['adaptationOptions']['energyConsumption']))]}
+            )
+            drawFigure(
+                'latency', 
+                'energyConsumption', 
+                'Latency (%)', 
+                'Energy consumption (Coulomb)', 
+                f'Cycle_{i}_LAEC', 
+                {'bound1': [5,5], 'bound2': [(min(data[i]['adaptationOptions']['energyConsumption'])), (max(data[i]['adaptationOptions']['energyConsumption']))]}
+            )
+        
+
+
+def boxplotsResults(ignoreTraining = False): 
+    if len(sys.argv) != 3:
+        print('Make sure to provide the data files as commandline argument.')
+        sys.exit(1)
+    
+    with open(sys.argv[1], 'r') as f:
+        data = json.load(f)
+
+    with open(sys.argv[2], 'r') as f:
+        # Regression shares the same overall data as classification, just other predictions
+        dataRegr = json.load(f)
+    
+
+    if ignoreTraining:
+        amtTraining = min(i for i in range(len(data)) if data[i]['training'] == 'false')
+        data = data[amtTraining:]
+        dataRegr = dataRegr[amtTraining:]
+
+    bestConfigurationsACTIVForms = []
+    bestConfigurationsClassification = []
+    bestConfigurationsRegression = []
+
+    overallData = {'totalAmount':len(data[0]['adaptationOptions']['latency']), 'amountCL':[], 'amountRE':[]}
+    # indicesGoodOptions = []
+    
+    for cycle in data:
+
+        bestOptionAF = {'energyConsumption': max(cycle['adaptationOptions']['energyConsumption']), 'latency': -10, 'packetLoss': -10}
+        bestOptionClass = {'energyConsumption': max(cycle['adaptationOptions']['energyConsumption']), 'latency': -10, 'packetLoss': -10}
+
+        amtOptions = len(cycle['adaptationOptions']['classificationBefore'])
+
+        # ACTIVForms
+        indicesAF = [i for i in range(amtOptions) if cycle['adaptationOptions']['packetLoss'][i] < 10 and cycle['adaptationOptions']['latency'][i] < 5]
+        # indicesGoodOptions.append(indicesAF.copy())
+        # overallData['amountC3'].append(len(indicesAF))
+
+        # In case there are no configurations which satisfy both goals, fall back to failsafe configuration (consider whole space)
+        if len(indicesAF) == 0:
+            indicesAF = [i for i in range(amtOptions)]
+
+        energyConsumptionsAF = [cycle['adaptationOptions']['energyConsumption'][i] for i in indicesAF]
+
+        for i in indicesAF:
+            if cycle['adaptationOptions']['energyConsumption'][i] == min(energyConsumptionsAF):
+                bestOptionAF['energyConsumption'] = cycle['adaptationOptions']['energyConsumption'][i]
+                bestOptionAF['latency'] = cycle['adaptationOptions']['latency'][i]
+                bestOptionAF['packetLoss'] = cycle['adaptationOptions']['packetLoss'][i]
+                break
+
+        # Classification
+        indicesTraining = [i for i in range(amtOptions) if cycle['adaptationOptions']['verifiedConfigurations'][i] == 1]
+
+        # TODO move to separate function (same as above)
+        indicesClass = [i for i in indicesTraining if cycle['adaptationOptions']['packetLoss'][i] < 10 and cycle['adaptationOptions']['latency'][i] < 5]
+        if len(indicesClass) == 0:
+            indicesClass = indicesTraining
+        energyConsumptionsClass = [cycle['adaptationOptions']['energyConsumption'][i] for i in indicesClass]
+        for i in indicesClass:
+            if cycle['adaptationOptions']['energyConsumption'][i] == min(energyConsumptionsClass):
+                bestOptionClass['energyConsumption'] = cycle['adaptationOptions']['energyConsumption'][i]
+                bestOptionClass['latency'] = cycle['adaptationOptions']['latency'][i]
+                bestOptionClass['packetLoss'] = cycle['adaptationOptions']['packetLoss'][i]
+                break
+
+
+        amt = len([i for i in range(amtOptions) if cycle['adaptationOptions']['verifiedConfigurations'][i] == 1])
+        overallData['amountCL'].append(amt)
+
+        bestConfigurationsACTIVForms.append(bestOptionAF)
+        bestConfigurationsClassification.append(bestOptionClass)
+
+
+
+    # Written ugly for now
+    # TODO fix later
+    index = 0
+    for cycle in dataRegr:
+        bestOptionRegr = {'energyConsumption': max(cycle['adaptationOptions']['energyConsumption']), 'latency': -10, 'packetLoss': -10}
+
+        amtOptions = len(cycle['adaptationOptions']['classificationBefore'])
+        
+
+        indicesTraining = [i for i in range(amtOptions) if cycle['adaptationOptions']['verifiedConfigurations'][i] == 1]
+
+        # TODO move to separate function (same as above)
+        indicesRegr = [i for i in indicesTraining if cycle['adaptationOptions']['packetLoss'][i] < 10 and cycle['adaptationOptions']['latency'][i] < 5]
+        if len(indicesRegr) == 0:
+            indicesRegr = indicesTraining
+        energyConsumptionsRegr = [cycle['adaptationOptions']['energyConsumption'][i] for i in indicesRegr]
+        for i in indicesRegr:
+            if cycle['adaptationOptions']['energyConsumption'][i] == min(energyConsumptionsRegr):
+                bestOptionRegr['energyConsumption'] = cycle['adaptationOptions']['energyConsumption'][i]
+                bestOptionRegr['latency'] = cycle['adaptationOptions']['latency'][i]
+                bestOptionRegr['packetLoss'] = cycle['adaptationOptions']['packetLoss'][i]
+                break
+
+
+        amt = len([i for i in range(amtOptions) if cycle['adaptationOptions']['verifiedConfigurations'][i] == 1])
+        overallData['amountRE'].append(amt)
+
+        bestConfigurationsRegression.append(bestOptionRegr)
+        index += 1
+
+
+    verificationTimesAF = [cycle['verificationTimeWithoutLearning'] / 1000 for cycle in data]
+    verificationTimesCL = [cycle['verificationTimeWithLearning'] / 1000 for cycle in data]
+    learningTimesMillisCL = [cycle['learningTime'] for cycle in data]
+
+    verificationTimesRE = [cycle['verificationTimeWithLearning'] / 1000 for cycle in dataRegr]
+    learningTimesMillisRE = [cycle['learningTime'] for cycle in dataRegr]
+
+    totalTimesCL = [x+(y/1000) for x,y in zip(verificationTimesCL, learningTimesMillisCL)]
+    totalTimesRE = [x+(y/1000) for x,y in zip(verificationTimesRE, learningTimesMillisRE)]
+
+    mlp.rcParams['font.size'] = 14
+    plt.figure(figsize=(13,10))
+    plt.subplots_adjust(wspace=0.25)
+
+    def makeBoxplot(dataAF, dataCL, dataRE, ylabel):
+        boxplot = plt.boxplot(
+            [dataAF, dataCL, dataRE],
+            labels=['No learning', 'Classification', 'Regression'],
+            patch_artist=True,
+            widths=0.5,
+            medianprops={'color': 'black', 'linewidth': 2}
+        )
+        for index, box in enumerate(boxplot['boxes']):
+            box.set(facecolor=['orange', 'dodgerblue', 'green'][index])
+        plt.ylabel(ylabel)
+    
+    plt.subplot(2,2,1)
+    makeBoxplot(
+        [i['packetLoss'] for i in bestConfigurationsACTIVForms], 
+        [i['packetLoss'] for i in bestConfigurationsClassification], 
+        [i['packetLoss'] for i in bestConfigurationsRegression],
+        'Packet loss (%)'
+    )
+
+    plt.subplot(2,2,2)
+    makeBoxplot(
+        [i['latency'] for i in bestConfigurationsACTIVForms], 
+        [i['latency'] for i in bestConfigurationsClassification], 
+        [i['latency'] for i in bestConfigurationsRegression],
+        'Latency (%)'
+    )
+
+    plt.subplot(2,2,3)
+    makeBoxplot(
+        [i['energyConsumption'] for i in bestConfigurationsACTIVForms], 
+        [i['energyConsumption'] for i in bestConfigurationsClassification], 
+        [i['energyConsumption'] for i in bestConfigurationsRegression],
+        'Energy consumption (Coulomb)'
+    )
+
+    plt.subplot(2,2,4)
+    makeBoxplot(
+        verificationTimesAF,
+        totalTimesCL,
+        totalTimesRE,
+        'Time (seconds)'
+    )
+
+    plt.savefig('OverallEvaluation.pdf', bbox_inches='tight')
+    plt.close()
+
+
+    # reductionPercentagesCL = [overallData['amountCL'][i] / overallData['totalAmount'] for i in range(len(overallData['amountCL']))]
+    # reductionPercentagesRE = [overallData['amountRE'][i] / overallData['totalAmount'] for i in range(len(overallData['amountRE']))]
+    # verificationPercentagesCL = [totalTimesCL[i]/verificationTimesAF[i] for i in range(len(verificationTimesAF))]
+    # verificationPercentagesRE = [totalTimesRE[i]/verificationTimesAF[i] for i in range(len(verificationTimesAF))]
+
+    # print(f'Classification (reduction space): mean = {np.mean(reductionPercentagesCL)*100:.2f} ; std = {np.std(reductionPercentagesCL)*100:.2f}')
+    # print(f'Regression (reduction space): mean = {np.mean(reductionPercentagesRE)*100:.2f} ; std = {np.std(reductionPercentagesRE)*100:.2f}')
+    # print(f'Classification (reduction verification time): mean = {np.mean(verificationPercentagesCL)*100:.2f} ; std = {np.std(verificationPercentagesCL)*100:.2f}')
+    # print(f'Classification (reduction verification time): mean = {np.mean(verificationPercentagesRE)*100:.2f} ; std = {np.std(verificationPercentagesRE)*100:.2f}')
+
+    # print(f'Mean time no learning: {np.mean(verificationTimesAF)}')
+    # print(f'Mean time classifier: {np.mean(totalTimesCL)}')
+    # print(f'Mean time regressors: {np.mean(totalTimesRE)}')
+
+    # verificationTimeCL = sum(verificationTimesCL)
+    # learningTimeCL = sum(learningTimesMillisCL) / 1000
+    # print(f"Verification time classifier: {verificationTimeCL:.2f} seconds")
+    # print(f"Learning time classifier: {learningTimeCL:.2F} seconds")
+    # print(f'Percentage of time spent learning: {learningTimeCL / (learningTimeCL + verificationTimeCL) * 100:.5f} %')
+
+    # Compile data in csv format
+    with open('data_overall_results.csv','w') as f:
+        writer = csv.writer(f)
+        writer.writerow(['AF_PL', 'AF_LA', 'AF_EC', 'AF_T', 'CL_PL', 'CL_LA', 'CL_EC', 'CL_T', 'RE_PL', 'RE_LA', 'RE_EC', 'RE_T'])
+
+        for i in range(len(bestConfigurationsACTIVForms)):
+            writer.writerow([
+                bestConfigurationsACTIVForms[i]['packetLoss'],
+                bestConfigurationsACTIVForms[i]['latency'],
+                bestConfigurationsACTIVForms[i]['energyConsumption'],
+                verificationTimesAF[i],
+
+                bestConfigurationsClassification[i]['packetLoss'],
+                bestConfigurationsClassification[i]['latency'],
+                bestConfigurationsClassification[i]['energyConsumption'],
+                totalTimesCL[i],
+
+                bestConfigurationsRegression[i]['packetLoss'],
+                bestConfigurationsRegression[i]['latency'],
+                bestConfigurationsRegression[i]['energyConsumption'],
+                totalTimesRE[i]
+            ])
+
 
 
 def uncertainties():
@@ -270,8 +583,11 @@ def uncertainties():
 
 
 
-uncertainties()
-overview_of_selected_adaptation_options()
-comparison()
-time_measurement()
-selected_adaptation_options()
+# uncertainties()
+# overview_of_selected_adaptation_options()
+# comparison()
+# time_measurement()
+# selected_adaptation_options()
+
+# selected_adaptation_options_multigoal(highlightBest=False)
+boxplotsResults(ignoreTraining=False)
