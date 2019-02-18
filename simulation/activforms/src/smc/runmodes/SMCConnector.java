@@ -47,7 +47,7 @@ abstract public class SMCConnector {
 
 	public enum Mode {
 		MACHINELEARNING("machinelearning"),
-		ACTIVFORM("activform"), 
+		ACTIVFORMS("activforms"), 
 		COMPARISON("comparison"),
 
 		// NOTE: training and testing should only be used internally
@@ -73,7 +73,7 @@ abstract public class SMCConnector {
 			switch (this) {
 				case MACHINELEARNING:
 					return new MachineLearning();
-				case ACTIVFORM:
+				case ACTIVFORMS:
 					return new ActivForms();
 				case COMPARISON:
 					return new Comparison();

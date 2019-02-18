@@ -89,16 +89,6 @@ public class MachineLearning extends SMCConnector {
 		send(qosEstimates, taskType, Mode.TRAINING);
 	}
 
-	// private void testing2Goals() {
-	// 	// TODO maybe unify both functions
-	// 	if (taskType == TaskType.PLLAMULTICLASS) {
-	// 		testing2GoalsClassification();
-	// 	} else {
-	// 		throw new UnsupportedOperationException("Regression with multiple goals is currently not supported.");
-	// 		// testing2GoalsRegression();
-	// 	}
-	// }
-
 	private void testing2Goals() {
 		// Send the adaptation options to the learner with mode testing, returns the predictions of the learner
 		JSONObject response = send(adaptationOptions, taskType, Mode.TESTING);
@@ -172,7 +162,7 @@ public class MachineLearning extends SMCConnector {
 				}
 
 
-				if(isPredictedRelevant) {
+				if (isPredictedRelevant) {
 					smcChecker.checkCAO(adaptationOption.toModelString(), environment.toModelString(),
 						adaptationOption.verificationResults);
 
