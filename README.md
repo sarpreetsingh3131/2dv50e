@@ -1,5 +1,5 @@
 # 2dv50e
-This repository contains the code of the approach that we mentioned in the thesis called: *Applying Machine Learning to Reduce the Adaptation Space in Self-Adaptive Systems: an exploratory work* (http://lnu.diva-portal.org/smash/record.jsf?pid=diva2%3A1240014&dswid=-7780)
+This repository contains the code of the approach that we mentioned in the thesis called: *Applying Machine Learning to Reduce the Adaptation Space in Self-Adaptive Systems: an exploratory work* (http://www.diva-portal.org/smash/record.jsf?pid=diva2:1240014)
 
 This repository contains two main modules:
 
